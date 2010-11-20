@@ -26,8 +26,11 @@ typedef enum _APIWPrimitiveType
 
 typedef enum _APIWFormat
 {
-	UNKNOWN			= 0,
-	R32G32B32_FLOAT = 1
+	UNKNOWN				= 0,
+	R32_FLOAT			= 1,
+	R32G32_FLOAT		= 2,
+	R32G32B32_FLOAT		= 3,
+	R32G32B32A32_FLOAT	= 4
 } APIWFormat;
 
 class RenderingAPIWrapper

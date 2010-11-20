@@ -337,7 +337,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 							}
 							if(raw->data.mouse.lLastY != 0)
 							{
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,(float)*(LONG*)&raw->data.mouse.lLastY/(float)0xff));
+								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)*(LONG*)&raw->data.mouse.lLastY/(float)0xff));
 							}
 						}
 						// button press buttons 1 to 5

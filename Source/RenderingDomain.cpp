@@ -25,7 +25,7 @@ const char* vertex_program =
 "  float4 color    : COLOR;\n"
 "};\n"
 "\n"
-"C2E1v_Output C2E1v_green(float3 position : POSITION,float3 color : COLOR)\n"
+"C2E1v_Output vertex(float3 position : POSITION,float3 color : COLOR)\n"
 "{	\n"
 "  C2E1v_Output OUT;\n"
 "\n"
@@ -43,7 +43,7 @@ const char* fragment_program =
 "  float4 color : COLOR;\n"
 "};\n"
 "\n"
-"C2E2f_Output C2E2f_passthru(float4 color : COLOR)\n"
+"C2E2f_Output fragment(float4 color : COLOR)\n"
 "{\n"
 "  C2E2f_Output OUT;\n"
 "  OUT.color = color;\n"
@@ -119,8 +119,8 @@ const char* fragment_program =
 
 		void RenderingDomain::DomainInit(u64 step)
 		{
-			//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-			pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+			pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
+			//pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 			pWrapper->BeginFrame();
 			pWrapper->RegisterVertexFormat(szDefFormat,DefFormatDescriptor,sizeof(DefFormatDescriptor)/sizeof(VertexDescriptionEntry));
 

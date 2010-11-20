@@ -197,8 +197,7 @@ D3D11APIWrapper::~D3D11APIWrapper()
 
 void D3D11APIWrapper::BeginFrame()
 {
-	// Clear the render target to dark blue
-    float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f }; // red, green, blue, alpha
+    float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f }; 
     m_pContext->ClearRenderTargetView( m_pRenderTargetView, ClearColor );
 	m_pContext->ClearDepthStencilView( m_pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
     m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, NULL );
@@ -213,6 +212,26 @@ void D3D11APIWrapper::PresentFrame()
 
     // Show the rendered frame on the screen
     m_pSwapChain->Present( 0, 0 );
+
+	//framerate hack yay
+    static HAGE::u64 last = 0;
+	static HAGE::u64 freq = 0;
+    static float sum = 0;
+    static int nSum = 0;
+    HAGE::u64 current;
+    QueryPerformanceCounter((LARGE_INTEGER*)&current);
+
+    HAGE::u64 diff = current - last;
+    last = current;
+
+	if(freq == 0)
+		QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+    sum +=1.0f/(float)diff*(float)freq;
+    nSum++;
+
+    if(nSum%100==0)
+        printf("Average %.02f - current %.02f\n",sum/(float)nSum,1.0f/(float)diff*(float)freq);
 }
 
 HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData)
@@ -247,7 +266,7 @@ const D3D11APIWrapper::ArrayFormatEntry*	D3D11APIWrapper::GetArrayFormat(const s
 		//create entry
 		HAGE::u32 nTotalEntries = 0;
 		for(auto i=code.begin();i!=code.end();++i)
-			nTotalEntries+=m_VertexFormatList[i-code.begin()].nElements;
+			nTotalEntries+=m_VertexFormatList[*i].nElements;
 
 		ArrayFormatEntry new_entry;
 		new_entry.nElements=nTotalEntries;
@@ -315,9 +334,21 @@ void D3D11APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDescri
 			new_entry.pD3DDescription[out].SemanticIndex = j;
 			switch(new_entry.pOriginalDescription[i].fFormat)
 			{
+			case HAGE::R32G32B32A32_FLOAT:
+				new_entry.pD3DDescription[out].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+				vertex_size+=sizeof(HAGE::f32)*4;
+				break;
 			case HAGE::R32G32B32_FLOAT:
 				new_entry.pD3DDescription[out].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 				vertex_size+=sizeof(HAGE::f32)*3;
+				break;
+			case HAGE::R32G32_FLOAT:
+				new_entry.pD3DDescription[out].Format = DXGI_FORMAT_R32G32_FLOAT;
+				vertex_size+=sizeof(HAGE::f32)*2;
+				break;
+			case HAGE::R32_FLOAT:
+				new_entry.pD3DDescription[out].Format = DXGI_FORMAT_R32_FLOAT;
+				vertex_size+=sizeof(HAGE::f32)*1;
 				break;
 			}
 

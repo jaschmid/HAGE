@@ -38,7 +38,7 @@ ID3D11VertexShader* D3D11Effect::CompileVertexShader(const char* shader)
 		CG_SOURCE,                /* Program in human-readable form */
 		shader,				/* Name of file containing program */
 		m_pWrapper->GetVertexProfile(),        /* Profile: OpenGL ARB vertex program */
-		"C2E1v_green",			/* Entry function name */
+		"vertex",			/* Entry function name */
 		NULL);
     m_pWrapper->checkForCgError("creating vertex program from CG source");
 
@@ -83,7 +83,7 @@ ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 		CG_SOURCE,                /* Program in human-readable form */
 		shader,				/* Name of file containing program */
 		m_pWrapper->GetFragmentProfile(),        /* Profile: OpenGL ARB vertex program */
-		"C2E2f_passthru",			/* Entry function name */
+		"fragment",			/* Entry function name */
 		NULL);
     m_pWrapper->checkForCgError("creating vertex program from CG source");
 

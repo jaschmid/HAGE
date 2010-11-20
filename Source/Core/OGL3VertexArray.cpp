@@ -51,7 +51,7 @@ const char* vertex_slot_names[] =
 	"FOGCOORD",
 	"PSIZE",
 	"BLENDINDICES",
-	"TEXCOORD0",
+	"TEXCOORD",
 	"TEXCOORD1",
 	"TEXCOORD2",
 	"TEXCOORD3",
@@ -86,10 +86,25 @@ OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 			int size = 0;
 			switch(pFormat->pOriginalDescription[j].fFormat)
 			{
+			case HAGE::R32G32B32A32_FLOAT:
+				nAttributes = 4;
+				Type = GL_FLOAT;
+				size += 4*sizeof(HAGE::f32);
+				break;
 			case HAGE::R32G32B32_FLOAT:
 				nAttributes = 3;
 				Type = GL_FLOAT;
 				size += 3*sizeof(HAGE::f32);
+				break;
+			case HAGE::R32G32_FLOAT:
+				nAttributes = 2;
+				Type = GL_FLOAT;
+				size += 2*sizeof(HAGE::f32);
+				break;
+			case HAGE::R32_FLOAT:
+				nAttributes = 1;
+				Type = GL_FLOAT;
+				size += 1*sizeof(HAGE::f32);
 				break;
 			}
 			int nProperty = -1;

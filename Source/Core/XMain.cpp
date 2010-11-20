@@ -255,7 +255,7 @@ extern void ProcessXEvents()
                     }
                     if(dy != 0)
                     {
-                        pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,(float)dy/(float)0xff));
+                        pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)dy/(float)0xff));
                     }
 
                     //set to center

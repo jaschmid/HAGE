@@ -157,7 +157,15 @@ public:
 	{
 	}
 
-	template<class _T2> Vector3(_T2 _1,_T2 _2,_T2 _3) : x((const _T&)_1),y((const _T&)_2),z((const _T&)_3)
+	template<class _T2> Vector3(const _T2& _1,const _T2& _2,const _T2& _3) : x((const _T&)_1),y((const _T&)_2),z((const _T&)_3)
+	{
+	}
+
+	template<class _T2> Vector3(const Vector2<_T2>& _v,const _T2& _3) : x((const _T&)_v.x),y((const _T&)_v.y),z((const _T&)_3)
+	{
+	}
+
+	template<class _T2> Vector3(const _T2& _1,const Vector2<_T2>& _v) : x((const _T&)_1),y((const _T&)_v.x),z((const _T&)_v.y)
 	{
 	}
 
@@ -385,6 +393,15 @@ template<class _T = f32> struct Matrix4
 		);
 	}
 
+	static const Matrix4<_T> Scale(const Vector3<>& v)
+	{
+		return Matrix4(
+			Vector4<_T>(v.x ,0.0f,0.0f,0.0f),
+			Vector4<_T>(0.0f,v.y ,0.0f,0.0f),
+			Vector4<_T>(0.0f,0.0f,v.z ,0.0f),
+			Vector4<_T>(0.0f,0.0f,0.0f,1.0f)
+		);
+	}
 	static const Matrix4<_T> AngleRotation(const Vector3<_T>& a,const _T& angle)
 	{
 		_T _cos = cos(angle);

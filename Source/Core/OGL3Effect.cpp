@@ -11,7 +11,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 		CG_SOURCE,                /* Program in human-readable form */
 		pVertexProgram,				/* Name of file containing program */
 		m_pWrapper->GetVertexProfile(),        /* Profile: OpenGL ARB vertex program */
-		"C2E1v_green",			/* Entry function name */
+		"vertex",			/* Entry function name */
 		NULL);                    /* No extra compiler options */
 	m_pWrapper->checkForCgError("creating vertex program from source");
 	cgGLLoadProgram(m_CgVertexProgram);
@@ -23,7 +23,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 		CG_SOURCE,                  /* Program in human-readable form */
 		pFragmentProgram,			/* Name of file containing program */
 		m_pWrapper->GetFragmentProfile(),        /* Profile: OpenGL ARB vertex program */
-		"C2E2f_passthru",		/* Entry function name */
+		"fragment",		/* Entry function name */
 		NULL);                      /* No extra compiler options */
 	m_pWrapper->checkForCgError("creating fragment program from source");
 	cgGLLoadProgram(m_CgFragmentProgram);

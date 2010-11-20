@@ -315,7 +315,7 @@ void OpenGL3APIWrapper::PresentFrame()
 	SwapBuffers(m_hDC);
 	wglMakeCurrent(NULL, NULL);
 
-	    //framerate hack yay
+	//framerate hack yay
     static HAGE::u64 last = 0;
 	static HAGE::u64 freq = 0;
     static float sum = 0;
@@ -431,8 +431,17 @@ void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDesc
 		{
 			switch(new_entry.pOriginalDescription[i].fFormat)
 			{
+			case HAGE::R32G32B32A32_FLOAT:
+				vertex_size+=sizeof(HAGE::f32)*4;
+				break;
 			case HAGE::R32G32B32_FLOAT:
 				vertex_size+=sizeof(HAGE::f32)*3;
+				break;
+			case HAGE::R32G32_FLOAT:
+				vertex_size+=sizeof(HAGE::f32)*2;
+				break;
+			case HAGE::R32_FLOAT:
+				vertex_size+=sizeof(HAGE::f32)*1;
 				break;
 			}
 		}

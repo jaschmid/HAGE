@@ -17,7 +17,14 @@ public:
 
 	void Draw();
 private:
-	RenderingAPIWrapper* m_pWrapper;
+	RenderingAPIWrapper*	m_pWrapper;
+
+	Vector2<>				m_vMousePosition;
+	
+	APIWVertexBuffer*		m_pVBSquare;
+	APIWVertexArray*		m_pVASquare;
+	APIWConstantBuffer*		m_pConstants;
+	APIWEffect*				m_pEffect2D;
 };
 
 }
