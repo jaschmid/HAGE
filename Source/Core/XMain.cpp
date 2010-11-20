@@ -188,6 +188,8 @@ int main(int argc,char** argv)
 	return 0;
 }
 
+extern HAGE::u32 x_keycode_to_scancode(unsigned int keycode,Display* XDisplay);
+
 extern void ProcessXEvents()
 {
 	if(bShutdown)
@@ -209,10 +211,10 @@ extern void ProcessXEvents()
                 XDefineCursor(display,win,cursor);
                 break;
             case KeyPress:
-                pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,e.xkey.keycode));
+                pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
                 break;
            case KeyRelease:
-                pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,e.xkey.keycode));
+                pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
                 break;
             case ButtonPress:
             case ButtonRelease:
@@ -229,12 +231,12 @@ extern void ProcessXEvents()
                     if(e.type == ButtonPress)
                     {
                         //keydown
-                        pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,button));
+                        pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,button,0));
                     }
                     else
                     {
                         //keyup
-                        pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,button));
+                        pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,button,0));
                     }
                 }
                 break;
