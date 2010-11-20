@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="HAGE" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="out\CB\bin\Debug\HAGE" prefix_auto="1" extension_auto="1" />
+				<Option object_output="out\CB\obj\Debug\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="out\CB\bin\Release\HAGE" prefix_auto="1" extension_auto="1" />
+				<Option object_output="out\CB\obj\Release\" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=gnu++0x" />
+			<Add directory="C:\Code\HAGE\Headers" />
+		</Compiler>
+		<Linker>
+			<Add library="GL" />
+			<Add library="X11" />
+			<Add library="Cg" />
+			<Add library="CgGL" />
+			<Add library="boost_thread" />
+			<Add library="GLEW" />
+		</Linker>
+		<Unit filename="Headers\AIDomain.h" />
+		<Unit filename="Headers\GenericActor.h" />
+		<Unit filename="Headers\GraphicsDomain.h" />
+		<Unit filename="Headers\InputDomain.h" />
+		<Unit filename="Headers\LogicDomain.h" />
+		<Unit filename="Headers\RenderingDomain.h" />
+		<Unit filename="Headers\ResourceDomain.h" />
+		<Unit filename="Headers\SoundDomain.h" />
+		<Unit filename="Headers\UserInterface.h" />
+		<Unit filename="Headers\UserInterfaceRendering.h" />
+		<Unit filename="Headers\guids.h" />
+		<Unit filename="Headers\header.h" />
+		<Unit filename="Source\AIDomain.cpp" />
+		<Unit filename="Source\GActor.cpp" />
+		<Unit filename="Source\GraphicsDomain.cpp" />
+		<Unit filename="Source\InputDomain.cpp" />
+		<Unit filename="Source\LActor.cpp" />
+		<Unit filename="Source\LogicDomain.cpp" />
+		<Unit filename="Source\Main.cpp" />
+		<Unit filename="Source\RActor.cpp" />
+		<Unit filename="Source\RenderingDomain.cpp" />
+		<Unit filename="Source\ResourceDomain.cpp" />
+		<Unit filename="Source\SoundDomain.cpp" />
+		<Unit filename="Source\UserInterface.cpp" />
+		<Unit filename="Source\UserInterfaceRendering.cpp" />
+		<Unit filename="Source\prec.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

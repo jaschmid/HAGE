@@ -1,0 +1,2 @@
+// PRECOMPILED HEADER GENERATOR
+#include <HAGE.h>

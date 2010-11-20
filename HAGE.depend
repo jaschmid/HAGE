@@ -1,0 +1,628 @@
+# depslib dependency file v1.0
+1290105725 source:/private/Code/HAGE/AIDomain.cpp
+	"AIDomain.h"
+	"stdlib.h"
+
+1288627844 /private/Code/HAGE/AIDomain.h
+	"LogicDomain.h"
+	"PinBase.h"
+
+1289044395 /private/Code/HAGE/LogicDomain.h
+	"DomainBase.h"
+	"InputDomain.h"
+	"PinBase.h"
+	"LActor.h"
+
+1290129422 /private/Code/HAGE/DomainBase.h
+	"header.h"
+	"TaskManager.h"
+	"CoreFactory.h"
+	"DomainMemory.h"
+
+1290106379 /private/Code/HAGE/header.h
+	"preproc.h"
+	"types.h"
+	"results.h"
+	"messages.h"
+	"TLS.h"
+	"hage_math.h"
+	"interlocked_functions.h"
+	"IObject.h"
+	"IFactory.h"
+	"IDomain.h"
+
+1290104688 /private/Code/HAGE/preproc.h
+
+1290105066 /private/Code/HAGE/types.h
+	"preproc.h"
+
+1290109035 /private/Code/HAGE/results.h
+	"types.h"
+
+1290125825 /private/Code/HAGE/messages.h
+	"types.h"
+
+1289211757 /private/Code/HAGE/TLS.h
+	"types.h"
+	"IDomain.h"
+	<boost/thread.hpp>
+
+1290129422 /private/Code/HAGE/IDomain.h
+	"IFactory.h"
+
+1288100402 /private/Code/HAGE/IFactory.h
+	"ISingleton.h"
+
+1288024753 /private/Code/HAGE/ISingleton.h
+
+1290107556 /private/Code/HAGE/hage_math.h
+	"types.h"
+
+1289129784 /private/Code/HAGE/IObject.h
+
+1290105428 /private/Code/HAGE/TaskManager.h
+	"header.h"
+	"SharedTaskManager.h"
+	"global_allocator.h"
+	<boost/bind.hpp>
+	<boost/function.hpp>
+	<vector>
+
+1290105428 /private/Code/HAGE/SharedTaskManager.h
+	"header.h"
+	<boost/thread.hpp>
+	<boost/date_time.hpp>
+	"TLS.h"
+	<queue>
+	"global_allocator.h"
+
+1288101597 /private/Code/HAGE/global_allocator.h
+	"DomainMemory.h"
+
+1288101049 /private/Code/HAGE/DomainMemory.h
+	"header.h"
+
+1290105631 /private/Code/HAGE/CoreFactory.h
+	"header.h"
+	"SharedCoreFactory.h"
+	<map>
+	<boost/random/mersenne_twister.hpp>
+	<boost/uuid/random_generator.hpp>
+	<boost/function.hpp>
+
+1290101363 /private/Code/HAGE/SharedCoreFactory.h
+	"header.h"
+	<map>
+
+1289945291 /private/Code/HAGE/InputDomain.h
+	"DomainBase.h"
+	"PinBase.h"
+	"UserInterface.h"
+
+1290105767 /private/Code/HAGE/PinBase.h
+	"header.h"
+	<boost/function.hpp>
+	<vector>
+	"global_allocator.h"
+	"DomainBase.h"
+	<array>
+
+1289957502 /private/Code/HAGE/UserInterface.h
+	"header.h"
+	"PinBase.h"
+	"ObjectBase.h"
+	<array>
+
+1290129870 /private/Code/HAGE/ObjectBase.h
+	"header.h"
+	"TaskManager.h"
+
+1289051883 /private/Code/HAGE/LActor.h
+	"header.h"
+	"PinBase.h"
+	"GenericActor.h"
+	"hage_math.h"
+
+1290105725 /private/Code/HAGE/GenericActor.h
+	"header.h"
+	"ObjectBase.h"
+	"PinBase.h"
+	"DomainBase.h"
+
+1289130236 source:/private/Code/HAGE/CoreFactory.cpp
+	"CoreFactory.h"
+	"LActor.h"
+	"GActor.h"
+	"RActor.h"
+
+1289053034 /private/Code/HAGE/GActor.h
+	"header.h"
+	"PinBase.h"
+	"GenericActor.h"
+	"hage_math.h"
+
+1289051883 /private/Code/HAGE/RActor.h
+	"header.h"
+	"PinBase.h"
+	"GenericActor.h"
+	"hage_math.h"
+
+1289581730 source:/private/Code/HAGE/D3D11ConstantBuffer.cpp
+	"D3D11APIWrapper.h"
+
+1289574981 /private/Code/HAGE/D3D11APIWrapper.h
+	"RenderingAPIWrapper.h"
+	<Windows.h>
+	<D3DCommon.h>
+	<D3Dcompiler.h>
+	<d3d11.h>
+	<Cg/cg.h>
+	<Cg/cgD3D11.h>
+	<boost/intrusive/list.hpp>
+	<boost/functional/hash.hpp>
+	<unordered_map>
+	<array>
+	<algorithm>
+
+1290002876 /private/Code/HAGE/RenderingAPIWrapper.h
+	"header.h"
+
+1289599554 source:/private/Code/HAGE/D3D11Effect.cpp
+	"D3D11APIWrapper.h"
+
+1290006511 source:/private/Code/HAGE/D3D11VertexArray.cpp
+	"D3D11APIWrapper.h"
+
+1289498670 source:/private/Code/HAGE/D3D11VertexBuffer.cpp
+	"D3D11APIWrapper.h"
+
+1251676754 source:/private/Code/HAGE/D3D11VertexBuffer.cpp,D3D11ConstantBuffer.cpp,D3D11Effect.cpp
+
+1290115347 /private/Code/HAGE/interlocked_functions.h
+	<boost/detail/interlocked.hpp>
+	"types.h"
+
+1289599589 source:/private/Code/HAGE/D3DRenderingAPIWrapper.cpp
+	"D3D11APIWrapper.h"
+
+1290115603 source:/private/Code/HAGE/DomainBase.cpp
+	"DomainBase.h"
+	"PinBase.h"
+
+1290106789 source:/private/Code/HAGE/DomainMemory.cpp
+	"DomainMemory.h"
+	<Windows.h>
+
+1289132889 source:/private/Code/HAGE/GActor.cpp
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"GenericActor.h"
+	"stdlib.h"
+
+1289053034 /private/Code/HAGE/GraphicsDomain.h
+	"DomainBase.h"
+	"LogicDomain.h"
+	"PinBase.h"
+
+1290126480 source:/private/Code/HAGE/GraphicsDomain.cpp
+	"GraphicsDomain.h"
+	"ResourceDomain.h"
+	"GenericActor.h"
+	"stdlib.h"
+
+1288571290 /private/Code/HAGE/ResourceDomain.h
+	"DomainBase.h"
+	"PinBase.h"
+
+1290126480 source:/private/Code/HAGE/InputDomain.cpp
+	"InputDomain.h"
+	"GenericActor.h"
+	<boost/date_time.hpp>
+
+1289132889 source:/private/Code/HAGE/LActor.cpp
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"GenericActor.h"
+	"stdlib.h"
+
+1290126480 source:/private/Code/HAGE/LogicDomain.cpp
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"GenericActor.h"
+	"stdlib.h"
+	<boost/date_time.hpp>
+
+1289945554 source:/private/Code/HAGE/Main.cpp
+	"TaskManager.h"
+	"header.h"
+
+1290011225 source:/private/Code/HAGE/OGL3ConstantBuffer.cpp
+	"OpenGL3APIWrapper.h"
+
+1290111979 /private/Code/HAGE/OpenGL3APIWrapper.h
+	"RenderingAPIWrapper.h"
+	<boost/intrusive/list.hpp>
+	<boost/functional/hash.hpp>
+	<unordered_map>
+	<array>
+	<algorithm>
+	<Windows.h>
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<GL/glew.h>
+	<GL/wglew.h>
+	<GL/glxew.h>
+	<Cg/cg.h>
+	<Cg/cgGL.h>
+
+1290011072 source:/private/Code/HAGE/OGL3Effect.cpp
+	"OpenGL3APIWrapper.h"
+
+1290006511 source:/private/Code/HAGE/OGL3VertexBuffer.cpp
+	"OpenGL3APIWrapper.h"
+
+1290129538 source:/private/Code/HAGE/OpenGL3APIWrapper.cpp
+	"OpenGL3APIWrapper.h"
+	<string.h>
+
+1290106920 source:/private/Code/HAGE/PinBase.cpp
+	"PinBase.h"
+
+1289132889 source:/private/Code/HAGE/RActor.cpp
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"GenericActor.h"
+	"stdlib.h"
+
+1276918210 /private/Code/HAGE/Include/Cg/cg.h
+
+1276918210 /private/Code/HAGE/Include/Cg/cgD3D11.h
+	<windows.h>
+	<d3d11.h>
+	<D3Dcompiler.h>
+	"Cg/cg.h"
+
+1289206649 /private/Code/HAGE/Include/GL/glew.h
+	<stddef.h>
+	<inttypes.h>
+	<stdint.h>
+	<inttypes.h>
+	<OpenGL/glu.h>
+	<GL/glu.h>
+
+1289206649 /private/Code/HAGE/Include/GL/wglew.h
+	<windows.h>
+
+1289206649 /private/Code/HAGE/Include/GL/glxew.h
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<X11/Xmd.h>
+	<GL/glew.h>
+	<inttypes.h>
+
+1276918210 /private/Code/HAGE/Include/Cg/cgGL.h
+	<Cg/cg.h>
+	<OpenGL/gl.h>
+	<GL/gl.h>
+
+1290126480 source:/private/Code/HAGE/RenderingDomain.cpp
+	"RenderingDomain.h"
+	"stdlib.h"
+	"GenericActor.h"
+
+1289957969 /private/Code/HAGE/RenderingDomain.h
+	"DomainBase.h"
+	"PinBase.h"
+	"GraphicsDomain.h"
+	"RenderingAPIWrapper.h"
+	"UserInterfaceRendering.h"
+
+1289956679 /private/Code/HAGE/UserInterfaceRendering.h
+	"header.h"
+	"PinBase.h"
+	"ObjectBase.h"
+	"RenderingAPIWrapper.h"
+
+1289052428 source:/private/Code/HAGE/ResourceDomain.cpp
+	"ResourceDomain.h"
+	"LogicDomain.h"
+	"stdlib.h"
+	"GenericActor.h"
+
+1288104419 source:/private/Code/HAGE/SharedCoreFactory.cpp
+	"SharedCoreFactory.h"
+
+1290126600 source:/private/Code/HAGE/SharedTaskManager.cpp
+	"SharedTaskManager.h"
+	"GraphicsDomain.h"
+	"LogicDomain.h"
+	"ResourceDomain.h"
+	"InputDomain.h"
+	"AIDomain.h"
+	"RenderingDomain.h"
+	"ResourceDomain.h"
+	"SoundDomain.h"
+
+1288627844 /private/Code/HAGE/SoundDomain.h
+	"GraphicsDomain.h"
+	"PinBase.h"
+
+1290126480 source:/private/Code/HAGE/SoundDomain.cpp
+	"SoundDomain.h"
+	"stdlib.h"
+	"GenericActor.h"
+
+1289211757 source:/private/Code/HAGE/TLS.cpp
+	"header.h"
+	"DomainMemory.h"
+
+1290108752 source:/private/Code/HAGE/TaskManager.cpp
+	"TaskManager.h"
+	"assert.h"
+	"DomainBase.h"
+
+1290129870 source:/private/Code/HAGE/UserInterface.cpp
+	"UserInterface.h"
+	"InputDomain.h"
+
+1289956679 source:/private/Code/HAGE/UserInterfaceRendering.cpp
+	"UserInterfaceRendering.h"
+
+1289956018 source:/private/Code/HAGE/WinMain.cpp
+	"header.h"
+	"CoreFactory.h"
+	"RenderingAPIWrapper.h"
+	"InputDomain.h"
+	<windows.h>
+	<stdio.h>
+	<fcntl.h>
+	<io.h>
+	<iostream>
+	<fstream>
+	<vector>
+	<boost/uuid/string_generator.hpp>
+
+1290100359 source:/private/Code/HAGE/main.c
+	<stdio.h>
+	<stdlib.h>
+	<GL/glx.h>
+	<GL/gl.h>
+	<X11/X.h>
+	<X11/keysym.h>
+
+1288641250 source:/private/Code/HAGE/stdafx.cpp
+	"header.h"
+
+1290109508 source:/private/Code/HAGE/OGL3VertexArray.cpp
+	"OpenGL3APIWrapper.h"
+	<strings.h>
+
+1290129980 source:/private/Code/HAGE/XMain.cpp
+	"header.h"
+	"CoreFactory.h"
+	"RenderingAPIWrapper.h"
+	"InputDomain.h"
+	<stdio.h>
+	<fcntl.h>
+	<iostream>
+	<fstream>
+	<vector>
+	<boost/uuid/string_generator.hpp>
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<GL/gl.h>
+	<GL/glx.h>
+	<xcb/xcb.h>
+	<X11/Xlib-xcb.h>
+
+1290212820 source:/private/Code/HAGE/Source/AIDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"AIDomain.h"
+	"LogicDomain.h"
+
+1290204367 /private/Code/HAGE/Headers/header.h
+	<stdlib.h>
+	<SDK/HAGE.h>
+	"guids.h"
+
+1290209956 /private/Code/HAGE/Headers/SDK/HAGE.h
+	"preproc.h"
+	"types.h"
+	"results.h"
+	"messages.h"
+	"TLS.h"
+	"hage_math.h"
+	"interlocked_functions.h"
+	"IObject.h"
+	"IDomain.h"
+	"global_allocator.h"
+	"MainClass.h"
+	"DomainBase.h"
+	"ObjectBase.h"
+	"PinHelpers.h"
+	"RenderingAPIWrapper.h"
+
+1290207946 /private/Code/HAGE/Headers/SDK/preproc.h
+
+1290208139 /private/Code/HAGE/Headers/SDK/types.h
+	"preproc.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/results.h
+	"types.h"
+
+1290208340 /private/Code/HAGE/Headers/SDK/messages.h
+	"types.h"
+
+1290201812 /private/Code/HAGE/Headers/SDK/TLS.h
+	"types.h"
+	"IDomain.h"
+	<boost/thread.hpp>
+
+1290206901 /private/Code/HAGE/Headers/SDK/IDomain.h
+
+1290195829 /private/Code/HAGE/Headers/SDK/hage_math.h
+	"types.h"
+
+1290209424 /private/Code/HAGE/Headers/SDK/interlocked_functions.h
+	<boost/detail/interlocked.hpp>
+	"types.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/IObject.h
+
+1290195829 /private/Code/HAGE/Headers/SDK/global_allocator.h
+	"DomainMemory.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/DomainMemory.h
+	"HAGE.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/MainClass.h
+
+1290195829 /private/Code/HAGE/Headers/SDK/DomainBase.h
+	"HAGE.h"
+	"TaskManager.h"
+	"CoreFactory.h"
+	"DomainMemory.h"
+
+1290201468 /private/Code/HAGE/Headers/SDK/TaskManager.h
+	"HAGE.h"
+	<boost/bind.hpp>
+	<boost/function.hpp>
+	<vector>
+
+1290206175 /private/Code/HAGE/Headers/SDK/CoreFactory.h
+	"HAGE.h"
+	"PinBase.h"
+	<map>
+	<boost/random/mersenne_twister.hpp>
+	<boost/uuid/random_generator.hpp>
+	<boost/function.hpp>
+
+1290198689 /private/Code/HAGE/Headers/SDK/PinBase.h
+	"HAGE.h"
+	"global_allocator.h"
+	<boost/function.hpp>
+	<vector>
+	<array>
+
+1290208382 /private/Code/HAGE/Headers/SDK/ObjectBase.h
+	"HAGE.h"
+	"TaskManager.h"
+	"PinHelpers.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/PinHelpers.h
+	"PinBase.h"
+	"DomainBase.h"
+
+1290195829 /private/Code/HAGE/Headers/SDK/RenderingAPIWrapper.h
+	"HAGE.h"
+
+1290208873 /private/Code/HAGE/Headers/guids.h
+	"header.h"
+
+1290185761 /private/Code/HAGE/Headers/GenericActor.h
+	"header.h"
+
+1290201374 /private/Code/HAGE/Headers/AIDomain.h
+	"header.h"
+
+1290201374 /private/Code/HAGE/Headers/LogicDomain.h
+	"header.h"
+
+1290202171 source:/private/Code/HAGE/Source/GActor.cpp
+	"header.h"
+	"GenericActor.h"
+	"GraphicsDomain.h"
+
+1290201561 /private/Code/HAGE/Headers/GraphicsDomain.h
+	"header.h"
+
+1290212820 source:/private/Code/HAGE/Source/GraphicsDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"GraphicsDomain.h"
+
+1290212820 source:/private/Code/HAGE/Source/InputDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"InputDomain.h"
+	"UserInterface.h"
+	<boost/date_time.hpp>
+
+1290201374 /private/Code/HAGE/Headers/InputDomain.h
+	"header.h"
+
+1290199737 /private/Code/HAGE/Headers/UserInterface.h
+	"header.h"
+	"InputDomain.h"
+	<array>
+
+1290206203 source:/private/Code/HAGE/Source/LActor.cpp
+	"header.h"
+	"LogicDomain.h"
+	"GenericActor.h"
+
+1290212820 source:/private/Code/HAGE/Source/LogicDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"LogicDomain.h"
+	<boost/date_time.hpp>
+
+1290199655 source:/private/Code/HAGE/Source/Main.cpp
+	"header.h"
+	"InputDomain.h"
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"RenderingDomain.h"
+	"SoundDomain.h"
+	"ResourceDomain.h"
+
+1290201374 /private/Code/HAGE/Headers/RenderingDomain.h
+	"header.h"
+
+1290201374 /private/Code/HAGE/Headers/SoundDomain.h
+	"header.h"
+
+1290201374 /private/Code/HAGE/Headers/ResourceDomain.h
+	"header.h"
+
+1290202029 source:/private/Code/HAGE/Source/RActor.cpp
+	"header.h"
+	"GenericActor.h"
+
+1290213466 source:/private/Code/HAGE/Source/RenderingDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"UserInterfaceRendering.h"
+	"RenderingDomain.h"
+
+1290199737 /private/Code/HAGE/Headers/UserInterfaceRendering.h
+	"header.h"
+	"RenderingDomain.h"
+
+1290202122 source:/private/Code/HAGE/Source/ResourceDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"ResourceDomain.h"
+
+1290212820 source:/private/Code/HAGE/Source/SoundDomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"SoundDomain.h"
+
+1290199737 source:/private/Code/HAGE/Source/UserInterface.cpp
+	"header.h"
+	"UserInterface.h"
+
+1290188862 source:/private/Code/HAGE/Source/UserInterfaceRendering.cpp
+	"header.h"
+	"UserInterfaceRendering.h"
+
+1290196714 source:/private/Code/HAGE/Source/prec.cpp
+	"header.h"
+
