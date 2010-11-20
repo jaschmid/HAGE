@@ -308,10 +308,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 			{
 			case RIM_TYPEKEYBOARD:
 				{
+					HAGE::u32 e = 0;
+					if(raw->data.keyboard.Flags & RI_KEY_E0)
+						e |= 0x00000100;
+					if(raw->data.keyboard.Flags & RI_KEY_E1)
+						e |= 0x00000200;
 					if(raw->data.keyboard.Flags & RI_KEY_BREAK)
-						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,raw->data.keyboard.VKey));
+						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
 					else
-						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,raw->data.keyboard.VKey));
+						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
 				}
 				break;
 			case RIM_TYPEMOUSE:
@@ -341,12 +346,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 							if(raw->data.mouse.ulButtons & (1<<(i*2)))
 							{
 								//keydown
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i));
+								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
 							}
 							else if(raw->data.mouse.ulButtons & (1<<(i*2+1)))
 							{
 								//keyup
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i));
+								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
 							}
 						}
 					}

@@ -17,7 +17,7 @@ public:
 	bool ProcessInputMessage(const Message* pMessage);
 private:
 	PinBase* m_pPinOut;
-	static const u32 nKeyboardKeys = (u32)(u16)-1;
+	static const u32 nKeyboardKeys = KEY_CODE_MAX+1;
 	std::array<u8,nKeyboardKeys>		m_bKeyboardState;
 	std::array<u8,6>					m_bMouseState;
 	Vector2<>							m_vCursor;

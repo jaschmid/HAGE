@@ -314,6 +314,27 @@ void OpenGL3APIWrapper::PresentFrame()
 #ifdef TARGET_WINDOWS
 	SwapBuffers(m_hDC);
 	wglMakeCurrent(NULL, NULL);
+
+	    //framerate hack yay
+    static HAGE::u64 last = 0;
+	static HAGE::u64 freq = 0;
+    static float sum = 0;
+    static int nSum = 0;
+    HAGE::u64 current;
+    QueryPerformanceCounter((LARGE_INTEGER*)&current);
+
+    HAGE::u64 diff = current - last;
+    last = current;
+
+	if(freq == 0)
+		QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+    sum +=1.0f/(float)diff*(float)freq;
+    nSum++;
+
+    if(nSum%100==0)
+        printf("Average %.02f - current %.02f\n",sum/(float)nSum,1.0f/(float)diff*(float)freq);
+
 #elif defined(TARGET_LINUX)
     glXSwapBuffers(m_pDisplay,*m_pWindow);
     glXMakeCurrent( m_pDisplay, 0, 0 );

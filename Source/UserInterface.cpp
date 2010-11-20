@@ -31,7 +31,11 @@ namespace HAGE {
 					{
 						//keydown
 						m_bKeyboardState[m->GetKey()] = 1;
-						GenerateShutdownMessage();
+
+						if(m->GetKey() == KEY_CODE_ESC)
+							GenerateShutdownMessage();
+
+						printf("%08x\n",m->GetKey());
 					}
 				}
 				else if(m->GetDevice() == guidDefMouse)
