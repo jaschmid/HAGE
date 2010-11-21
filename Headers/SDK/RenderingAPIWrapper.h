@@ -1,3 +1,9 @@
+/********************************************************/
+/* FILE: RenderingAPIWrapper.h                          */
+/* DESCRIPTION: Defines the Rendering API Wrapper class.*/
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif
@@ -51,6 +57,11 @@ typedef struct _APIWRasterizerState
 	bool				bScissorEnable;
 	bool				bMultisampleEnable;
 } APIWRasterizerState;
+
+inline bool operator ==(const HAGE::APIWRasterizerState& _l,const HAGE::APIWRasterizerState& _r)
+{
+	return memcmp(&_l,&_r,sizeof(HAGE::APIWRasterizerState))==0;
+}
 
 typedef enum _APIWBlendMode
 {

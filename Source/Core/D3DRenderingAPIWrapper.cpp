@@ -312,7 +312,7 @@ inline D3D11_BLEND_DESC HAGEBlendToD3DBlendState(const HAGE::APIWBlendState* pBl
 	D3D11_BLEND_DESC res;
 	res.AlphaToCoverageEnable		= AlphaToCoverage;
 	res.IndependentBlendEnable		= (nBlendStates > 1);
-	int i;
+	HAGE::u32 i;
 	for(i = 0;i < nBlendStates; ++i)
 	{
 		res.RenderTarget[i].BlendEnable = pBlendState[i].bBlendEnable;

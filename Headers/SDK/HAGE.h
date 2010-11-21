@@ -1,3 +1,9 @@
+/********************************************************/
+/* FILE: HAGE.h                                         */
+/* DESCRIPTION: HAGE Main Header                        */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #define HAGE__MAIN__HEADER
 

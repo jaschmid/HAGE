@@ -18,13 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Headers\CoreFactory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\DomainBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Headers\SDK\DomainMemory.h">
@@ -97,6 +91,15 @@
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\InputDomain.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\CoreFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\DomainBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\FixedSizeKeyStorage.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>

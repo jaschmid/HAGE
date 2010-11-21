@@ -1,3 +1,9 @@
+/********************************************************/
+/* FILE: preproc.h                                      */
+/* DESCRIPTION: Defines common preprocessor macros.     */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif

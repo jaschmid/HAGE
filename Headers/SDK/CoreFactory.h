@@ -1,3 +1,10 @@
+/********************************************************/
+/* FILE: CoreFactory.h                                  */
+/* DESCRIPTION: Defines the CoreFactory class for       */
+/*              Domains                                 */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif

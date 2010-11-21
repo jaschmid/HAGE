@@ -3,7 +3,7 @@
 
 #ifndef NO_OGL
 
-OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram) :m_pWrapper(pWrapper)
+OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend) :m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer)
 {
 	m_CgVertexProgram =
 	cgCreateProgram(
@@ -59,11 +59,16 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer*
 
 	// set cBuffers
 
-	for(int i =0; i<nConstants;++i)
+	for(HAGE::u32 i =0; i<nConstants;++i)
 	{
 		cgSetProgramBuffer(m_CgVertexProgram,i,ppConstants[i]->m_Buffer);
 	}
 	//m_pWrapper->SetCBuffer(nBuffer,this);
+
+	// set states
+
+	m_pWrapper->SetBlendState(m_BlendState);
+	m_pWrapper->SetRasterizerState(m_RastState);
 	
 	glBindVertexArray(pArray->m_vaoID);	
 

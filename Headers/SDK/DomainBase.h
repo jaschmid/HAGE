@@ -1,3 +1,9 @@
+/********************************************************/
+/* FILE: DomainBase.h                                   */
+/* DESCRIPTION: Defines the DomainBase class            */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif

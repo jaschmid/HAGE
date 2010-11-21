@@ -1,3 +1,10 @@
+/********************************************************/
+/* FILE: global_allocator.h                             */
+/* DESCRIPTION: Defines a global allocator for STL      */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc) based on custom */
+/*  Allocator class by Quovadx, inc                     */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif

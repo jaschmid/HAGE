@@ -149,8 +149,8 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Headers\CoreFactory.h" />
-    <ClInclude Include="Headers\DomainBase.h" />
+    <ClInclude Include="Headers\SDK\CoreFactory.h" />
+    <ClInclude Include="Headers\SDK\DomainBase.h" />
     <ClInclude Include="Headers\SDK\DomainMemory.h" />
     <ClInclude Include="Headers\SDK\global_allocator.h" />
     <ClInclude Include="Headers\SDK\HAGE.h" />
@@ -171,6 +171,7 @@
     <ClInclude Include="Headers\SDK\types.h" />
     <ClInclude Include="Source\Core\D3D11APIWrapper.h" />
     <ClInclude Include="Source\Core\DebugUI.h" />
+    <ClInclude Include="Source\Core\FixedSizeKeyStorage.h" />
     <ClInclude Include="Source\Core\InputDomain.h" />
     <ClInclude Include="Source\Core\OpenGL3APIWrapper.h" />
     <ClInclude Include="Source\Core\RenderDebugUI.h" />

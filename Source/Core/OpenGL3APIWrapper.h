@@ -6,10 +6,14 @@
 
 #ifndef NO_OGL
 
-#define N_CBUFFERS 16
+#define N_CBUFFERS				16
+#define MAX_VERTEX_FORMATS		((HAGE::u8)256)
+#define MAX_RASTERIZER_STATES	((HAGE::u16)4096)
+#define MAX_BLEND_STATES		((HAGE::u16)4096)
 
 #include <boost/intrusive/list.hpp>
 #include <boost/functional/hash.hpp>
+#include "FixedSizeKeyStorage.h"
 #include <unordered_map>
 #include <array>
 #include <algorithm>
@@ -31,8 +35,59 @@
 
 #include <Cg/cg.h>    /* Can't include this?  Is Cg Toolkit installed! */
 #include <Cg/cgGL.h>
+#include <boost/functional/hash.hpp>
 
 class OGL3ConstantBuffer;
+
+struct BlendStateEX
+{
+	bool					bAlphaToCoverage;
+	HAGE::u32				nBlendStates;
+	HAGE::APIWBlendState	BlendStates[8];
+};
+
+inline bool operator ==(const BlendStateEX& _l,const BlendStateEX& _r)
+{
+	return memcmp(&_l,&_r,sizeof(BlendStateEX))==0;
+}
+
+template<> size_t std::hash<HAGE::APIWRasterizerState>::operator ()(const HAGE::APIWRasterizerState & state) const
+{
+	 std::size_t seed = 0;
+	 boost::hash_combine(seed,state.bDepthClipEnable);
+	 boost::hash_combine(seed,state.bMultisampleEnable);
+	 boost::hash_combine(seed,state.bScissorEnable);
+	 boost::hash_combine(seed,state.bWireframe);
+	 boost::hash_combine(seed,state.CullMode);
+	 boost::hash_combine(seed,state.fDepthBiasClamp);
+	 boost::hash_combine(seed,state.fSlopeScaledDepthBias);
+	 boost::hash_combine(seed,state.iDepthBias);
+	 return seed;
+}
+template<> size_t std::hash<BlendStateEX>::operator ()(const BlendStateEX & state) const
+{
+	 std::size_t seed = 0;
+	 boost::hash_combine(seed,state.bAlphaToCoverage);
+	 boost::hash_combine(seed,state.nBlendStates);
+	 for(int i =0;i<state.nBlendStates;++i)
+	 {
+		 boost::hash_combine(seed,state.BlendStates[i].bBlendEnable);
+		 if(state.BlendStates[i].bBlendEnable)
+		 {
+			boost::hash_combine(seed,state.BlendStates[i].BlendOp);
+			boost::hash_combine(seed,state.BlendStates[i].BlendOpAlpha);
+			boost::hash_combine(seed,state.BlendStates[i].bWriteA);
+			boost::hash_combine(seed,state.BlendStates[i].bWriteB);
+			boost::hash_combine(seed,state.BlendStates[i].bWriteG);
+			boost::hash_combine(seed,state.BlendStates[i].bWriteR);
+			boost::hash_combine(seed,state.BlendStates[i].DestBlend);
+			boost::hash_combine(seed,state.BlendStates[i].DestBlendAlpha);
+			boost::hash_combine(seed,state.BlendStates[i].SrcBlend);
+			boost::hash_combine(seed,state.BlendStates[i].SrcBlendAlpha);
+		 }
+	 }
+	 return seed;
+}
 
 class OpenGL3APIWrapper : public HAGE::RenderingAPIWrapper
 {
@@ -76,11 +131,26 @@ public:
 	const VertexFormatEntry*	GetVertexFormat(HAGE::u8 code);
 	void checkForCgError(const char *situation);
 
+	HAGE::u16					GetRasterizerStateCode(const HAGE::APIWRasterizerState* pState);
+	void						SetRasterizerState(HAGE::u16 code);
+
+	HAGE::u16					GetBlendStateCode(const HAGE::APIWBlendState* pState,HAGE::u32 nBlendStates,bool bAlphaToCoverage);
+	void						SetBlendState(HAGE::u16 code);
+
 private:
 	typedef std::unordered_map<std::string,HAGE::u8> VertexStringTableType;
 	VertexStringTableType		m_VertexStringTable;
 	typedef std::array<VertexFormatEntry,256> VertexFormatListType;
 	VertexFormatListType		m_VertexFormatList;
+	HAGE::u32					m_NextVertexFormatEntry;
+
+	FixedSizeKeyStorage<HAGE::u16,MAX_RASTERIZER_STATES,HAGE::APIWRasterizerState>		
+								m_RasterizerStates;
+	HAGE::u16					m_CurrentRS;
+
+	FixedSizeKeyStorage<HAGE::u16,MAX_BLEND_STATES,BlendStateEX>
+								m_BlendStates;
+	HAGE::u16					m_CurrentBS;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -92,9 +162,8 @@ private:
     Window*                     m_pWindow;
     Display*                    m_pDisplay;
 #endif
-	HAGE::u32					m_NextVertexFormatEntry;
-	CGcontext   myCgContext;
-	CGprofile   myCgVertexProfile, myCgFragmentProfile;
+	CGcontext					myCgContext;
+	CGprofile					myCgVertexProfile, myCgFragmentProfile;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
@@ -149,7 +218,7 @@ private:
 class OGL3Effect : public HAGE::APIWEffect
 {
 public:
-	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram);
+	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
 	~OGL3Effect();
 	
 	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1);
@@ -158,6 +227,8 @@ private:
 	CGprogram					m_CgFragmentProgram;
 
 	OpenGL3APIWrapper*			m_pWrapper;
+	HAGE::u16					m_RastState;
+	HAGE::u16					m_BlendState;
 };
 
 #endif

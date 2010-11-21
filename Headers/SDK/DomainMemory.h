@@ -1,3 +1,9 @@
+/********************************************************/
+/* FILE: DomainMemory.h                                 */
+/* DESCRIPTION: Defines the Domain Memory Allocator     */
+/* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
+/********************************************************/ 
+
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
 #endif

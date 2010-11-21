@@ -61,7 +61,9 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
     m_pWindow(GetWindow()),
     m_pDisplay(GetPDisplay()),
 #endif
-	m_NextVertexFormatEntry(0)
+	m_NextVertexFormatEntry(0),
+	m_CurrentRS(-1),
+	m_CurrentBS(-1)
 {
 
 #ifdef TARGET_WINDOWS
@@ -253,12 +255,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	cgGLSetOptimalOptions(myCgFragmentProfile);
 	checkForCgError("selecting fragment profile");
 
-	//zbuffer lol
-	glEnable (GL_DEPTH_TEST);
-
-	//culling lol
-	glFrontFace(GL_CW);
-	glEnable(GL_CULL_FACE);
+	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
+	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
 
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 
@@ -382,7 +380,7 @@ HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pVertexProgram,con
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
 {
-	return new OGL3Effect(this,pVertexProgram,pFragmentProgram);
+	return new OGL3Effect(this,pVertexProgram,pFragmentProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage));
 }
 
 HAGE::APIWVertexArray* OpenGL3APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,
@@ -459,4 +457,125 @@ void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDesc
 
 	++m_NextVertexFormatEntry;
 }
+
+HAGE::u16	OpenGL3APIWrapper::GetRasterizerStateCode(const HAGE::APIWRasterizerState* pState)
+{
+	return m_RasterizerStates.GetKey(*pState);
+}
+
+void		OpenGL3APIWrapper::SetRasterizerState(HAGE::u16 code)
+{
+	if(code == m_CurrentRS)
+		return;
+	m_CurrentRS=code;
+	const HAGE::APIWRasterizerState& state = m_RasterizerStates.GetItem(code);
+
+	if(state.bDepthClipEnable)
+		glEnable (GL_DEPTH_TEST);
+	else
+		glDisable (GL_DEPTH_TEST);
+
+	switch(state.CullMode)
+	{
+		case HAGE::CULL_NONE:	glDisable(GL_CULL_FACE);					break;
+		case HAGE::CULL_CCW:	glEnable(GL_CULL_FACE);glFrontFace(GL_CW);	break;
+		case HAGE::CULL_CW:		glEnable(GL_CULL_FACE);glFrontFace(GL_CCW);	break;
+	}
+
+	if(state.bWireframe)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
+}
+
+HAGE::u16	OpenGL3APIWrapper::GetBlendStateCode(const HAGE::APIWBlendState* pState,HAGE::u32 nBlendStates,bool bAlphaToCoverage)
+{
+	BlendStateEX state;
+	state.bAlphaToCoverage = bAlphaToCoverage;
+	state.nBlendStates = nBlendStates;
+	HAGE::u32 i;
+	for(i=0;i<nBlendStates;++i)
+		state.BlendStates[i]=pState[i];
+	for(;i<8;++i)
+		state.BlendStates[i]=HAGE::DefaultBlendState;
+
+	return m_BlendStates.GetKey(state);
+}
+
+inline GLenum HAGEBlendOpToOGLBlendOp(const HAGE::APIWBlendOp& op)
+{
+	switch(op)
+	{
+	case HAGE::BLEND_OP_ADD:			return GL_FUNC_ADD;
+	case HAGE::BLEND_OP_SUBTRACT:		return GL_FUNC_SUBTRACT;
+	case HAGE::BLEND_OP_REV_SUBTRACT:	return GL_FUNC_REVERSE_SUBTRACT;
+	case HAGE::BLEND_OP_MIN:			return GL_MIN;
+	case HAGE::BLEND_OP_MAX:			return GL_MAX;
+	default: assert("Unsupported Blend Mode"); return 0;
+	}
+}
+
+inline GLenum HAGEBlendModeToOGLBlendMode(const HAGE::APIWBlendMode& mode)
+{
+	switch(mode)
+	{
+	case HAGE::BLEND_ZERO:					return GL_ZERO;
+	case HAGE::BLEND_ONE:					return GL_ONE;
+	case HAGE::BLEND_SRC_COLOR:				return GL_SRC_COLOR;
+	case HAGE::BLEND_INV_SRC_COLOR:			return GL_ONE_MINUS_SRC_COLOR;
+	case HAGE::BLEND_SRC_ALPHA:				return GL_SRC_ALPHA;
+	case HAGE::BLEND_INV_SRC_ALPHA:			return GL_ONE_MINUS_SRC_ALPHA;
+	case HAGE::BLEND_DEST_ALPHA:			return GL_DST_ALPHA;
+	case HAGE::BLEND_INV_DEST_ALPHA:		return GL_ONE_MINUS_DST_ALPHA;
+	case HAGE::BLEND_DEST_COLOR:			return GL_DST_COLOR;
+	case HAGE::BLEND_INV_DEST_COLOR:		return GL_ONE_MINUS_DST_COLOR;
+	case HAGE::BLEND_SRC_ALPHA_SAT:			return GL_SRC_ALPHA_SATURATE;
+	case HAGE::BLEND_BLEND_FACTOR:			return GL_CONSTANT_COLOR;
+	case HAGE::BLEND_INV_BLEND_FACTOR:		return GL_ONE_MINUS_CONSTANT_COLOR;
+		/*
+	case HAGE::BLEND_SRC1_COLOR:			return GL_ZERO;
+	case HAGE::BLEND_INV_SRC_1_COLOR:		return GL_ZERO;
+	case HAGE::BLEND_SRC1_ALPHA:			return GL_ZERO;
+	case HAGE::BLEND_INV_SRC1_ALPHA:		return GL_ZERO;
+		*/
+	default: assert("Multiple Rendertargets currently not supported\n"); return 0;
+	}
+}
+
+void		OpenGL3APIWrapper::SetBlendState(HAGE::u16 code)
+{
+	if(code == m_CurrentBS)
+		return;
+	m_CurrentBS=code;
+	const BlendStateEX& state = m_BlendStates.GetItem(code);
+
+	if(state.bAlphaToCoverage)
+		glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB);
+	else
+		glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB);
+
+	assert(state.nBlendStates == 1);
+	int i;
+	for(i =0;i<state.nBlendStates;++i)
+	{
+		if(state.BlendStates[i].bBlendEnable)
+		{
+			glEnable(GL_BLEND);
+			glBlendEquationSeparate(
+					HAGEBlendOpToOGLBlendOp(state.BlendStates[i].BlendOp),
+					HAGEBlendOpToOGLBlendOp(state.BlendStates[i].BlendOpAlpha)
+				);
+			glBlendFuncSeparate(/*i,*/
+				HAGEBlendModeToOGLBlendMode(state.BlendStates[i].SrcBlend),
+				HAGEBlendModeToOGLBlendMode(state.BlendStates[i].DestBlend),
+				HAGEBlendModeToOGLBlendMode(state.BlendStates[i].SrcBlendAlpha),
+				HAGEBlendModeToOGLBlendMode(state.BlendStates[i].DestBlendAlpha)
+				);
+		}
+		else
+			glDisable(GL_BLEND);
+	}
+
+}
+
 #endif
