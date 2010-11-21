@@ -23,4 +23,10 @@
 #include "PinHelpers.h"
 #include "RenderingAPIWrapper.h"
 
+namespace HAGE
+{
+	class InputDomain;
+	DECLARE_GUID(InputDomain,		0x8a601455,0xb21c,0x4870,0x902d,0x693abde180ba);
+}
+
 #endif

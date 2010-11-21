@@ -1,4 +1,7 @@
 #include <HAGE.h>
+#include "InputDomain.h"
+#include "TaskManager.h"
+#include "SharedTaskManager.h"
 
 namespace HAGE {
 void __InternalHAGEMain();
@@ -27,7 +30,7 @@ namespace WindowsGlobal
 	HINSTANCE instance;
 	HWND hWnd;
 	int CmdShow;
-	HAGE::IMain*	pMain=nullptr;
+	HAGE::InputDomain* pInput = nullptr;
 	bool		bShutdown= false;
     MSG         DestroyMessage;
 
@@ -251,17 +254,24 @@ int CALLBACK WinMain(
 		wprintf(L"Registered: \"%s\"\n",HageDevice.szName.c_str());
 	}
 
-	HAGE::__InternalHAGEMain();
+	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
+	
+	pInput = pSharedTaskManager->StartThreads();
 
-	//get rid of the window
+	// Message queue
     MSG         Msg;
-    TranslateMessage(&DestroyMessage);
-    DispatchMessage(&DestroyMessage);
-	while( GetMessage(&Msg, NULL, 0, 0) )
+    while( GetMessage(&Msg, NULL, 0, 0) )
     {
+		if( Msg.message == WM_CLOSE )
+		{
+			bShutdown= true;	
+			pSharedTaskManager->StopThreads();
+		}
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
     }
+
+	delete pSharedTaskManager;
 	
 	return 0;
 }
@@ -293,7 +303,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 			printf("show\n");
 			ShowCursor(TRUE);
 			ClipCursor(nullptr);
-			WindowsGlobal::pMain->MessageProc(HAGE::MessageInputReset());
+			pInput->PostInputMessage(HAGE::MessageInputReset());
 		}
 		return 0;
 	case WM_INPUT:
@@ -314,9 +324,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 					if(raw->data.keyboard.Flags & RI_KEY_E1)
 						e |= 0x00000200;
 					if(raw->data.keyboard.Flags & RI_KEY_BREAK)
-						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
+						pInput->PostInputMessage(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
 					else
-						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
+						pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
 				}
 				break;
 			case RIM_TYPEMOUSE:
@@ -324,7 +334,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 					if(raw->data.mouse.usButtonFlags & RI_MOUSE_WHEEL)
 					{
 						// wheel move
-						WindowsGlobal::pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Z,(float)*(SHORT*)&raw->data.mouse.usButtonData/(float)0xff));
+						pInput->PostInputMessage(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Z,(float)*(SHORT*)&raw->data.mouse.usButtonData/(float)0xff));
 					}
 					else
 					{
@@ -333,11 +343,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 						{
 							if(raw->data.mouse.lLastX != 0)
 							{
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_X,(float)*(LONG*)&raw->data.mouse.lLastX/(float)0xff));
+								pInput->PostInputMessage(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_X,(float)*(LONG*)&raw->data.mouse.lLastX/(float)0xff));
 							}
 							if(raw->data.mouse.lLastY != 0)
 							{
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)*(LONG*)&raw->data.mouse.lLastY/(float)0xff));
+								pInput->PostInputMessage(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)*(LONG*)&raw->data.mouse.lLastY/(float)0xff));
 							}
 						}
 						// button press buttons 1 to 5
@@ -346,12 +356,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 							if(raw->data.mouse.ulButtons & (1<<(i*2)))
 							{
 								//keydown
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
+								pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
 							}
 							else if(raw->data.mouse.ulButtons & (1<<(i*2+1)))
 							{
 								//keyup
-								WindowsGlobal::pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
+								pInput->PostInputMessage(HAGE::MessageInputKeyup(HAGE::guidDefMouse,HAGE::MOUSE_BUTTON_1+i,0));
 							}
 						}
 					}
@@ -383,24 +393,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, Msg, wParam, lParam);
     }
     return 0;
-}
-
-void OSMessageQueue(HAGE::IMain* _pMain)
-{
-    MSG         Msg;
-	pMain = _pMain;
-
-    while( GetMessage(&Msg, NULL, 0, 0) )
-    {
-		if( Msg.message == WM_CLOSE )
-		{
-			bShutdown= true;
-			DestroyMessage=Msg;
-			break;
-		}
-        TranslateMessage(&Msg);
-        DispatchMessage(&Msg);
-    }
 }
 
 extern void OSLeaveMessageQueue()

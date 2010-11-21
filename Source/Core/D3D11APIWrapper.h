@@ -2,6 +2,7 @@
 #define D3D11__API__WRAPPER
 
 #include <HAGE.h>
+#include "RenderDebugUI.h"
 
 #ifndef TARGET_WINDOWS
 #define NO_D3D
@@ -44,7 +45,9 @@ public:
 		const HAGE::u32* pIndexBufferData);
 	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
-	HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram);
+	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
 	ID3D11DeviceContext*		GetContext(){return m_pContext;}
@@ -106,6 +109,8 @@ private:
 	CGcontext					myCgContext;
 	CGprofile					myCgVertexProfile, myCgFragmentProfile;
 
+	HAGE::RenderDebugUI*		m_DebugUIRenderer;
+
 	friend class D3D11Effect;
 
 };
@@ -149,7 +154,6 @@ class D3D11ConstantBuffer : public HAGE::APIWConstantBuffer
 {
 public:
 	D3D11ConstantBuffer(D3D11APIWrapper* pWrapper,HAGE::u32 nSize);
-	virtual void Set(HAGE::u32 nBuffer);
 	virtual void UpdateContent(const void* pData);
 	~D3D11ConstantBuffer();
 
@@ -157,15 +161,17 @@ private:
 	D3D11APIWrapper*			m_pWrapper;
 	ID3D11Buffer*				m_pBuffer;
 	HAGE::u32					m_nSize;
+
+	friend class D3D11Effect;
 };
 
 class D3D11Effect : public HAGE::APIWEffect, public boost::intrusive::list_base_hook<>
 {
 public:
-	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram);
+	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
 	~D3D11Effect();
 
-	virtual void Draw(HAGE::APIWVertexArray* pArray);
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1);
 private:
 
 	ID3D11VertexShader* CompileVertexShader(const char* shader);
@@ -177,6 +183,8 @@ private:
 	ID3D11VertexShader*         m_pVertexShader;
 	ID3D11PixelShader*          m_pPixelShader;
     ID3D10Blob*					m_pCompiledShader;
+	ID3D11RasterizerState*		m_pRasterizerState;
+	ID3D11BlendState*			m_pBlendState;
 
 	typedef std::unordered_map<std::vector<HAGE::u8>,ID3D11InputLayout*,D3D11APIWrapper::VertexFormatHash> ArrayLayoutListType;
 	ArrayLayoutListType			m_ArrayLayoutList;

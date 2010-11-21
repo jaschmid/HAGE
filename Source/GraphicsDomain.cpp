@@ -16,8 +16,9 @@ namespace HAGE {
 		private:
 		};
 
-		GraphicsDomain::GraphicsDomain() : TestIn(LogicInput.GetBasePin()),TestOut(Output.GetBasePin())
+		GraphicsDomain::GraphicsDomain()
 		{
+			Factory.RegisterObjectType<Actor<GraphicsDomain>>();
 			printf("Init Graphic\n");
 		}
 
@@ -25,12 +26,7 @@ namespace HAGE {
 		{
 			switch(m->GetMessageCode())
 			{
-				case MESSAGE_ITEM_CREATED:
-					{
-						const SimpleMessage<MemHandle>* item = (const SimpleMessage<MemHandle>*)m;
-						TestIn.Open(item->GetData());
-					}
-					return true;
+				case MESSAGE_UI_UNKNOWN:
 				default:
 					SharedDomainBase::MessageProc(m);
 					return true;
@@ -39,8 +35,6 @@ namespace HAGE {
 
 		void GraphicsDomain::DomainInit(u64 step)
 		{
-			Output.PostMessage(SimpleMessage<MemHandle>(MESSAGE_ITEM_CREATED,TestOut.GetHandle()));
-			*TestOut = *TestIn;
 			printf("G");
 		}
 
@@ -57,8 +51,6 @@ namespace HAGE {
 				Tasks.QueueTask(&tasks[0]);
 			}
 			Tasks.Execute();
-
-			*TestOut = *TestIn;
 
 
 			//printf("}",step);

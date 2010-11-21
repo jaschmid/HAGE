@@ -400,7 +400,8 @@ enum {
 	MESSAGE_UI_CURSOR_UPDATE	= 0x00110001,
 	MESSAGE_UI_ADJUST_CAMERA	= 0x00110002,
 	MESSAGE_UI_MOVE_PLAYER		= 0x00110003,
-	MESSAGE_UI_INIT				= 0x00110004
+	MESSAGE_UI_SHOW				= 0x00110004,
+	MESSAGE_UI_HIDE				= 0x00110005
 };
 
 class MessageUIUnknown : public Message
@@ -453,6 +454,22 @@ public:
 private:
 	const f32		m_fForwardMovement,m_fStraveMovement,m_fRotate;
 	static const u32 id = MESSAGE_UI_MOVE_PLAYER;
+};
+
+class MessageUIShow : public MessageHelper<MessageUIShow,MessageUIUnknown>
+{
+public:
+	MessageUIShow() : MessageHelper<MessageUIShow,MessageUIUnknown>(id) {}
+private:
+	static const u32 id = MESSAGE_UI_SHOW;
+};
+
+class MessageUIHide : public MessageHelper<MessageUIHide,MessageUIUnknown>
+{
+public:
+	MessageUIHide() : MessageHelper<MessageUIHide,MessageUIUnknown>(id) {}
+private:
+	static const u32 id = MESSAGE_UI_HIDE;
 };
 
 }

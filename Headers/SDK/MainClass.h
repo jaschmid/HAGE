@@ -11,7 +11,6 @@ namespace HAGE {
 	{
 	public:
 		virtual ~IMain(){};
-		virtual void MessageProc(const Message& m){}
 	};
 	extern IMain* HAGECreateMain();
 

@@ -19,12 +19,7 @@ namespace HAGE {
 		{
 			switch(m->GetMessageCode())
 			{
-				case MESSAGE_ITEM_CREATED:
-					{
-						const SimpleMessage<MemHandle>* item = (const SimpleMessage<MemHandle>*)m;
-						TestIn.Open(item->GetData());
-					}
-					return true;
+				case MESSAGE_UI_UNKNOWN:
 				default:
 					return SharedDomainBase::MessageProc(m);
 			}
@@ -54,7 +49,7 @@ namespace HAGE {
 
 		}
 
-		SoundDomain::SoundDomain() : TestIn(Input.GetBasePin())
+		SoundDomain::SoundDomain()
 		{
 			printf("Init Rendering\n");
 		}

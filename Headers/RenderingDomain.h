@@ -26,9 +26,6 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 
 		float										fCameraX,fCameraY,fCameraZ;
 		
-		InputVar<u32> TestIn;
-		InputVar<u32> TestInDirect;
-
 		RenderingAPIWrapper*						pWrapper;
 
 		UserInterfaceRendering*						pInterface;

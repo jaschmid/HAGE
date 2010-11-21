@@ -90,6 +90,15 @@
     <ClInclude Include="Source\Core\OpenGL3APIWrapper.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Core\DebugUI.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\RenderDebugUI.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\InputDomain.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">
@@ -152,10 +161,19 @@
     <ClCompile Include="Source\Core\D3DRenderingAPIWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Core\Main.cpp">
+    <ClCompile Include="Source\Core\prec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Core\prec.cpp">
+    <ClCompile Include="Source\Core\DebugUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\RenderDebugUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\InputDomain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\RenderingAPIWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

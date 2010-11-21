@@ -157,7 +157,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
 
 	myCgVertexProfile = CG_PROFILE_VS_4_0;
 	myCgFragmentProfile = CG_PROFILE_PS_4_0;
-
+	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	// rasterizing state
 	/*
 	D3D11_RASTERIZER_DESC desc;
@@ -181,6 +181,8 @@ D3D11APIWrapper::D3D11APIWrapper() :
 
 D3D11APIWrapper::~D3D11APIWrapper()
 {
+	delete m_DebugUIRenderer;
+
 	// CG sucks and forgets to release the device
 	m_pContext->Release();
     cgD3D11SetDevice( myCgContext, NULL );
@@ -209,6 +211,9 @@ void D3D11APIWrapper::PresentFrame()
 	m_pContext->OMSetBlendState( myBlendState_NoBlend, 0, 0xffffffff );
     m_pContext->RSSetState( myRasterizerState_NoCull );
 	*/
+
+	// Debug UI
+	m_DebugUIRenderer->Draw();
 
     // Show the rendered frame on the screen
     m_pSwapChain->Present( 0, 0 );
@@ -244,9 +249,111 @@ HAGE::APIWConstantBuffer* D3D11APIWrapper::CreateConstantBuffer(HAGE::u32 nSize)
 	return new D3D11ConstantBuffer(this,nSize);
 }
 
-HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram)
+inline D3D11_RASTERIZER_DESC HAGERasterizerToD3DRasterizerState(const HAGE::APIWRasterizerState* pRasterizerState)
 {
-	return new D3D11Effect(this,pVertexProgram,pFragmentProgram);
+	D3D11_RASTERIZER_DESC res;
+	res.FrontCounterClockwise = false;
+	res.FillMode = pRasterizerState->bWireframe?D3D11_FILL_WIREFRAME:D3D11_FILL_SOLID;
+	switch(pRasterizerState->CullMode)
+	{
+		case HAGE::CULL_NONE:	res.CullMode = D3D11_CULL_NONE;	break;
+		case HAGE::CULL_CCW:	res.CullMode = D3D11_CULL_BACK;	break;
+		case HAGE::CULL_CW:	res.CullMode = D3D11_CULL_FRONT;	break;
+	}
+	res.DepthBias				= pRasterizerState->iDepthBias;
+	res.DepthBiasClamp			= pRasterizerState->fDepthBiasClamp;
+	res.SlopeScaledDepthBias	= pRasterizerState->fSlopeScaledDepthBias;
+	res.DepthClipEnable			= pRasterizerState->bDepthClipEnable;
+	res.ScissorEnable			= pRasterizerState->bScissorEnable;
+	res.MultisampleEnable		= pRasterizerState->bMultisampleEnable;
+	return res;
+}
+
+inline D3D11_BLEND HAGEBlendModeToD3DBlendMode(HAGE::APIWBlendMode op)
+{
+	switch(op)
+	{
+		case HAGE::BLEND_ZERO:				return D3D11_BLEND_ZERO;				
+		case HAGE::BLEND_ONE:				return D3D11_BLEND_ONE;		
+		case HAGE::BLEND_SRC_COLOR:			return D3D11_BLEND_SRC_COLOR;		
+		case HAGE::BLEND_INV_SRC_COLOR:		return D3D11_BLEND_INV_SRC_COLOR;				
+		case HAGE::BLEND_SRC_ALPHA:			return D3D11_BLEND_SRC_ALPHA;		
+		case HAGE::BLEND_INV_SRC_ALPHA:		return D3D11_BLEND_INV_SRC_ALPHA;				
+		case HAGE::BLEND_DEST_ALPHA:		return D3D11_BLEND_DEST_ALPHA;		
+		case HAGE::BLEND_INV_DEST_ALPHA:	return D3D11_BLEND_INV_DEST_ALPHA;		
+		case HAGE::BLEND_DEST_COLOR:		return D3D11_BLEND_DEST_COLOR;				
+		case HAGE::BLEND_INV_DEST_COLOR:	return D3D11_BLEND_INV_DEST_COLOR;		
+		case HAGE::BLEND_SRC_ALPHA_SAT:		return D3D11_BLEND_SRC_ALPHA_SAT;				
+		case HAGE::BLEND_BLEND_FACTOR:		return D3D11_BLEND_BLEND_FACTOR;		
+		case HAGE::BLEND_INV_BLEND_FACTOR:	return D3D11_BLEND_INV_BLEND_FACTOR;		
+		case HAGE::BLEND_SRC1_COLOR:		return D3D11_BLEND_SRC1_COLOR;				
+		case HAGE::BLEND_INV_SRC_1_COLOR:	return D3D11_BLEND_INV_SRC1_COLOR;		
+		case HAGE::BLEND_SRC1_ALPHA:		return D3D11_BLEND_SRC1_ALPHA;				
+		case HAGE::BLEND_INV_SRC1_ALPHA:	return D3D11_BLEND_INV_SRC1_ALPHA;		
+		default:							return D3D11_BLEND_ZERO;
+	}
+}
+
+inline D3D11_BLEND_OP HAGEBlendOpToD3DBlendOp(HAGE::APIWBlendOp op)
+{
+	switch(op)
+	{
+		case HAGE::BLEND_OP_ADD:			return D3D11_BLEND_OP_ADD;				
+		case HAGE::BLEND_OP_SUBTRACT:		return D3D11_BLEND_OP_SUBTRACT;		
+		case HAGE::BLEND_OP_REV_SUBTRACT:	return D3D11_BLEND_OP_REV_SUBTRACT;		
+		case HAGE::BLEND_OP_MIN:			return D3D11_BLEND_OP_MIN;				
+		case HAGE::BLEND_OP_MAX:			return D3D11_BLEND_OP_MAX;		
+		default:					return D3D11_BLEND_OP_ADD;
+	}
+}
+
+inline D3D11_BLEND_DESC HAGEBlendToD3DBlendState(const HAGE::APIWBlendState* pBlendState,const HAGE::u32 nBlendStates, bool AlphaToCoverage)
+{
+	D3D11_BLEND_DESC res;
+	res.AlphaToCoverageEnable		= AlphaToCoverage;
+	res.IndependentBlendEnable		= (nBlendStates > 1);
+	int i;
+	for(i = 0;i < nBlendStates; ++i)
+	{
+		res.RenderTarget[i].BlendEnable = pBlendState[i].bBlendEnable;
+		res.RenderTarget[i].BlendOp		= HAGEBlendOpToD3DBlendOp(pBlendState[i].BlendOp);
+		res.RenderTarget[i].BlendOpAlpha= HAGEBlendOpToD3DBlendOp(pBlendState[i].BlendOpAlpha);
+		res.RenderTarget[i].DestBlend		= HAGEBlendModeToD3DBlendMode(pBlendState[i].DestBlend);
+		res.RenderTarget[i].DestBlendAlpha	= HAGEBlendModeToD3DBlendMode(pBlendState[i].DestBlendAlpha);
+		res.RenderTarget[i].SrcBlend		= HAGEBlendModeToD3DBlendMode(pBlendState[i].SrcBlend);
+		res.RenderTarget[i].SrcBlendAlpha	= HAGEBlendModeToD3DBlendMode(pBlendState[i].SrcBlendAlpha);
+		res.RenderTarget[i].RenderTargetWriteMask = 
+									(pBlendState[i].bWriteR?D3D11_COLOR_WRITE_ENABLE_RED:0) |
+									(pBlendState[i].bWriteG?D3D11_COLOR_WRITE_ENABLE_GREEN:0) |
+									(pBlendState[i].bWriteB?D3D11_COLOR_WRITE_ENABLE_BLUE:0) |
+									(pBlendState[i].bWriteA?D3D11_COLOR_WRITE_ENABLE_ALPHA:0);
+	}
+	if(nBlendStates>1)
+		for(; i < 8;++i)
+		{
+			res.RenderTarget[i].BlendEnable = FALSE;
+			res.RenderTarget[i].BlendOp		= D3D11_BLEND_OP_ADD;
+			res.RenderTarget[i].BlendOpAlpha= D3D11_BLEND_OP_ADD;
+			res.RenderTarget[i].DestBlend		= D3D11_BLEND_ZERO;
+			res.RenderTarget[i].DestBlendAlpha	= D3D11_BLEND_ZERO;
+			res.RenderTarget[i].SrcBlend		= D3D11_BLEND_ONE;
+			res.RenderTarget[i].SrcBlendAlpha	= D3D11_BLEND_ONE;
+			res.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		}
+	return res;
+}
+
+HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
+{
+	ID3D11RasterizerState*	rast;
+	ID3D11BlendState*		blend;
+	D3D11_RASTERIZER_DESC	rastDesc = HAGERasterizerToD3DRasterizerState(pRasterizerState);
+	D3D11_BLEND_DESC		blendDesc = HAGEBlendToD3DBlendState(pBlendState,nBlendStates,AlphaToCoverage);
+	m_pDevice->CreateRasterizerState(&rastDesc,&rast);
+	m_pDevice->CreateBlendState(&blendDesc,&blend);
+	return new D3D11Effect(this,pVertexProgram,pFragmentProgram,rast,blend);
 }
 
 HAGE::APIWVertexArray* D3D11APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,

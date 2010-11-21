@@ -71,7 +71,7 @@ namespace HAGE {
 		{"Texcoord",	1,	R32G32_FLOAT	}
 	};
 
-	UserInterfaceRendering::UserInterfaceRendering(RenderingAPIWrapper* pWrapper) : m_pWrapper(pWrapper)
+	UserInterfaceRendering::UserInterfaceRendering(RenderingAPIWrapper* pWrapper) : m_pWrapper(pWrapper),m_bMouseVisible(false)
 	{
 		Vertex2DFormat vertices[] =
 		{
@@ -80,7 +80,6 @@ namespace HAGE {
 			{Vector2<>(-1.0f, -1.0f),	Vector3<>(0.0f, 0.0f, 1.0f), Vector2<>(0.0f, 0.0f)},
 			{Vector2<>(1.0f,  -1.0f),	Vector3<>(0.1f, 0.1f, 0.1f), Vector2<>(1.0f, 0.0f)},
 		};
-
 
 		u32	indices[] =
 		{
@@ -110,6 +109,7 @@ namespace HAGE {
 				const MessageUICursorUpdate* m = (const MessageUICursorUpdate*)pMessage;
 				m_vMousePosition.x=m->GetCursorX();
 				m_vMousePosition.y=m->GetCursorY();
+				m_bMouseVisible = m->IsVisible();
 				return true;
 			}
 			break;
@@ -119,12 +119,14 @@ namespace HAGE {
 
 	void UserInterfaceRendering::Draw()
 	{
-		Effect2DConstants constants;
-		constants.texture_matrix = Matrix4<>::One();
-		constants.position_matrix = Matrix4<>::Translate(Vector3<>(m_vMousePosition,0.0f))*Matrix4<>::Scale(Vector3<>(0.1f,0.1f,0.0f));
+		if(m_bMouseVisible)
+		{
+			Effect2DConstants constants;
+			constants.texture_matrix = Matrix4<>::One();
+			constants.position_matrix = Matrix4<>::Translate(Vector3<>(m_vMousePosition,0.0f))*Matrix4<>::Scale(Vector3<>(0.1f,0.1f,0.0f));
 
-		m_pConstants->UpdateContent(&constants);
-		m_pConstants->Set(0);
-		m_pEffect2D->Draw(m_pVASquare);
+			m_pConstants->UpdateContent(&constants);
+			m_pEffect2D->Draw(m_pVASquare,&m_pConstants);
+		}
 	}
 }

@@ -21,8 +21,6 @@ class SoundDomain : public DomainBase<SoundDomain>
 		InputPin<GraphicsDomain,SoundDomain>	Input;
 		InputPin<LogicDomain,SoundDomain>		InputDirect;
 		
-		InputVar<u32> TestIn;
-
 		friend class SharedTaskManager;
 };
 

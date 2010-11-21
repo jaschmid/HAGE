@@ -13,12 +13,6 @@ OGL3ConstantBuffer::~OGL3ConstantBuffer()
 	cgDestroyBuffer(m_Buffer);
 }
 
-void OGL3ConstantBuffer::Set(HAGE::u32 nBuffer)
-{
-	assert(nBuffer<=16);
-	m_pWrapper->SetCBuffer((HAGE::u8)nBuffer,this);
-}
-
 void OGL3ConstantBuffer::UpdateContent(const void* pData)
 {
 	cgSetBufferData(m_Buffer,m_nSize,pData);

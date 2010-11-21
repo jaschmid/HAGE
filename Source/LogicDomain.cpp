@@ -1,5 +1,5 @@
 #include "header.h"
-//#include "InputDomain.h"
+#include "UserInterface.h"
 #include "GenericActor.h"
 #include "LogicDomain.h"
 
@@ -20,26 +20,19 @@ namespace HAGE {
 		private:
 		};
 
-		LogicDomain::LogicDomain()  : InputAI(-2),TestOut(Output.GetBasePin()), TestIn(Input.GetBasePin()), TestInAI(InputAI.GetBasePin())
-		{
+		LogicDomain::LogicDomain()  : InputAI(-2)
+		{			
+			Factory.RegisterObjectType<Actor<LogicDomain>>();
 			printf("Init Logic\n");
 		}
 
 		bool LogicDomain::MessageProc(const Message* m)
 		{
+			if(m_pUserInterface->ProcessInputMessage(m))
+				return true;
 			switch(m->GetMessageCode())
 			{
 				case MESSAGE_ITEM_CREATED:
-					{
-						const SimpleMessage<MemHandle>* item = (const SimpleMessage<MemHandle>*)m;
-						if(m->GetSource() == guidInputDomain)
-						{
-							TestIn.Open(item->GetData());
-						}
-						else if(m->GetSource() == guidAIDomain)
-							TestInAI.Open(item->GetData());
-					}
-					return true;
 				default:
 					return SharedDomainBase::MessageProc(m);
 			}
@@ -47,14 +40,11 @@ namespace HAGE {
 
 		void LogicDomain::DomainInit(u64 step)
 		{
+			m_pUserInterface = new UserInterface(&Output.GetBasePin());
 			testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
-			Output.PostMessage(SimpleMessage<MemHandle>(MESSAGE_ITEM_CREATED,TestOut.GetHandle()));
-			printf("L%u",*TestIn);
-			*TestOut = *TestIn;
 		}
 		void LogicDomain::DomainStep(u64 step)
 		{
-			*TestOut = *TestIn;
 
 			//printf("(",step);
 
@@ -66,13 +56,12 @@ namespace HAGE {
 				Tasks.QueueTask(&tasks[0]);
 			}
 			Tasks.Execute();
-			if(step >= 2)
-			{
-				//printf("%u-%u",*TestInAI,*TestOut);
-				assert(*TestInAI == *TestOut -2);
-			}
 
 			//printf(")",step);
+		}
+		void LogicDomain::DomainShutdown(u64 step)
+		{
+			delete m_pUserInterface;
 		}
 
 		LogicDomain::~LogicDomain()

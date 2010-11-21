@@ -22,7 +22,6 @@
     <ClCompile Include="Source\AIDomain.cpp" />
     <ClCompile Include="Source\GActor.cpp" />
     <ClCompile Include="Source\GraphicsDomain.cpp" />
-    <ClCompile Include="Source\InputDomain.cpp" />
     <ClCompile Include="Source\LActor.cpp" />
     <ClCompile Include="Source\LogicDomain.cpp" />
     <ClCompile Include="Source\Main.cpp" />
@@ -44,7 +43,6 @@
     <ClInclude Include="Headers\GenericActor.h" />
     <ClInclude Include="Headers\GraphicsDomain.h" />
     <ClInclude Include="Headers\guids.h" />
-    <ClInclude Include="Headers\InputDomain.h" />
     <ClInclude Include="Headers\header.h" />
     <ClInclude Include="Headers\LogicDomain.h" />
     <ClInclude Include="Headers\RenderingDomain.h" />

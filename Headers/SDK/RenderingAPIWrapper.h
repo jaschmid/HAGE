@@ -33,6 +33,70 @@ typedef enum _APIWFormat
 	R32G32B32A32_FLOAT	= 4
 } APIWFormat;
 
+typedef enum _APIWCullMode
+{
+	CULL_NONE			= 0,
+	CULL_CCW			= 1,
+	CULL_CW				= 2
+} APIWCullMode;
+
+typedef struct _APIWRasterizerState
+{
+	APIWCullMode		CullMode;
+	bool				bWireframe;
+	i32					iDepthBias;
+	f32					fDepthBiasClamp;
+	f32					fSlopeScaledDepthBias;
+	bool				bDepthClipEnable;
+	bool				bScissorEnable;
+	bool				bMultisampleEnable;
+} APIWRasterizerState;
+
+typedef enum _APIWBlendMode
+{
+	BLEND_ZERO				= 1,
+	BLEND_ONE				= 2,
+	BLEND_SRC_COLOR			= 3,
+	BLEND_INV_SRC_COLOR		= 4,
+	BLEND_SRC_ALPHA			= 5,
+	BLEND_INV_SRC_ALPHA		= 6,
+	BLEND_DEST_ALPHA		= 7,
+	BLEND_INV_DEST_ALPHA	= 8,
+	BLEND_DEST_COLOR		= 9,
+	BLEND_INV_DEST_COLOR	= 10,
+	BLEND_SRC_ALPHA_SAT		= 11,
+	BLEND_BLEND_FACTOR		= 12,
+	BLEND_INV_BLEND_FACTOR	= 13,
+	BLEND_SRC1_COLOR		= 14,
+	BLEND_INV_SRC_1_COLOR	= 15,
+	BLEND_SRC1_ALPHA		= 16,
+	BLEND_INV_SRC1_ALPHA	= 17
+} APIWBlendMode;
+
+typedef enum _APIWBlendOp
+{
+	BLEND_OP_ADD			= 1,
+	BLEND_OP_SUBTRACT		= 2,
+	BLEND_OP_REV_SUBTRACT	= 3,
+	BLEND_OP_MIN			= 4,
+	BLEND_OP_MAX			= 5
+} APIWBlendOp;
+
+typedef struct _APIWBlendState
+{
+	bool				bBlendEnable;
+	APIWBlendMode		SrcBlend;
+	APIWBlendMode		DestBlend;
+	APIWBlendOp			BlendOp;
+	APIWBlendMode		SrcBlendAlpha;
+	APIWBlendMode		DestBlendAlpha;
+	APIWBlendOp			BlendOpAlpha;
+	bool				bWriteR,bWriteG,bWriteB,bWriteA;
+} APIWBlendState;
+
+extern const APIWBlendState DefaultBlendState;
+extern const APIWRasterizerState DefaultRasterizerState;
+
 class RenderingAPIWrapper
 {
 public:
@@ -54,11 +118,13 @@ public:
 	virtual APIWVertexArray* CreateVertexArray(HAGE::u32 nPrimitives,
 		HAGE::APIWPrimitiveType PrimitiveType,
 		HAGE::APIWVertexBuffer** pBuffers,
-		HAGE::u32 nBuffers,
-		const HAGE::u32* pIndexBufferData) = 0;
+		HAGE::u32 nBuffers = 1,
+		const HAGE::u32* pIndexBufferData = nullptr) = 0;
 	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,u32 nElements,bool bInstanceData = false) = 0;
 	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
-	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram) = 0;
+	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
+		const u32 nBlendStates = 1, bool AlphaToCoverage = false) = 0;
 };
 
 class APIWVertexBuffer
@@ -77,7 +143,6 @@ class APIWConstantBuffer
 {
 public:
 	virtual ~APIWConstantBuffer(){}
-	virtual void Set(u32 nBuffer)=0;
 	virtual void UpdateContent(const void* pData)=0;
 };
 
@@ -85,7 +150,7 @@ class APIWEffect
 {
 public:
 	virtual ~APIWEffect(){}
-	virtual void Draw(HAGE::APIWVertexArray* pArray)=0;
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1)=0;
 };
 
 struct VertexDescriptionEntry

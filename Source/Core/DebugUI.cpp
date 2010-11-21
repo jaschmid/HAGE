@@ -1,5 +1,5 @@
-#include "header.h"
-#include "UserInterface.h"
+#include "HAGE.h"
+#include "DebugUI.h"
 /*
 	MESSAGE_UI_UNKNOWN			= 0x00110000,
 	MESSAGE_UI_CURSOR_UPDATE	= 0x00110001,
@@ -8,18 +8,41 @@
 	*/
 namespace HAGE {
 
-	UserInterface::UserInterface(PinBase* pOut) : m_pPinOut(pOut)
+	DebugUI::DebugUI() : m_vCursor(0.0,0.0),m_bVisible(false)
+	{
+		ResetKeyBuffer();	
+	}
+	DebugUI::~DebugUI()
+	{
+	}
+	void DebugUI::PostMessageUI(const Message& m)
+	{
+		RenderDebugUI::DebugUIControl.PostMessage(m);
+	}
+	void DebugUI::ResetKeyBuffer()
 	{
 		for(auto i = m_bKeyboardState.begin();i!=m_bKeyboardState.end();++i)
 			*i=0;
 		for(auto i = m_bMouseState.begin();i!=m_bMouseState.end();++i)
 			*i=0;
 	}
-	UserInterface::~UserInterface()
+	bool DebugUI::ProcessInputMessage(const Message* pMessage)
 	{
-	}
-	bool UserInterface::ProcessInputMessage(const Message* pMessage)
-	{
+		if(!m_bVisible)
+		{
+			if(pMessage->GetMessageCode() == MESSAGE_INPUT_KEYDOWN && ((MessageInputKeydown*)pMessage)->GetKey() == KEY_CODE_ACCENT_GRAVE)
+			{
+				m_bVisible = true;
+				PostMessageUI(MessageUIShow());
+				ResetKeyBuffer();
+
+				//lets not process that again
+				m_bKeyboardState[KEY_CODE_ACCENT_GRAVE] = 1;
+				//and then act as if visible
+			}
+			else
+				return false;
+		}
 
 		switch(pMessage->GetMessageCode())
 		{
@@ -32,6 +55,19 @@ namespace HAGE {
 					{
 						//keydown
 						m_bKeyboardState[m->GetKey()] = 1;
+
+						if(m->GetKey() == KEY_CODE_ESC)
+							GenerateShutdownMessage();
+
+						if(m->GetKey() == KEY_CODE_ACCENT_GRAVE)
+						{
+							//hide!
+							m_bVisible = false;
+							PostMessageUI(MessageUIHide());
+							return true;
+						}
+
+						printf("%08x\n",m->GetKey());
 					}
 				}
 				else if(m->GetDevice() == guidDefMouse)
@@ -72,19 +108,26 @@ namespace HAGE {
 					switch(m->GetAxis())
 					{
 					case MOUSE_AXIS_X:
-						if(m_bMouseState[MOUSE_BUTTON_1])
 						{
-							m_pPinOut->PostMessage(MessageUIAdjustCamera(m->GetChange(),0,0));
+							m_vCursor.x+=m->GetChange();
+							if(m_vCursor.x > 1.0f)
+								m_vCursor.x = 1.0f;
+							else if(m_vCursor.x < -1.0f)
+								m_vCursor.x = -1.0f;
+							PostMessageUI(MessageUICursorUpdate(m_vCursor.x,m_vCursor.y,true,false));
 						}
 						break;
 					case MOUSE_AXIS_Y:
-						if(m_bMouseState[MOUSE_BUTTON_1])
 						{
-							m_pPinOut->PostMessage(MessageUIAdjustCamera(0,m->GetChange(),0));
+							m_vCursor.y+=m->GetChange();
+							if(m_vCursor.y > 1.0f)
+								m_vCursor.y = 1.0f;
+							else if(m_vCursor.y < -1.0f)
+								m_vCursor.y = -1.0f;
+							PostMessageUI(MessageUICursorUpdate(m_vCursor.x,m_vCursor.y,true,false));
 						}
 						break;
 					case MOUSE_AXIS_Z:
-						m_pPinOut->PostMessage(MessageUIAdjustCamera(0,0,m->GetChange()));
 						break;
 					}
 			}
@@ -95,12 +138,9 @@ namespace HAGE {
 			}
 			return true;
 		case MESSAGE_INPUT_RESET:
-			for(auto i = m_bKeyboardState.begin();i!=m_bKeyboardState.end();++i)
-				*i=0;
-			for(auto i = m_bMouseState.begin();i!=m_bMouseState.end();++i)
-				*i=0;
+			ResetKeyBuffer();
 			return true;
 		}
-		return false;
+		return true;
 	}
 }

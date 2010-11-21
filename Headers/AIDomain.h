@@ -20,9 +20,6 @@ class AIDomain : public DomainBase<AIDomain>
 
 		InputPin<LogicDomain,AIDomain>		Input;
 		OutputPin<AIDomain>					Output;
-		
-		InputVar<u32> TestIn;
-		OutputVar<u32>	TestOut;
 
 		friend class SharedTaskManager;
 };

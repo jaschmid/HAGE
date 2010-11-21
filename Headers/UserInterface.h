@@ -2,14 +2,14 @@
 #define USER__INTERFACE__INCLUDED
 
 #include "header.h"
-#include "InputDomain.h"
+#include "LogicDomain.h"
 #include <array>
 
 namespace HAGE {
 
 class InputDomain;
 
-class UserInterface : protected ObjectBase<InputDomain>
+class UserInterface : protected ObjectBase<LogicDomain>
 {
 public:
 	UserInterface(PinBase* pOut);
@@ -20,8 +20,6 @@ private:
 	static const u32 nKeyboardKeys = KEY_CODE_MAX+1;
 	std::array<u8,nKeyboardKeys>		m_bKeyboardState;
 	std::array<u8,6>					m_bMouseState;
-	Vector2<>							m_vCursor;
-	bool								m_bCursorVisible;
 };
 
 }

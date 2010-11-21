@@ -82,12 +82,6 @@ namespace HAGE {
 	{
 	}
 
-	void TaskManager::Initialize()
-	{
-		TaskManager::pSharedManager = new SharedTaskManager();
-		pSharedManager->Run();
-	}
-
 	u32 TaskManager::GetCurrentStep()
 	{
 		return nStep;

@@ -38,10 +38,13 @@ OGL3Effect::~OGL3Effect()
     m_pWrapper->checkForCgError( "destroying fragment program" );
 }
 
-void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
+void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer** _pConstants,HAGE::u32 nConstants)
 {
 	OGL3VertexArray* pArray = (OGL3VertexArray*)pArrayPre;
-
+	OGL3ConstantBuffer** ppConstants = (OGL3ConstantBuffer**)_pConstants;
+	
+	assert(nConstants<=N_CBUFFERS);
+	
 	cgGLBindProgram(m_CgVertexProgram);
 	m_pWrapper->checkForCgError("binding vertex program");
 
@@ -56,11 +59,9 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
 
 	// set cBuffers
 
-	for(int i =0; i<N_CBUFFERS;++i)
+	for(int i =0; i<nConstants;++i)
 	{
-		OGL3ConstantBuffer* c=m_pWrapper->GetCBuffer(i);
-		if(c)
-			cgSetProgramBuffer(m_CgVertexProgram,i,c->m_Buffer);
+		cgSetProgramBuffer(m_CgVertexProgram,i,ppConstants[i]->m_Buffer);
 	}
 	//m_pWrapper->SetCBuffer(nBuffer,this);
 	

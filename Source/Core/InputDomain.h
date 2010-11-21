@@ -1,11 +1,11 @@
 #ifndef INPUT__DOMAIN__INCLUDED
 #define INPUT__DOMAIN__INCLUDED
 
-#include "header.h"
+#include "HAGE.h"
 
 namespace HAGE {
 
-class UserInterface;
+class DebugUI;
 
 class InputDomain : public DomainBase<InputDomain>
 {
@@ -25,14 +25,12 @@ class InputDomain : public DomainBase<InputDomain>
 	private:
 		OutputPin<InputDomain>	Output;
 
-		OutputVar<u32> TestOut;
-
 		// non synced input
 		StaticMessageQueue<1024*128>	OSInputQueue;
 
 		friend class SharedTaskManager;
 
-		UserInterface* m_pInterface;
+		DebugUI*	m_pDebugInterface;
 };
 
 }

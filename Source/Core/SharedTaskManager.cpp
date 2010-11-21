@@ -1,38 +1,47 @@
 #include <HAGE.h>
 #include "SharedTaskManager.h"
+#include "InputDomain.h"
+#include <assert.h>
 
-extern void OSMessageQueue(HAGE::IMain* pMain);
+extern void OSMessageQueue();
 extern void OSLeaveMessageQueue();
 
 namespace HAGE {
 
-	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0)
+	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0),m_pInputDomain(nullptr),
+		m_nThreads(boost::thread::hardware_concurrency()),
+		m_initbarrier(m_nThreads + 1)
+	{
+		HAGE::TaskManager::pSharedManager= this;
+	}
+
+	SharedTaskManager::~SharedTaskManager()
 	{
 	}
 
-	void SharedTaskManager::Run()
+	volatile i32 SharedTaskManager::UserlandShutdownCounter()
 	{
-		const int nThreads = boost::thread::hardware_concurrency();
+		return _InterlockedDecrement(&m_userlandShutdownCounter);
+	}
 
-		IMain*	pMain = HAGECreateMain();
+	
+	void SharedTaskManager::InitUserland()
+	{		
+		m_pInputDomain = new InputDomain;
+		m_pMain = HAGECreateMain();
+	}
 
-		/*
-		InputDomain* pInput = new InputDomain();
-		LogicDomain* pLogic = new LogicDomain();
-		AIDomain* pAI = new AIDomain();
-		GraphicsDomain* pGraphics = new GraphicsDomain();
-		RenderingDomain* pRendering = new RenderingDomain();
-		SoundDomain* pSound = new SoundDomain();
-		ResourceDomain* pResource = new ResourceDomain();
-		*/
+	void SharedTaskManager::EndUserland()
+	{
+		delete m_pMain;
+		delete m_pInputDomain;
+	}
 
-		printf("domains created\n");
-
-		boost::barrier initbarrier( nThreads + 1 );
-
-		for(int i = 0;i < nThreads; i++)
+	InputDomain* SharedTaskManager::StartThreads()
+	{
+		for(int i = 0;i < m_nThreads; i++)
 		{
-			workerThreadProc proc = { this , i , (u32) i, initbarrier };
+			workerThreadProc proc = { this , i , (u32) i, m_initbarrier };
 			workerThreads.create_thread<workerThreadProc>(proc);
 		}
 
@@ -42,49 +51,46 @@ namespace HAGE {
 			lastTick = boost::posix_time::microsec_clock::universal_time();
 		}
 
-		initbarrier.wait();
+		m_initbarrier.wait();
 
 		// now queue the init task
 
-		printf("%u threads init \n",nThreads);
+		printf("%u threads init \n",m_nThreads);
 		// program is running
 
-		OSMessageQueue(pMain);
+		assert(m_pInputDomain);
 
-		if( !bShutdown)
+		return m_pInputDomain;
+	}
+
+	void SharedTaskManager::StopThreads()
+	{
+		m_userlandShutdownCounter = m_nThreads;
+
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
-			if(!bShutdown)
-			{
-				nShutdownStep = nHighestStep +1;
-				bShutdown = true;
-			}
+			assert(!bShutdown);
+			nShutdownStep = nHighestStep +1;
+			bShutdown = true;
 		}
 
-		initbarrier.wait();
+		m_initbarrier.wait();
 
 		// program is completed
 
 		workerThreads.join_all();
 
-		printf("threads terminated \n");
+		assert(m_userlandShutdownCounter == 0);
 
-		delete pMain;
-		/*
-		delete pResource;
-		delete pSound;
-		delete pRendering;
-		delete pGraphics;
-		delete pAI;
-		delete pLogic;
-		delete pInput;
-		*/
 		printf("domains destroyed\n");
 	}
 
 	void SharedTaskManager::workerThreadProc::operator () ()
 	{
 		//boost::this_thread::bin
+
+		if(nThreadId == 0)
+			pTaskManager->InitUserland();
 
 		// run thread
 		printf("pthread %i started \n",nThreadId);
@@ -101,9 +107,12 @@ namespace HAGE {
 			pManager->TaskLeave();
 		}
 
+		int count;
+		if((count=pTaskManager->UserlandShutdownCounter()) == 0)
+			pTaskManager->EndUserland();
 
 		// run thread
-		printf("pthread %i completed \n",nThreadId);
+		printf("pthread %i completed as %i\n",nThreadId,count);
 		initbarrier.wait();
 	}
 
@@ -125,7 +134,7 @@ namespace HAGE {
 					taskList.erase(first);
 				}
 
-				if(*ppTask)
+				if(*ppTask && result)
 					return result;
 			}
 
@@ -201,12 +210,10 @@ namespace HAGE {
 		const guid* pDomainGuid = TLS::domain_guid.release();
 		IDomain* pDomain = TLS::domain_ptr.release();
 
-		if(!bShutdown)
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
-			nShutdownStep = nHighestStep +1;
-			bShutdown = true;
-			OSLeaveMessageQueue();
+			if(!bShutdown)
+				OSLeaveMessageQueue();
 		}
 
 		TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));

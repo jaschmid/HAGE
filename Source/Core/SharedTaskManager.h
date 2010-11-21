@@ -8,14 +8,15 @@
 
 namespace HAGE {
 
+class InputDomain;
+
 class SharedTaskManager
 {
 public:
 	SharedTaskManager();
-	void Run();
+	InputDomain* StartThreads();
+	void StopThreads();
 	~SharedTaskManager();
-
-
 
 	struct workerThreadProc
 	{
@@ -52,6 +53,10 @@ public:
 			return false;
 	}
 
+	volatile i32 UserlandShutdownCounter();
+
+	void InitUserland();
+	void EndUserland();
 
 private:
 
@@ -65,8 +70,14 @@ private:
 	jobqueue							taskList;
 
 	float								fSteptime;
-	bool								bShutdown;
+	volatile bool						bShutdown;
 	boost::posix_time::ptime			lastTick;
+
+	InputDomain*						m_pInputDomain;
+	IMain*								m_pMain;
+	const int							m_nThreads;
+	boost::barrier						m_initbarrier;
+	volatile i32						m_userlandShutdownCounter;
 
 	u64									nShutdownStep;
 	u64									nHighestStep;

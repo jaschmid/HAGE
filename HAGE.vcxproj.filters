@@ -10,9 +10,6 @@
     <ClCompile Include="Source\GraphicsDomain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\InputDomain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\LActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,9 +69,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Headers\GraphicsDomain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\InputDomain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Headers\LogicDomain.h">

@@ -7,7 +7,6 @@
 
 namespace HAGE
 {
-	class InputDomain;
 	class LogicDomain;
 	class AIDomain;
 	class GraphicsDomain;

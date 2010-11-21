@@ -93,7 +93,6 @@ public:
 		pDomain=this;
 		Tasks.SetDomain((_T*)this);
 		Factory.SetDomain((_T*)this);
-		Factory.RegisterObjectType<Actor<_T>>();
 	}
 	virtual ~DomainBase()
 	{

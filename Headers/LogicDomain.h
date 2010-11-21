@@ -6,6 +6,7 @@
 namespace HAGE {
 
 class AIDomain;
+class UserInterface;
 
 class LogicDomain : public DomainBase<LogicDomain>
 {
@@ -14,6 +15,7 @@ class LogicDomain : public DomainBase<LogicDomain>
 		~LogicDomain();
 		void DomainInit(u64 step);
 		void DomainStep(u64 step);
+		void DomainShutdown(u64 step);
 
 		static const guid& id;
 		static const bool continuous;
@@ -25,11 +27,10 @@ class LogicDomain : public DomainBase<LogicDomain>
 		InputPin<AIDomain,LogicDomain>		InputAI;
 		OutputPin<LogicDomain>	Output;
 
-		OutputVar<u32>	TestOut;
-		InputVar<u32>	TestIn;
-		InputVar<u32>	TestInAI;
 		Actor<LogicDomain>*	testActor;
 		guid			testActorId;
+
+		UserInterface*	m_pUserInterface;
 
 		friend class SharedTaskManager;
 };

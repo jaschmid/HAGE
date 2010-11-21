@@ -103,15 +103,7 @@ const char* fragment_program =
 			}
 			switch(m->GetMessageCode())
 			{
-				case MESSAGE_ITEM_CREATED:
-					{
-						const SimpleMessage<MemHandle>* item = (const SimpleMessage<MemHandle>*)m;
-						if(m->GetSource() == guidLogicDomain)
-							TestInDirect.Open(item->GetData());
-						else if(m->GetSource() == guidGraphicsDomain)
-							TestIn.Open(item->GetData());
-					}
-					return true;
+				case MESSAGE_UI_UNKNOWN:
 				default:
 					return SharedDomainBase::MessageProc(m);
 			}
@@ -119,8 +111,8 @@ const char* fragment_program =
 
 		void RenderingDomain::DomainInit(u64 step)
 		{
-			pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-			//pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+			//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
+			pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 			pWrapper->BeginFrame();
 			pWrapper->RegisterVertexFormat(szDefFormat,DefFormatDescriptor,sizeof(DefFormatDescriptor)/sizeof(VertexDescriptionEntry));
 
@@ -191,7 +183,6 @@ const char* fragment_program =
 			}
 
 			//printf("%u-%u",*TestIn,*TestInDirect);
-			assert(*TestIn == *TestInDirect -1);
 
 			Tasks.Execute();
 
@@ -201,8 +192,7 @@ const char* fragment_program =
 			c.inverse_modelview =		c.modelview;
 			c.modelview_projection =	Matrix4<>::Perspective(0.001f,10000.0f,1.3f,3.0f/4.0f*1.3f)*c.modelview;
 			pConstants->UpdateContent(&c);
-			pConstants->Set(0);
-			pEffect->Draw(pVertexArray);
+			pEffect->Draw(pVertexArray,&pConstants);
 
 			pInterface->Draw();
 
@@ -221,9 +211,10 @@ const char* fragment_program =
 			if(pWrapper)delete pWrapper;
 		}
 
-		RenderingDomain::RenderingDomain() : Input(1),TestIn(Input.GetBasePin()),TestInDirect(InputDirect.GetBasePin()),
+		RenderingDomain::RenderingDomain() : Input(1),
 			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(5.0)
 		{
+			Factory.RegisterObjectType<Actor<RenderingDomain>>();
 			printf("Init Rendering\n");
 		}
 

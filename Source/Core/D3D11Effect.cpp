@@ -3,19 +3,25 @@
 
 #ifndef NO_D3D
 
-D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram) :
+D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState) :
 	m_pWrapper(pWrapper),
-	m_pCompiledShader(nullptr)
+	m_pCompiledShader(nullptr),
+	m_pRasterizerState(pRasterizerState),
+	m_pBlendState(pBlendState)
 {
 
 	// Create Shaders
 
 	m_pVertexShader=CompileVertexShader(pVertexProgram);
 	m_pPixelShader=CompilePixelShader(pFragmentProgram);
+
 }
 
 D3D11Effect::~D3D11Effect()
 {
+	m_pRasterizerState->Release();
+	m_pBlendState->Release();
+
 	for(auto i=m_ArrayLayoutList.begin();i!=m_ArrayLayoutList.end();++i)
 		i->second->Release();
 
@@ -122,8 +128,13 @@ ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 }
 
 
-void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
+void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants)
 {
+	for(HAGE::u32 i = 0; i<nConstants; ++i)
+	{
+		m_pWrapper->GetContext()->VSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
+	}
+
 	D3D11VertexArray* pArray = (D3D11VertexArray*)pVertexArray;
 
 	auto layout = m_ArrayLayoutList.find(pArray->m_ArrayCode);
@@ -165,6 +176,10 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
 		nItems = pArray->m_nPrimitives-2;
 		break;
 	}
+
+	m_pWrapper->GetContext()->RSSetState(m_pRasterizerState);
+	float blend_factor[4] = {1.0f,1.0f,1.0f,1.0f};
+	m_pWrapper->GetContext()->OMSetBlendState(m_pBlendState,blend_factor,0xffffffff);
 
 	if(pArray->m_pIndexBuffer)
 		m_pWrapper->GetContext()->IASetIndexBuffer(pArray->m_pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);

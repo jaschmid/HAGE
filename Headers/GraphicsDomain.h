@@ -20,9 +20,6 @@ class GraphicsDomain : public DomainBase<GraphicsDomain>
 
 		InputPin<LogicDomain,GraphicsDomain>			LogicInput;
 		OutputPin<GraphicsDomain>		Output;
-
-		InputVar<u32> TestIn;
-		OutputVar<u32> TestOut;
 };
 
 }

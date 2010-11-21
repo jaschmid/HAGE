@@ -2,6 +2,7 @@
 #define OPENGL3__API__WRAPPER
 
 #include <HAGE.h>
+#include "RenderDebugUI.h"
 
 #ifndef NO_OGL
 
@@ -51,7 +52,9 @@ public:
 		const HAGE::u32* pIndexBufferData);
 	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
-	HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram);
+	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
 
 #ifdef TARGET_WINDOWS
 	HGLRC GetRC(){return m_hrc;}
@@ -71,11 +74,6 @@ public:
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
 	const VertexFormatEntry*	GetVertexFormat(HAGE::u8 code);
-	void						SetCBuffer(HAGE::u8 i,OGL3ConstantBuffer* p)
-	{
-		m_cBuffers[i]=p;
-	}
-	OGL3ConstantBuffer*			GetCBuffer(HAGE::u8 i){return m_cBuffers[i];}
 	void checkForCgError(const char *situation);
 
 private:
@@ -83,8 +81,6 @@ private:
 	VertexStringTableType		m_VertexStringTable;
 	typedef std::array<VertexFormatEntry,256> VertexFormatListType;
 	VertexFormatListType		m_VertexFormatList;
-
-	std::array<OGL3ConstantBuffer*,N_CBUFFERS> m_cBuffers;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -99,6 +95,8 @@ private:
 	HAGE::u32					m_NextVertexFormatEntry;
 	CGcontext   myCgContext;
 	CGprofile   myCgVertexProfile, myCgFragmentProfile;
+
+	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
 	friend class D3D11Effect;
 };
@@ -138,7 +136,6 @@ class OGL3ConstantBuffer : public HAGE::APIWConstantBuffer
 {
 public:
 	OGL3ConstantBuffer(OpenGL3APIWrapper* pWrapper,HAGE::u32 nSize);
-	virtual void Set(HAGE::u32 nBuffer);
 	virtual void UpdateContent(const void* pData);
 	~OGL3ConstantBuffer();
 private:
@@ -154,8 +151,8 @@ class OGL3Effect : public HAGE::APIWEffect
 public:
 	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram);
 	~OGL3Effect();
-
-	virtual void Draw(HAGE::APIWVertexArray* pArray);
+	
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1);
 private:
 	CGprogram					m_CgVertexProgram;
 	CGprogram					m_CgFragmentProgram;

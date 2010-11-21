@@ -142,7 +142,9 @@ private:
 	volatile bool bShutdownComplete;
 
 	static void Initialize();
+
 	friend void __InternalHAGEMain();
+
 	friend class StepTask;
 	friend class ShutdownTask;
 	friend class InitTask;

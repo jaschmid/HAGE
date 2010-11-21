@@ -170,7 +170,10 @@
     <ClInclude Include="Headers\SDK\TLS.h" />
     <ClInclude Include="Headers\SDK\types.h" />
     <ClInclude Include="Source\Core\D3D11APIWrapper.h" />
+    <ClInclude Include="Source\Core\DebugUI.h" />
+    <ClInclude Include="Source\Core\InputDomain.h" />
     <ClInclude Include="Source\Core\OpenGL3APIWrapper.h" />
+    <ClInclude Include="Source\Core\RenderDebugUI.h" />
     <ClInclude Include="Source\Core\SharedCoreFactory.h" />
     <ClInclude Include="Source\Core\SharedTaskManager.h" />
   </ItemGroup>
@@ -181,9 +184,10 @@
     <ClCompile Include="Source\Core\D3D11VertexArray.cpp" />
     <ClCompile Include="Source\Core\D3D11VertexBuffer.cpp" />
     <ClCompile Include="Source\Core\D3DRenderingAPIWrapper.cpp" />
+    <ClCompile Include="Source\Core\DebugUI.cpp" />
     <ClCompile Include="Source\Core\DomainBase.cpp" />
     <ClCompile Include="Source\Core\DomainMemory.cpp" />
-    <ClCompile Include="Source\Core\Main.cpp" />
+    <ClCompile Include="Source\Core\InputDomain.cpp" />
     <ClCompile Include="Source\Core\OGL3ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\OGL3Effect.cpp" />
     <ClCompile Include="Source\Core\OGL3VertexArray.cpp" />
@@ -196,6 +200,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Source\Core\RenderDebugUI.cpp" />
+    <ClCompile Include="Source\Core\RenderingAPIWrapper.cpp" />
     <ClCompile Include="Source\Core\SharedCoreFactory.cpp" />
     <ClCompile Include="Source\Core\SharedTaskManager.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />

@@ -26,8 +26,4 @@ void D3D11ConstantBuffer::UpdateContent(const void* pData)
 	m_pWrapper->GetContext()->UpdateSubresource(m_pBuffer,0,NULL,pData,0,0);
 }
 
-void D3D11ConstantBuffer::Set(HAGE::u32 nSlot)
-{
-	m_pWrapper->GetContext()->VSSetConstantBuffers(nSlot,1,&m_pBuffer);
-}
 #endif

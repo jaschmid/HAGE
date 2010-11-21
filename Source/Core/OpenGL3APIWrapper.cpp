@@ -63,8 +63,6 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 #endif
 	m_NextVertexFormatEntry(0)
 {
-	for(HAGE::u32 i =0;i<m_cBuffers.size();++i)
-		m_cBuffers[i]=0;
 
 #ifdef TARGET_WINDOWS
 	PIXELFORMATDESCRIPTOR pfd;
@@ -262,6 +260,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 
+	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
+
 #ifdef TARGET_WINDOWS
 	wglMakeCurrent(NULL, NULL);
 #elif defined(TARGET_LINUX)
@@ -272,6 +272,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 OpenGL3APIWrapper::~OpenGL3APIWrapper()
 {
+	delete m_DebugUIRenderer;
+
 	// Cleanup CG
 
     cgDestroyContext( myCgContext );
@@ -311,6 +313,9 @@ void OpenGL3APIWrapper::BeginFrame()
 
 void OpenGL3APIWrapper::PresentFrame()
 {
+	// Debug UI
+	m_DebugUIRenderer->Draw();
+
 #ifdef TARGET_WINDOWS
 	SwapBuffers(m_hDC);
 	wglMakeCurrent(NULL, NULL);
@@ -373,7 +378,9 @@ HAGE::APIWConstantBuffer* OpenGL3APIWrapper::CreateConstantBuffer(HAGE::u32 nSiz
 	return new OGL3ConstantBuffer(this,nSize);
 }
 
-HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram)
+HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
 {
 	return new OGL3Effect(this,pVertexProgram,pFragmentProgram);
 }

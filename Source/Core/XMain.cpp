@@ -1,4 +1,7 @@
 #include <HAGE.h>
+#include "InputDomain.h"
+#include "TaskManager.h"
+#include "SharedTaskManager.h"
 
 namespace HAGE {
 void __InternalHAGEMain();
@@ -15,12 +18,10 @@ void __InternalHAGEMain();
 #include <X11/Xutil.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include <xcb/xcb.h>
-#include <X11/Xlib-xcb.h>
 
 namespace UnixGlobal
 {
-	HAGE::IMain*	pMain=nullptr;
+	HAGE::InputDomain* pInput = nullptr;
     Display*    display;
     Window      win;
     GLXFBConfig bestFbc;
@@ -181,9 +182,21 @@ int main(int argc,char** argv)
             break;
     }
 
-    HAGE::__InternalHAGEMain();
+	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
+	
+	pInput = pSharedTaskManager->StartThreads();
+
+	// Wait for shutdown
+    while(!bShutdown)
+    {
+        usleep(1000000);
+    }
+
+	pSharedTaskManager->StopThreads();
 
     XDestroyWindow(display,win);
+
+	delete pSharedTaskManager;
 
 	return 0;
 }
@@ -211,10 +224,10 @@ extern void ProcessXEvents()
                 XDefineCursor(display,win,cursor);
                 break;
             case KeyPress:
-                pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
+                pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
                 break;
            case KeyRelease:
-                pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
+                pInput->PostInputMessage(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
                 break;
             case ButtonPress:
             case ButtonRelease:
@@ -231,12 +244,12 @@ extern void ProcessXEvents()
                     if(e.type == ButtonPress)
                     {
                         //keydown
-                        pMain->MessageProc(HAGE::MessageInputKeydown(HAGE::guidDefMouse,button,0));
+                        pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefMouse,button,0));
                     }
                     else
                     {
                         //keyup
-                        pMain->MessageProc(HAGE::MessageInputKeyup(HAGE::guidDefMouse,button,0));
+                        pInput->PostInputMessage(HAGE::MessageInputKeyup(HAGE::guidDefMouse,button,0));
                     }
                 }
                 break;
@@ -251,11 +264,11 @@ extern void ProcessXEvents()
 
                     if(dx != 0)
                     {
-                        pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_X,(float)dx/(float)0xff));
+                        pInput->PostInputMessage(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_X,(float)dx/(float)0xff));
                     }
                     if(dy != 0)
                     {
-                        pMain->MessageProc(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)dy/(float)0xff));
+                        pInput->PostInputMessage(HAGE::MessageInputAxisRelative(HAGE::guidDefMouse,HAGE::MOUSE_AXIS_Y,-1.0f*(float)dy/(float)0xff));
                     }
 
                     //set to center
@@ -268,17 +281,6 @@ extern void ProcessXEvents()
                 XUndefineCursor(display,win);
                 break;
         }
-    }
-}
-
-void OSMessageQueue(HAGE::IMain* _pMain)
-{
-	pMain = _pMain;
-
-    while(!bShutdown)
-    {
-        usleep(1000000);
-
     }
 }
 

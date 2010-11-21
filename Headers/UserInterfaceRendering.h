@@ -20,6 +20,7 @@ private:
 	RenderingAPIWrapper*	m_pWrapper;
 
 	Vector2<>				m_vMousePosition;
+	bool					m_bMouseVisible;
 	
 	APIWVertexBuffer*		m_pVBSquare;
 	APIWVertexArray*		m_pVASquare;
