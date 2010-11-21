@@ -3,10 +3,17 @@
 
 template<class _Key,_Key _Size,class _Item> class FixedSizeKeyStorage
 {
+private:
+	typedef typename std::unordered_map<_Item,_Key> ItemToKeyMapType;
+	ItemToKeyMapType				m_ItemToKeyMap;
+	typedef typename std::array<_Item,_Size> ItemStorageType;
+	ItemStorageType					m_ItemStorage;
+	_Key							m_NextFreeItem;
+
 public:
 	_Key GetKey(const _Item& item)
 	{
-		ItemToKeyMapType::iterator found=m_ItemToKeyMap.find(item);
+		typename ItemToKeyMapType::iterator found(m_ItemToKeyMap.find(item));
 		if(found==m_ItemToKeyMap.end())
 		{
 			assert(m_NextFreeItem<_Size);
@@ -24,10 +31,4 @@ public:
 		assert(key<m_NextFreeItem);
 		return m_ItemStorage[key];
 	}
-private:
-	typedef std::unordered_map<_Item,_Key> ItemToKeyMapType;
-	ItemToKeyMapType				m_ItemToKeyMap;
-	typedef std::array<_Item,_Size> ItemStorageType;
-	ItemStorageType					m_ItemStorage;
-	_Key							m_NextFreeItem;
 };

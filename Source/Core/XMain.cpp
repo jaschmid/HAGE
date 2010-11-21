@@ -124,7 +124,8 @@ int main(int argc,char** argv)
         XFree( vi );
     }
 
-    bestFbc = fbc[ best_fbc ];
+    // actually lets not use AA
+    bestFbc = fbc[ 0 ];
 
     // Be sure to free the FBConfig list allocated by glXChooseFBConfig()
     XFree( fbc );
@@ -183,7 +184,7 @@ int main(int argc,char** argv)
     }
 
 	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
-	
+
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Wait for shutdown

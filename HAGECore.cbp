@@ -65,8 +65,13 @@
 		<Unit filename="Source/Core/D3D11VertexArray.cpp" />
 		<Unit filename="Source/Core/D3D11VertexBuffer.cpp" />
 		<Unit filename="Source/Core/D3DRenderingAPIWrapper.cpp" />
+		<Unit filename="Source/Core/DebugUI.cpp" />
+		<Unit filename="Source/Core/DebugUI.h" />
 		<Unit filename="Source/Core/DomainBase.cpp" />
 		<Unit filename="Source/Core/DomainMemory.cpp" />
+		<Unit filename="Source/Core/FixedSizeKeyStorage.h" />
+		<Unit filename="Source/Core/InputDomain.cpp" />
+		<Unit filename="Source/Core/InputDomain.h" />
 		<Unit filename="Source/Core/Main.cpp" />
 		<Unit filename="Source/Core/OGL3ConstantBuffer.cpp" />
 		<Unit filename="Source/Core/OGL3Effect.cpp" />
@@ -75,6 +80,9 @@
 		<Unit filename="Source/Core/OpenGL3APIWrapper.cpp" />
 		<Unit filename="Source/Core/OpenGL3APIWrapper.h" />
 		<Unit filename="Source/Core/PinBase.cpp" />
+		<Unit filename="Source/Core/RenderDebugUI.cpp" />
+		<Unit filename="Source/Core/RenderDebugUI.h" />
+		<Unit filename="Source/Core/RenderingAPIWrapper.cpp" />
 		<Unit filename="Source/Core/SharedCoreFactory.cpp" />
 		<Unit filename="Source/Core/SharedCoreFactory.h" />
 		<Unit filename="Source/Core/SharedTaskManager.cpp" />

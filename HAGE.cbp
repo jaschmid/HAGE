@@ -51,7 +51,6 @@
 		<Unit filename="Headers/AIDomain.h" />
 		<Unit filename="Headers/GenericActor.h" />
 		<Unit filename="Headers/GraphicsDomain.h" />
-		<Unit filename="Headers/InputDomain.h" />
 		<Unit filename="Headers/LogicDomain.h" />
 		<Unit filename="Headers/RenderingDomain.h" />
 		<Unit filename="Headers/ResourceDomain.h" />
@@ -63,7 +62,6 @@
 		<Unit filename="Source/AIDomain.cpp" />
 		<Unit filename="Source/GActor.cpp" />
 		<Unit filename="Source/GraphicsDomain.cpp" />
-		<Unit filename="Source/InputDomain.cpp" />
 		<Unit filename="Source/LActor.cpp" />
 		<Unit filename="Source/LogicDomain.cpp" />
 		<Unit filename="Source/Main.cpp" />

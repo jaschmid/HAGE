@@ -88,7 +88,7 @@ namespace HAGE {
 			1,3,2
 		};
 
-		pWrapper->RegisterVertexFormat(__Vertex2DFormat::name,__Vertex2DFormatDescriptor,3);
+		pWrapper->RegisterVertexFormat(__Vertex2DFormat::name,__Vertex2DFormatDescriptor,2);
 		m_pVBSquare = pWrapper->CreateVertexBuffer(__Vertex2DFormat::name,vertices,4);
 		m_pVASquare = pWrapper->CreateVertexArray(2,PRIMITIVE_TRIANGLELIST,&m_pVBSquare,1,indices);
 
@@ -103,7 +103,7 @@ namespace HAGE {
 		m_pEffect2D = pWrapper->CreateEffect(__Effect2D_VP,__Effect2D_FP,&rast,&blend);
 		m_pConstantsBackdrop = pWrapper->CreateConstantBuffer(sizeof(__Effect2DConstants));
 		m_pConstantsPointer = pWrapper->CreateConstantBuffer(sizeof(__Effect2DConstants));
-		
+
 		__Effect2DConstants constants;
 
 		constants.texture_matrix = Matrix4<>::One();

@@ -45,7 +45,6 @@ namespace HAGE {
 
 	result LockedMessageQueue::InitializeOutputPin(boost::function<void()> f,const guid& guid)
 	{
-		printf("%08x registered output\n",this);
 		fWriteReadyCallback = f;
 		sourceStamp = guid;
 		fWriteReadyCallback();
@@ -55,7 +54,6 @@ namespace HAGE {
 
 	result LockedMessageQueue::InitializeInputPin(boost::function<void()> f)
 	{
-		printf("%08x registered input\n",this);
 		fReadReadyCallback.push_back( f );
 		return S_OK;
 	}

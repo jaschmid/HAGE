@@ -626,18 +626,18 @@
 1290196714 source:/private/Code/HAGE/Source/prec.cpp
 	"header.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/AIDomain.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/AIDomain.cpp
 	"header.h"
 	"GenericActor.h"
 	"AIDomain.h"
 	"LogicDomain.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/header.h
+1290304763 /home/jaschmid/HAGE/Headers/header.h
 	<stdlib.h>
 	<SDK/HAGE.h>
 	"guids.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/HAGE.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/HAGE.h
 	"preproc.h"
 	"types.h"
 	"results.h"
@@ -654,54 +654,54 @@
 	"PinHelpers.h"
 	"RenderingAPIWrapper.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/preproc.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/preproc.h
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/types.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/types.h
 	"preproc.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/results.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/results.h
 	"types.h"
 
-1290276697 /home/jaschmid/HAGE/Headers/SDK/messages.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/messages.h
 	"types.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/TLS.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/TLS.h
 	"types.h"
 	"IDomain.h"
 	<boost/thread.hpp>
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/IDomain.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/IDomain.h
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/hage_math.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/hage_math.h
 	"types.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/interlocked_functions.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/interlocked_functions.h
 	<boost/detail/interlocked.hpp>
 	"types.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/IObject.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/IObject.h
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/global_allocator.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/global_allocator.h
 	"DomainMemory.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/DomainMemory.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/DomainMemory.h
 	"HAGE.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/MainClass.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/MainClass.h
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/DomainBase.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/DomainBase.h
 	"HAGE.h"
 	"TaskManager.h"
 	"CoreFactory.h"
 	"DomainMemory.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/TaskManager.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/TaskManager.h
 	"HAGE.h"
 	<boost/bind.hpp>
 	<boost/function.hpp>
 	<vector>
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/CoreFactory.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/CoreFactory.h
 	"HAGE.h"
 	"PinBase.h"
 	<map>
@@ -709,35 +709,35 @@
 	<boost/uuid/random_generator.hpp>
 	<boost/function.hpp>
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/PinBase.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/PinBase.h
 	"HAGE.h"
 	"global_allocator.h"
 	<boost/function.hpp>
 	<vector>
 	<array>
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/ObjectBase.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/ObjectBase.h
 	"HAGE.h"
 	"TaskManager.h"
 	"PinHelpers.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/PinHelpers.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/PinHelpers.h
 	"PinBase.h"
 	"DomainBase.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SDK/RenderingAPIWrapper.h
+1290362784 /home/jaschmid/HAGE/Headers/SDK/RenderingAPIWrapper.h
 	"HAGE.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/guids.h
+1290304763 /home/jaschmid/HAGE/Headers/guids.h
 	"header.h"
 
 1290251017 /home/jaschmid/HAGE/Headers/GenericActor.h
 	"header.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/AIDomain.h
+1290304763 /home/jaschmid/HAGE/Headers/AIDomain.h
 	"header.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/LogicDomain.h
+1290304763 /home/jaschmid/HAGE/Headers/LogicDomain.h
 	"header.h"
 
 1290251017 source:/home/jaschmid/HAGE/Source/GActor.cpp
@@ -745,10 +745,10 @@
 	"GenericActor.h"
 	"GraphicsDomain.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/GraphicsDomain.h
+1290304763 /home/jaschmid/HAGE/Headers/GraphicsDomain.h
 	"header.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/GraphicsDomain.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/GraphicsDomain.cpp
 	"header.h"
 	"GenericActor.h"
 	"GraphicsDomain.h"
@@ -763,9 +763,9 @@
 1290251017 /home/jaschmid/HAGE/Headers/InputDomain.h
 	"header.h"
 
-1290276697 /home/jaschmid/HAGE/Headers/UserInterface.h
+1290304763 /home/jaschmid/HAGE/Headers/UserInterface.h
 	"header.h"
-	"InputDomain.h"
+	"LogicDomain.h"
 	<array>
 
 1290251017 source:/home/jaschmid/HAGE/Source/LActor.cpp
@@ -773,15 +773,15 @@
 	"LogicDomain.h"
 	"GenericActor.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/LogicDomain.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/LogicDomain.cpp
 	"header.h"
+	"UserInterface.h"
 	"GenericActor.h"
 	"LogicDomain.h"
 	<boost/date_time.hpp>
 
-1290251017 source:/home/jaschmid/HAGE/Source/Main.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/Main.cpp
 	"header.h"
-	"InputDomain.h"
 	"LogicDomain.h"
 	"AIDomain.h"
 	"GraphicsDomain.h"
@@ -789,10 +789,10 @@
 	"SoundDomain.h"
 	"ResourceDomain.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/RenderingDomain.h
+1290304763 /home/jaschmid/HAGE/Headers/RenderingDomain.h
 	"header.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/SoundDomain.h
+1290304763 /home/jaschmid/HAGE/Headers/SoundDomain.h
 	"header.h"
 
 1290251017 /home/jaschmid/HAGE/Headers/ResourceDomain.h
@@ -802,13 +802,13 @@
 	"header.h"
 	"GenericActor.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/RenderingDomain.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/RenderingDomain.cpp
 	"header.h"
 	"GenericActor.h"
 	"UserInterfaceRendering.h"
 	"RenderingDomain.h"
 
-1290251017 /home/jaschmid/HAGE/Headers/UserInterfaceRendering.h
+1290304763 /home/jaschmid/HAGE/Headers/UserInterfaceRendering.h
 	"header.h"
 	"RenderingDomain.h"
 
@@ -817,19 +817,19 @@
 	"GenericActor.h"
 	"ResourceDomain.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/SoundDomain.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/SoundDomain.cpp
 	"header.h"
 	"GenericActor.h"
 	"SoundDomain.h"
 
-1290251017 source:/home/jaschmid/HAGE/Source/UserInterfaceRendering.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/UserInterfaceRendering.cpp
 	"header.h"
 	"UserInterfaceRendering.h"
 
 1290251017 source:/home/jaschmid/HAGE/Source/prec.cpp
 	"header.h"
 
-1290276697 source:/home/jaschmid/HAGE/Source/UserInterface.cpp
+1290304763 source:/home/jaschmid/HAGE/Source/UserInterface.cpp
 	"header.h"
 	"UserInterface.h"
 

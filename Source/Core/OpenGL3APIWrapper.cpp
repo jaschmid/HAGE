@@ -422,12 +422,7 @@ void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDesc
 	new_entry.pOriginalDescription = new HAGE::VertexDescriptionEntry[nNumEntries];
 	memcpy(new_entry.pOriginalDescription,pDescription,sizeof(HAGE::VertexDescriptionEntry)*nNumEntries);
 
-	HAGE::u32 nNumD3DEntries = 0;
-
-	for(HAGE::u32 i=0;i<nNumEntries;++i)
-		nNumD3DEntries+=pDescription[i].nSubElements;
-
-	new_entry.nElements = nNumD3DEntries;
+	new_entry.nElements = nNumEntries;
 
 	int out = 0;
 	int vertex_size = 0;
@@ -483,9 +478,9 @@ void		OpenGL3APIWrapper::SetRasterizerState(HAGE::u16 code)
 	}
 
 	if(state.bWireframe)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 HAGE::u16	OpenGL3APIWrapper::GetBlendStateCode(const HAGE::APIWBlendState* pState,HAGE::u32 nBlendStates,bool bAlphaToCoverage)
