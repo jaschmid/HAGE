@@ -57,8 +57,13 @@ public:
 
 	void InitUserland();
 	void EndUserland();
+	
+	SharedDomainBase* ConstructDomain(HAGE::u32 size);
 
 private:
+	void DestructDomains();
+	void DestructInput();
+	void DestructDomain(SharedDomainBase* p);
 
 	typedef std::multimap<TaskEntry,TaskManager*,std::less<TaskEntry>,global_allocator<TaskEntry> > jobqueue;
 
@@ -78,6 +83,8 @@ private:
 	const int							m_nThreads;
 	boost::barrier						m_initbarrier;
 	volatile i32						m_userlandShutdownCounter;
+
+	std::vector<SharedDomainBase*>		m_DomainsToDestruct;
 
 	u64									nShutdownStep;
 	u64									nHighestStep;

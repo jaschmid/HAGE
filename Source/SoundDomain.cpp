@@ -24,28 +24,9 @@ namespace HAGE {
 					return SharedDomainBase::MessageProc(m);
 			}
 		}
-
-		void SoundDomain::DomainInit(u64 step)
-		{
-			printf("S");
-		}
-
+		
 		void SoundDomain::DomainStep(u64 step)
 		{
-
-			//printf("!",step);
-
-			static float f=1.534523f;
-			for(int i=0;i<rand()%0xffff;++i)f=f*f;
-			SoundTask tasks[255];
-			for(int i=0;i<rand()%255;++i)
-			{
-				Tasks.QueueTask(&tasks[0]);
-			}
-
-			Tasks.Execute();
-
-			//printf("?",step);
 
 		}
 

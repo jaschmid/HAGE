@@ -19,6 +19,7 @@
 namespace HAGE {
 
 class SharedTaskManager;
+class SharedDomainBase;
 
 class TaskManager
 {
@@ -61,6 +62,7 @@ public:
 	void QueueTask(genericTask* pTask);
 	void Execute();
 
+	static SharedDomainBase* ConstructDomain(HAGE::u32 size);
 
 	enum
 	{

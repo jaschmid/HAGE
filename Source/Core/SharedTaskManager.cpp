@@ -27,14 +27,15 @@ namespace HAGE {
 	
 	void SharedTaskManager::InitUserland()
 	{		
-		m_pInputDomain = new InputDomain;
+		DomainCreator<InputDomain>();
 		m_pMain = HAGECreateMain();
 	}
 
 	void SharedTaskManager::EndUserland()
 	{
+		DestructDomains();
 		delete m_pMain;
-		delete m_pInputDomain;
+		DestructInput();
 	}
 
 	InputDomain* SharedTaskManager::StartThreads()
@@ -232,6 +233,46 @@ namespace HAGE {
 			return false;
 		else
 			return priority > other.priority;
+	}
+
+	SharedDomainBase* SharedTaskManager::ConstructDomain(HAGE::u32 size)
+	{
+		DomainMemory* pMem = new (DomainMemory::GlobalAllocate(sizeof(DomainMemory))) DomainMemory();
+		SharedDomainBase* r = (SharedDomainBase*)pMem->Allocate(size);
+		r->Memory = pMem;
+		m_DomainsToDestruct.push_back(r);
+		if(m_pInputDomain == nullptr)
+			m_pInputDomain =(InputDomain*)r;
+		return r;
+	}
+	
+	void SharedTaskManager::DestructDomain(SharedDomainBase* p)
+	{
+		DomainMemory* pMem = p->Memory;
+		
+		TLS::mode.reset((int*)THREAD_MODE_ST);
+		TLS::domain_guid.reset(const_cast<guid*>(&guidNull));
+		TLS::domain_ptr.reset((IDomain*)p);
+	
+		delete(p,p);
+
+		TLS::mode.release();
+		TLS::domain_guid.release();
+		TLS::domain_ptr.release();
+
+		DomainMemory::GlobalFree(pMem);
+	}
+
+	void SharedTaskManager::DestructDomains()
+	{
+		for(auto i = m_DomainsToDestruct.begin();i!=m_DomainsToDestruct.end();++i)
+			if(*i != m_pInputDomain)
+				DestructDomain(*i);
+	}
+
+	void SharedTaskManager::DestructInput()
+	{
+		DestructDomain(m_pInputDomain);
 	}
 
 }

@@ -46,16 +46,8 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer*
 	assert(nConstants<=N_CBUFFERS);
 	
 	cgGLBindProgram(m_CgVertexProgram);
-	m_pWrapper->checkForCgError("binding vertex program");
-
-	cgGLEnableProfile(m_pWrapper->GetVertexProfile());
-	m_pWrapper->checkForCgError("enabling vertex profile");
-
+	
 	cgGLBindProgram(m_CgFragmentProgram);
-	m_pWrapper->checkForCgError("binding fragment program");
-
-	cgGLEnableProfile(m_pWrapper->GetFragmentProfile());
-	m_pWrapper->checkForCgError("enabling fragment profile");
 
 	// set cBuffers
 
@@ -102,13 +94,7 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer*
 	if(pArray->m_vboIndexID)
 	{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pArray->m_vboIndexID);
-		glDrawElements(PrimitiveType, nItems , GL_UNSIGNED_INT,0);	
-		GLenum error;
-		while((error = glGetError()) != GL_NO_ERROR)
-		{
-			printf("GlError: %08x\n",error);
-		}
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glDrawElements(PrimitiveType, nItems , GL_UNSIGNED_INT,0);
 
 	}
 	else
@@ -116,14 +102,6 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer*
 		glDrawArrays(PrimitiveType, 0, nItems);	
 	}
 
-	glBindVertexArray(0);
-
-
-	cgGLDisableProfile(m_pWrapper->GetVertexProfile());
-	m_pWrapper->checkForCgError("disabling vertex profile");
-
-	cgGLDisableProfile(m_pWrapper->GetFragmentProfile());
-	m_pWrapper->checkForCgError("disabling fragment profile");
 }
 
 #endif NO_OGL

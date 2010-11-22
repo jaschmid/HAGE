@@ -13,29 +13,23 @@ class HAGEMain : public IMain
 public:
 	HAGEMain()
 	{
-		m_pLogic	= new LogicDomain();
-		m_pAI		= new AIDomain();
-		m_pGraphics = new GraphicsDomain();
-		m_pRendering= new RenderingDomain();
-		m_pSound	= new SoundDomain();
-		m_pResource = new ResourceDomain();
+		m_pLogic	= DomainCreator<LogicDomain>();
+		m_pAI		= DomainCreator<AIDomain>();
+		m_pGraphics = DomainCreator<GraphicsDomain>();
+		m_pRendering= DomainCreator<RenderingDomain>();
+		m_pSound	= DomainCreator<SoundDomain>();
+		m_pResource = DomainCreator<ResourceDomain>();
 	}
 	~HAGEMain()
 	{
-		delete m_pLogic;
-		delete m_pAI;
-		delete m_pGraphics;
-		delete m_pRendering;
-		delete m_pSound;
-		delete m_pResource;
 	}
 private:
-	LogicDomain*		m_pLogic;
-	AIDomain*			m_pAI;
-	GraphicsDomain*		m_pGraphics;
-	RenderingDomain*	m_pRendering;
-	SoundDomain*		m_pSound;
-	ResourceDomain*		m_pResource;
+	const LogicDomain*		m_pLogic;
+	const AIDomain*			m_pAI;
+	const GraphicsDomain*		m_pGraphics;
+	const RenderingDomain*	m_pRendering;
+	const SoundDomain*		m_pSound;
+	const ResourceDomain*		m_pResource;
 };
 
 extern IMain* HAGECreateMain(void)

@@ -12,9 +12,9 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 	public:
 		RenderingDomain();
 		~RenderingDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
-		void DomainShutdown(u64 step);
+
+		void DrawIco(Vector3<> Location);
 
 		static const guid& id;
 		static const bool continuous;

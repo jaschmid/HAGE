@@ -1,5 +1,6 @@
 #include "header.h"
 #include "GenericActor.h"
+#include "RActor.h"
 
 namespace HAGE {
 
@@ -13,12 +14,10 @@ namespace HAGE {
 		ColorIn(GetInputPin<GraphicsDomain>()),
 		PositionIn(GetInputPin<LogicDomain>())
 	{
-		printf("RActor");
 	}
 
 	Actor<RenderingDomain>::~Actor()
 	{
-		printf("XRActor");
 	}
 
 	result Actor<RenderingDomain>::Step(u64 step)

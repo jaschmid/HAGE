@@ -12,7 +12,6 @@ class InputDomain : public DomainBase<InputDomain>
 	public:
 		InputDomain();
 		~InputDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
 
 		void PostInputMessage(const Message& m)

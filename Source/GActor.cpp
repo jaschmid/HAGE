@@ -14,13 +14,11 @@ namespace HAGE {
 		ColorOut(GetOutputPin()),
 		PositionIn(GetInputPin<LogicDomain>())
 	{
-		printf("GActor");
 		PostMessage(MessageObjectOutputInit(ObjectId,ColorOut.GetHandle()));
 	}
 
 	Actor<GraphicsDomain>::~Actor()
 	{
-		printf("XGActor");
 	}
 
 	result Actor<GraphicsDomain>::Step(u64 step)

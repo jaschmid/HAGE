@@ -258,6 +258,12 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
 
+	cgGLEnableProfile(GetVertexProfile());
+	checkForCgError("enabling vertex profile");
+	
+	cgGLEnableProfile(GetFragmentProfile());
+	checkForCgError("enabling fragment profile");
+
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 
 #ifdef TARGET_WINDOWS
@@ -273,6 +279,12 @@ OpenGL3APIWrapper::~OpenGL3APIWrapper()
 	delete m_DebugUIRenderer;
 
 	// Cleanup CG
+	cgGLDisableProfile(GetVertexProfile());
+	checkForCgError("disabling vertex profile");
+
+	cgGLDisableProfile(GetFragmentProfile());
+	checkForCgError("disabling fragment profile");
+
 
     cgDestroyContext( myCgContext );
 

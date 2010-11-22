@@ -23,7 +23,6 @@ public:
 	static boost::thread_specific_ptr<guid> domain_guid;
 	static boost::thread_specific_ptr<IDomain> domain_ptr;
 	static boost::thread_specific_ptr<int> mode;
-
 };
 
 }

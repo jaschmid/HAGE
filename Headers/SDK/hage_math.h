@@ -51,9 +51,7 @@ public:
 	{
 	}
 
-	Vector2()
-	{
-	}
+	Vector2(){};
 
 	// math operations
 	// scalar
@@ -175,9 +173,7 @@ public:
 	{
 	}
 
-	Vector3()
-	{
-	}
+	Vector3(){};
 
 	// math operations
 	// scalar
@@ -194,22 +190,22 @@ public:
 
 	// vector
 
-	template<class _T2> Vector3<_T>& operator +(const Vector3<_T2>& v) const
+	template<class _T2> Vector3<_T> operator +(const Vector3<_T2>& v) const
 	{
 		return Vector3<_T>(c[0] + (_T)v[0],c[1] + (_T)v[1], c[2] + (_T)v[2]);
 	}
 
-	template<class _T2> Vector3<_T>& operator -(const Vector3<_T2>& v) const
+	template<class _T2> Vector3<_T> operator -(const Vector3<_T2>& v) const
 	{
 		return Vector3<_T>(c[0] - (_T)v[0],c[1] - (_T)v[1], c[2] - (_T)v[2]);
 	}
 
-	template<class _T2> Vector3<_T>& operator &(const Vector3<_T2>& v) const
+	template<class _T2> Vector3<_T> operator &(const Vector3<_T2>& v) const
 	{
 		return Vector3<_T>(c[0] * (_T)v[0],c[1] * (_T)v[1], c[2] * (_T)v[2]);
 	}
 
-	template<class _T2> Vector3<_T>& operator |(const Vector3<_T2>& v) const
+	template<class _T2> Vector3<_T> operator |(const Vector3<_T2>& v) const
 	{
 		return Vector3<_T>(c[0] / (_T)v[0],c[1] / (_T)v[1], c[2] / (_T)v[2]);
 	}
@@ -219,17 +215,17 @@ public:
 		return _T(c[0] * (_T)v[0] + c[1] * (_T)v[1] + c[2] * (_T)v[2]);
 	}
 
-	template<class _T2> Vector3<_T>& operator %(const Vector2<_T2>& v) const
+	template<class _T2> Vector3<_T> operator %(const Vector2<_T2>& v) const
 	{
 		return Vector3<_T>(c[1] * (_T)v[2] - c[2] * (_T)v[1], c[2] * (_T)v[0] - c[0] * (_T)v[2], c[0] * (_T)v[1] - c[1] * (_T)v[0]);
 	}
 
-	_T& operator!() const
+	_T operator!() const
 	{
 		return c[0]*c[0]+c[1]*c[1]+c[2]*c[2];
 	}
 
-	Vector3<_T>& operator-() const
+	Vector3<_T> operator-() const
 	{
 		return Vector3<_T>(-c[0],-c[1],-c[2]);
 	}

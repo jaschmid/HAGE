@@ -45,6 +45,7 @@
     <ClInclude Include="Headers\guids.h" />
     <ClInclude Include="Headers\header.h" />
     <ClInclude Include="Headers\LogicDomain.h" />
+    <ClInclude Include="Headers\RActor.h" />
     <ClInclude Include="Headers\RenderingDomain.h" />
     <ClInclude Include="Headers\ResourceDomain.h" />
     <ClInclude Include="Headers\SoundDomain.h" />

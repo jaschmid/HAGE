@@ -10,7 +10,6 @@ class SoundDomain : public DomainBase<SoundDomain>
 	public:
 		SoundDomain();
 		~SoundDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
 
 		static const guid& id;

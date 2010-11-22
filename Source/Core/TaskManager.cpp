@@ -208,21 +208,26 @@ namespace HAGE {
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		pDomain->Init(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Init(nStep);
 	}
 	void TaskManager::StepTask()
 	{
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		pDomain->Step(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Step(nStep);
 	}
 	void TaskManager::ShutdownTask()
 	{
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		pDomain->Shutdown(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Shutdown(nStep);
+	}
+	
+	SharedDomainBase* TaskManager::ConstructDomain(HAGE::u32 size)
+	{
+		return pSharedManager->ConstructDomain(size);
 	}
 
 	SharedTaskManager* TaskManager::pSharedManager = nullptr;

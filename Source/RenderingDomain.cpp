@@ -2,8 +2,11 @@
 #include "GenericActor.h"
 #include "UserInterfaceRendering.h"
 #include "RenderingDomain.h"
+#include "RActor.h"
 
 namespace HAGE {
+
+
 
 const char* vertex_program =
 "// This is C2E1v_green from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
@@ -109,8 +112,33 @@ const char* fragment_program =
 			}
 		}
 
-		void RenderingDomain::DomainInit(u64 step)
+		void RenderingDomain::DrawIco(Vector3<> position)
 		{
+			testConstants c;
+			c.modelview =				Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY)*Matrix4<>::Translate(position);
+			c.inverse_modelview =		c.modelview;
+			c.modelview_projection =	Matrix4<>::Perspective(0.1f,200.0f,1.3f,3.0f/4.0f*1.3f)*c.modelview;
+			pConstants->UpdateContent(&c);
+			pEffect->Draw(pVertexArray,&pConstants);
+		}
+
+		void RenderingDomain::DomainStep(u64 step)
+		{
+			pWrapper->BeginFrame();
+
+			auto result = Factory.ForEach<int,Actor<RenderingDomain>>( [this](Actor<RenderingDomain>* o) -> int {return o->Step(this);} , guidNull ,true);
+
+
+			pWrapper->PresentFrame();
+
+		}
+
+		RenderingDomain::RenderingDomain() : Input(1),
+			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
+		{
+			
+			Factory.RegisterObjectType<Actor<RenderingDomain>>();
+
 			//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
 			pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 			pWrapper->BeginFrame();
@@ -167,60 +195,20 @@ const char* fragment_program =
 			pConstants = pWrapper->CreateConstantBuffer(sizeof(testConstants));
 			pInterface = new UserInterfaceRendering(pWrapper);
 			pWrapper->PresentFrame();
-		}
 
-		void RenderingDomain::DomainStep(u64 step)
-		{
-			//printf(";",step);
-			pWrapper->BeginFrame();
-
-			static float f=1.534523f;
-			for(int i=0;i<rand()%0xffff;++i)f=f*f;
-			RenderingTask tasks[255];
-			for(int i=0;i<rand()%255;++i)
-			{
-				Tasks.QueueTask(&tasks[0]);
-			}
-
-			//printf("%u-%u",*TestIn,*TestInDirect);
-
-			Tasks.Execute();
-
-
-			testConstants c;
-			c.modelview =				Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY);
-			c.inverse_modelview =		c.modelview;
-			c.modelview_projection =	Matrix4<>::Perspective(0.001f,10000.0f,1.3f,3.0f/4.0f*1.3f)*c.modelview;
-			pConstants->UpdateContent(&c);
-			pEffect->Draw(pVertexArray,&pConstants);
-
-			pInterface->Draw();
-
-			pWrapper->PresentFrame();
-			//printf(":",step);
-
-		}
-
-		void RenderingDomain::DomainShutdown(u64 step)
-		{
-			if(pInterface)delete pInterface;
-			if(pVertexBuffer)delete pVertexBuffer;
-			if(pVertexArray)delete pVertexArray;
-			if(pEffect)delete pEffect;
-			if(pConstants)delete pConstants;
-			if(pWrapper)delete pWrapper;
-		}
-
-		RenderingDomain::RenderingDomain() : Input(1),
-			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(5.0)
-		{
-			Factory.RegisterObjectType<Actor<RenderingDomain>>();
 			printf("Init Rendering\n");
 		}
 
 		RenderingDomain::~RenderingDomain()
 		{
 			printf("Destroy Rendering\n");
+			
+			if(pInterface)delete pInterface;
+			if(pVertexBuffer)delete pVertexBuffer;
+			if(pVertexArray)delete pVertexArray;
+			if(pEffect)delete pEffect;
+			if(pConstants)delete pConstants;
+			if(pWrapper)delete pWrapper;
 		}
 
 		const guid& RenderingDomain::id = guidRenderingDomain;

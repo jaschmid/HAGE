@@ -5,7 +5,7 @@ namespace HAGE {
 	SharedDomainBase::SharedDomainBase(boost::function<void()> f,boost::function<void(bool)> f2,const guid& id)
 		:staticCallback(f),staticQueue(f2),nInputCallbacks(0),nOutputCallbacks(0),nCallbacksRecieved(0),bInit(false),outputPin(nullptr),
 		guidDomain(id),bShutdown(false),
-		nDelayedInputCallbacks(0),Factory((PinBase*&)outputPin)
+		nDelayedInputCallbacks(0),Factory((PinBase*&)outputPin,&Tasks)
 	{
 	}
 	SharedDomainBase::~SharedDomainBase(){}
@@ -108,8 +108,6 @@ namespace HAGE {
 	void SharedDomainBase::Init(u64 step)
 	{
 		ProcessMessages();
-
-		DomainInit(step);
 	}
 
 	void SharedDomainBase::Step(u64 step)
@@ -122,8 +120,6 @@ namespace HAGE {
 	void SharedDomainBase::Shutdown(u64 step)
 	{
 		ProcessMessages();
-
-		DomainShutdown(step);
 
 		Factory.Shutdown();
 

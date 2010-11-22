@@ -34,13 +34,11 @@ public:
 	void AddRef(){};
 	void Release(){};
 	result QueryInterface(guid id,void** ppInterface){return E_FAIL;};
-	void* Allocate(u64 size){return Memory.Allocate(size);}
-	void Free(void* p){Memory.Free(p);}
+	void* Allocate(u64 size){return Memory->Allocate(size);}
+	void Free(void* p){Memory->Free(p);}
 	void PostMessage(const Message& message);
 
-	virtual void DomainInit(u64 step){};
 	virtual void DomainStep(u64 step){};
-	virtual void DomainShutdown(u64 step){};
 
 	void GenerateShutdownMessage(){Tasks.Shutdown();}
 
@@ -48,15 +46,15 @@ protected:
 
 	virtual bool MessageProc(const Message* pMessage);
 
-	DomainMemory	Memory;
+	DomainMemory*	Memory;
 	TaskManager		Tasks;
 	CoreFactory		Factory;
 
 private:
 
-	virtual void Init(u64 step);
-	virtual void Step(u64 step);
-	virtual void Shutdown(u64 step);
+	void Init(u64 step);
+	void Step(u64 step);
+	void Shutdown(u64 step);
 
 	void Callback();
 	void StepComplete();
@@ -83,12 +81,31 @@ private:
 	const guid		guidDomain;
 
 	friend class TaskManager;
+	friend class SharedTaskManager;
 	template<class _T,class _T2> friend class InputPin;
 	template<class _T> friend class OutputPin;
 	template<class _T> friend class DomainBase;
 };
 
 class IFactory;
+
+
+template<class _T> const _T* DomainCreator()
+{
+	_T* r = static_cast<_T*>(TaskManager::ConstructDomain(sizeof(_T)));
+	_T::pDomain = (IDomain*)r;
+	TLS::mode.reset((int*)THREAD_MODE_ST);
+	TLS::domain_guid.reset(const_cast<guid*>(&_T::id));
+	TLS::domain_ptr.reset((IDomain*)r);
+
+	_T* result = new(r) _T;
+
+	TLS::mode.release();
+	TLS::domain_guid.release();
+	TLS::domain_ptr.release();
+
+	return result;
+}
 
 template<class _T> class DomainBase : public SharedDomainBase
 {
@@ -104,10 +121,18 @@ public:
 	{
 	}
 
-
 	static IDomain*	pDomain;
 
 private:
+	
+	void* operator new (std::size_t size,_T* loc)
+	{
+		return loc;
+	}
+
+	void operator delete(void* l, _T* loc)
+	{
+	}
 
 	static void StaticCallback()
 	{
@@ -120,6 +145,7 @@ private:
 	}
 
 	friend class TaskManager;
+	friend const _T* DomainCreator<_T>();
 
 	void QueueItem(bool bInit)
 	{

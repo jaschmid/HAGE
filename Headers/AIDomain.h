@@ -10,7 +10,6 @@ class AIDomain : public DomainBase<AIDomain>
 	public:
 		AIDomain();
 		~AIDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
 
 		static const guid& id;

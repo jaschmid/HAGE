@@ -158,25 +158,30 @@ D3D11APIWrapper::D3D11APIWrapper() :
 	myCgVertexProfile = CG_PROFILE_VS_4_0;
 	myCgFragmentProfile = CG_PROFILE_PS_4_0;
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
-	// rasterizing state
+	// depth
 	/*
-	D3D11_RASTERIZER_DESC desc;
-	desc.FillMode = D3D11_FILL_SOLID;
-	desc.CullMode = D3D11_CULL_NONE;
-	desc.FrontCounterClockwise = false;
-	desc.DepthBias = 0;
-	desc.DepthBiasClamp = 0;
-	desc.SlopeScaledDepthBias = 0;
-	desc.DepthClipEnable = false;
-	desc.ScissorEnable = false;
-	desc.MultisampleEnable = false;
-	desc.AntialiasedLineEnable = false;
-	ID3D11RasterizerState* pState;
+	ID3D11DepthStencilState* pDDState;
+	D3D11_DEPTH_STENCIL_DESC DDesc;
+	DDesc.DepthEnable = true;
+	DDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	DDesc.DepthFunc = D3D11_COMPARISON_NEVER;
+	DDesc.StencilEnable = false;
+	DDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	DDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	DDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	DDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	DDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	DDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	DDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	DDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	DDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	DDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 
-	m_pDevice->CreateRasterizerState(&desc,&pState);
+	m_pDevice->CreateDepthStencilState(&DDesc,&pDDState);
 
-	m_pContext->RSSetState(pState);*/
+	m_pContext->OMSetDepthStencilState(pDDState,0);
 
+	pDDState->Release();*/
 }
 
 D3D11APIWrapper::~D3D11APIWrapper()
@@ -202,7 +207,7 @@ void D3D11APIWrapper::BeginFrame()
     float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f }; 
     m_pContext->ClearRenderTargetView( m_pRenderTargetView, ClearColor );
 	m_pContext->ClearDepthStencilView( m_pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
-    m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, NULL );
+    m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
 }
 
 void D3D11APIWrapper::PresentFrame()

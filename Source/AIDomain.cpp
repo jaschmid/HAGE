@@ -21,20 +21,9 @@ namespace HAGE {
 		}
 	}
 
-	void AIDomain::DomainInit(u64 step)
-	{
-	}
-
 	void AIDomain::DomainStep(u64 step)
 	{
 
-		//printf(",",step);
-
-
-		static float f=1.534523f;
-		for(int i=0;i<rand()%0xffff;++i)f=f*f;
-
-		//printf(".",step);
 
 	}
 

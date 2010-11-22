@@ -7,14 +7,13 @@
 
 namespace HAGE {
 
+		struct test_struct
+		{
+			int a,b,c;
+		};
+		
 		InputDomain::InputDomain()  :m_pDebugInterface(new DebugUI)
 		{
-			printf("Init Input\n");
-		}
-
-		void InputDomain::DomainInit(u64 step)
-		{
-			// for now just forward input
 			while(const Message* m=OSInputQueue.GetTopMessage())
 			{
 				if(failed(m_pDebugInterface->ProcessInputMessage(m)))
@@ -22,7 +21,10 @@ namespace HAGE {
 
 				OSInputQueue.PopMessage();
 			}
+			printf("Init Input\n");
 		}
+
+
 		void InputDomain::DomainStep(u64 step)
 		{
 			// for now just forward input
@@ -33,7 +35,8 @@ namespace HAGE {
 
 				OSInputQueue.PopMessage();
 			}
-
+			/*
+			auto result = Factory.ForEach<test_struct,IObject>( [](IObject* o) -> test_struct {test_struct t; t.a=1; return t;} , guidNull );*/
 		}
 
 		InputDomain::~InputDomain()

@@ -11,13 +11,11 @@ namespace HAGE {
 
 	Actor<LogicDomain>::Actor(guid ObjectId) : GenericActor(ObjectId),TestOut(GetOutputPin())
 	{
-		printf("LActor");
 		PostMessage(MessageObjectOutputInit(ObjectId,TestOut.GetHandle()));
 	}
 
 	Actor<LogicDomain>::~Actor()
 	{
-		printf("XLActor");
 	}
 
 	result Actor<LogicDomain>::Step(u64 step)

@@ -13,9 +13,7 @@ class LogicDomain : public DomainBase<LogicDomain>
 	public:
 		LogicDomain();
 		~LogicDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
-		void DomainShutdown(u64 step);
 
 		static const guid& id;
 		static const bool continuous;
@@ -29,6 +27,8 @@ class LogicDomain : public DomainBase<LogicDomain>
 
 		Actor<LogicDomain>*	testActor;
 		guid			testActorId;
+		
+		std::vector<Vector3<>> positions;
 
 		UserInterface*	m_pUserInterface;
 

@@ -13,12 +13,7 @@ namespace HAGE {
 			}
 		private:
 		};
-
-		void ResourceDomain::DomainInit(u64 step)
-		{
-			printf("X");
-		}
-
+		
 		void ResourceDomain::DomainStep(u64 step)
 		{
 

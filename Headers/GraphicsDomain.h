@@ -10,7 +10,6 @@ class GraphicsDomain : public DomainBase<GraphicsDomain>
 	public:
 		GraphicsDomain();
 		~GraphicsDomain();
-		void DomainInit(u64 step);
 		void DomainStep(u64 step);
 
 		static const guid& id;
