@@ -61,7 +61,7 @@ namespace HAGE {
 
 	const Message* LockedMessageQueue::GetNextMessage(const Message* prev) const
 	{
-		if(prev == nullptr)
+		if(prev == (void*)nullptr)
 		{
 			if( pMem[nReadIndex].size() == 0)
 				return nullptr;

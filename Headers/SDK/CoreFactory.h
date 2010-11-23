@@ -3,7 +3,7 @@
 /* DESCRIPTION: Defines the CoreFactory class for       */
 /*              Domains                                 */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -114,9 +114,28 @@ private:
 
 		CoreFactory*		m_pFactory;
 		HAGE::u32			m_nMyIndex;
-	};	
+	};
 
-	struct RegistrationContainer;
+	struct ObjectEntry
+	{
+		IObject*							pObject;
+		std::vector<u32>*		            object_entry;
+		u32									index;
+	};
+
+	typedef std::unordered_map<guid,std::vector<ObjectEntry>,guid_hasher>		object_capabilties_map_type;
+
+	struct Capability
+	{
+		guid										cap_guid;
+		object_capabilties_map_type::value_type*	pEntry;
+	};
+
+	struct RegistrationContainer
+	{
+		std::function<IObject*(guid)>	function;
+		std::vector<Capability>			capabilities;
+	};
 
 	typedef std::unordered_map<guid,RegistrationContainer,guid_hasher>			function_map_type;
 
@@ -128,29 +147,9 @@ private:
 		bool			bMaster;
 		std::vector<u32> vCapabilitiesIndices;
 	};
-	
+
 	typedef std::unordered_map<guid,ObjectRefContainer,guid_hasher>				object_map_type;
 
-	struct ObjectEntry
-	{
-		IObject*							pObject;
-		object_map_type::value_type*		object_entry;
-		u32									index;
-	};
-
-	typedef std::unordered_map<guid,std::vector<ObjectEntry>,guid_hasher>		object_capabilties_map_type;
-
-	struct Capability
-	{
-		guid										guid;
-		object_capabilties_map_type::value_type*	pEntry;
-	};
-
-	struct RegistrationContainer
-	{
-		std::function<IObject*(guid)>	function;
-		std::vector<Capability>			capabilities;
-	};
 
 	std::pair<const void*,u32> _ForEach(boost::function<void (void*,IObject*)> f,size_t size,const guid& capability,bool bSync);
 	void DestroyObjectInternal(object_map_type::iterator& item);

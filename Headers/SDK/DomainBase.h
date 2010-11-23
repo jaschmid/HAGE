@@ -2,7 +2,7 @@
 /* FILE: DomainBase.h                                   */
 /* DESCRIPTION: Defines the DomainBase class            */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -122,9 +122,8 @@ public:
 	}
 
 	static IDomain*	pDomain;
+protected:
 
-private:
-	
 	void* operator new (std::size_t size,_T* loc)
 	{
 		return loc;
@@ -133,6 +132,20 @@ private:
 	void operator delete(void* l, _T* loc)
 	{
 	}
+
+	#ifdef COMPILER_GCC //fix compiler issue
+
+	void* operator new (std::size_t size)
+	{
+		return nullptr;
+	}
+
+	void operator delete(void* l)
+	{
+	}
+	#endif
+
+private:
 
 	static void StaticCallback()
 	{

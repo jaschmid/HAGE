@@ -24,9 +24,9 @@ namespace HAGE {
 		return _InterlockedDecrement(&m_userlandShutdownCounter);
 	}
 
-	
+
 	void SharedTaskManager::InitUserland()
-	{		
+	{
 		DomainCreator<InputDomain>();
 		m_pMain = HAGECreateMain();
 	}
@@ -241,19 +241,19 @@ namespace HAGE {
 		SharedDomainBase* r = (SharedDomainBase*)pMem->Allocate(size);
 		r->Memory = pMem;
 		m_DomainsToDestruct.push_back(r);
-		if(m_pInputDomain == nullptr)
+		if(!m_pInputDomain)
 			m_pInputDomain =(InputDomain*)r;
 		return r;
 	}
-	
+
 	void SharedTaskManager::DestructDomain(SharedDomainBase* p)
 	{
 		DomainMemory* pMem = p->Memory;
-		
+
 		TLS::mode.reset((int*)THREAD_MODE_ST);
 		TLS::domain_guid.reset(const_cast<guid*>(&guidNull));
 		TLS::domain_ptr.reset((IDomain*)p);
-	
+
 		delete(p,p);
 
 		TLS::mode.release();

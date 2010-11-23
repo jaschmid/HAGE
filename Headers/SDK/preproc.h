@@ -2,7 +2,7 @@
 /* FILE: preproc.h                                      */
 /* DESCRIPTION: Defines common preprocessor macros.     */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -55,6 +55,7 @@
 #elif defined(__GNUC__)
     #define COMPILER_GCC
 	//olol gcc does not support nullptr
+
 	const                        // this is a const object...
 	class {
 	public:

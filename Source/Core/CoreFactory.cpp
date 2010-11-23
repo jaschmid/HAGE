@@ -8,7 +8,7 @@ namespace HAGE {
 	CoreFactory::~CoreFactory()
 	{
 	}
-	
+
 	bool CoreFactory::TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId, IObject** ppInterface, bool bMaster)
 	{
 		// check if already exists
@@ -34,7 +34,7 @@ namespace HAGE {
 			if(m_pout)
 				m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,ObjectTypeId));
 			*ppInterface=it2->second.function(ObjectId);
-		
+
 			if(*ppInterface)
 			{
 				ObjectRefContainer container = {*ppInterface, *it2, 1, bMaster };
@@ -42,11 +42,13 @@ namespace HAGE {
 				flatObjectList.insert(std::pair<guid,ObjectRefContainer>(ObjectId,container));
 				object_map_type::iterator inserted = flatObjectList.find(ObjectId);
 				assert(inserted != flatObjectList.end());
-				
+
 				for(auto caps = it2->second.capabilities.begin(); caps != it2->second.capabilities.end(); ++caps)
 				{
 					inserted->second.vCapabilitiesIndices.push_back((u32)caps->pEntry->second.size());
-					ObjectEntry o = {*ppInterface,&(*inserted),inserted->second.vCapabilitiesIndices.size()-1};
+					std::vector<u32>* vp = &(inserted->second.vCapabilitiesIndices);
+					u32 index = inserted->second.vCapabilitiesIndices.size()-1;
+					ObjectEntry o = {*ppInterface,vp,index};
 					caps->pEntry->second.push_back( o );
 				}
 
@@ -76,7 +78,7 @@ namespace HAGE {
 		assert(found !=capabilitiesObjectLists.end());
 
 		u32 nItems = (u32)found->second.size();
-		
+
 		m_ForEachReturnBuffer.resize(nItems * size);
 
 		if(!bSync)
@@ -98,7 +100,7 @@ namespace HAGE {
 
 			if(oldSize > nTasks)
 				oldSize = nTasks;
-		
+
 			for(u32 i = 0;i<oldSize;++i)
 				m_pTask->QueueTask(&m_ForEachTasks[i]);
 
@@ -125,7 +127,7 @@ namespace HAGE {
 
 		return res;
 	}
-	
+
 	void CoreFactory::DestroyObjectInternal(object_map_type::iterator& item)
 	{
 		result res=item->second.pObject->Destroy();
@@ -143,13 +145,13 @@ namespace HAGE {
 			if(removed != swapped)
 			{
 				found->second[removed] = found->second[swapped];
-				found->second[removed].object_entry->second.vCapabilitiesIndices[found->second[removed].index]=(u32)removed;
-				found->second.pop_back();	
+				(*found->second[removed].object_entry)[found->second[removed].index]=(u32)removed;
+				found->second.pop_back();
 			}
 			else
 				found->second.pop_back();
 		}
-					
+
 		flatObjectList.erase(item);
 	}
 
@@ -185,7 +187,7 @@ namespace HAGE {
 		{
 			return it->second.pObject->MessageProc(pMessage);
 		}
-		
+
 		return false;
 	}
 
@@ -194,7 +196,7 @@ namespace HAGE {
 		object_map_type::iterator it = flatObjectList.find(ObjectId);
 		if(it != flatObjectList.end())
 		{
-			// only master objects can explicity 
+			// only master objects can explicity
 			if( it->second.bMaster)
 				DestroyObjectInternal(it);
 		}

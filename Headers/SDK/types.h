@@ -2,7 +2,7 @@
 /* FILE: types.h                                        */
 /* DESCRIPTION: Declares basic types for HAGE.          */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -113,7 +113,7 @@ public:
 	MemHandle() : _p(nullptr) {}
 	~MemHandle(){}
 
-	bool isValid() {return _p!=nullptr;}
+	bool isValid() {return _p!=(void*)nullptr;}
 private:
 	MemHandle(void* p) : _p(p) {}
 	void* _p;
