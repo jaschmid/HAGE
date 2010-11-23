@@ -224,7 +224,7 @@ namespace HAGE {
 		++nQueueCode;
 		static_cast<SharedDomainBase*>(pDomain)->Shutdown(nStep);
 	}
-	
+
 	SharedDomainBase* TaskManager::ConstructDomain(HAGE::u32 size)
 	{
 		return pSharedManager->ConstructDomain(size);

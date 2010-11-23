@@ -185,6 +185,8 @@ int main(int argc,char** argv)
 
 	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
 
+	pInput = nullptr;
+
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Wait for shutdown
@@ -206,8 +208,11 @@ extern HAGE::u32 x_keycode_to_scancode(unsigned int keycode,Display* XDisplay);
 
 extern void ProcessXEvents()
 {
-	if(bShutdown)
+	if(bShutdown || !pInput)
 		return;
+
+    static bool focus = false;
+
     while(XPending(display))
     {
         XEvent e;
@@ -217,12 +222,17 @@ extern void ProcessXEvents()
         switch(e.type)
         {
             case FocusIn:
-                // recieved focus, grab mouse pointer
-                XGrabPointer(display,win,true,PointerMotionMask,GrabModeAsync,GrabModeAsync,win,None,CurrentTime);
-                // also move it to center
-                XGetWindowAttributes(display,win,&attributes);
-                XWarpPointer(display,None,win,0,0,0,0,attributes.width/2,attributes.height/2);
-                XDefineCursor(display,win,cursor);
+                if(!focus)
+                {
+                    focus = true;
+
+                    // recieved focus, grab mouse pointer
+                    //XGrabPointer(display,win,true,PointerMotionMask,GrabModeAsync,GrabModeAsync,win,None,CurrentTime);
+                    // also move it to center
+                    XGetWindowAttributes(display,win,&attributes);
+                    XWarpPointer(display,None,win,0,0,0,0,attributes.width/2,attributes.height/2);
+                    XDefineCursor(display,win,cursor);
+                }
                 break;
             case KeyPress:
                 pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,x_keycode_to_scancode(e.xkey.keycode,display),0));
@@ -255,6 +265,7 @@ extern void ProcessXEvents()
                 }
                 break;
             case MotionNotify:
+                if(focus)
                 {
                     XGetWindowAttributes(display,win,&attributes);
                     if( e.xmotion.x == attributes.width/2 && e.xmotion.y == attributes.height/2 )
@@ -277,9 +288,14 @@ extern void ProcessXEvents()
                 }
                 break;
             case FocusOut:
-                // lost focus, release mouse pointer
-                XUngrabPointer(display,CurrentTime);
-                XUndefineCursor(display,win);
+                if(focus)
+                {
+                    focus = false;
+                    // lost focus, release mouse pointer
+                    //XUngrabPointer(display,CurrentTime);
+                    XUndefineCursor(display,win);
+
+                }
                 break;
         }
     }

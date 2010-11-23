@@ -3,7 +3,7 @@
 /* DESCRIPTION: Defines a global allocator for STL      */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc) based on custom */
 /*  Allocator class by Quovadx, inc                     */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -32,22 +32,22 @@ public:
 
 
 
-  pointer   allocate(size_type n, const void * = 0) 
+  pointer   allocate(size_type n, const void * = 0)
   {
 	T* t = (T*) DomainMemory::GlobalAllocate(n * sizeof(T));
     return t;
   }
-  
+
   void      deallocate(void* p, size_type) {
               if (p) {
                 DomainMemory::GlobalFree(p);
-              } 
+              }
             }
 
   pointer           address(reference x) const { return &x; }
   const_pointer     address(const_reference x) const { return &x; }
   global_allocator<T>&  operator=(const global_allocator&) { return *this; }
-  void              construct(pointer p, const T& val) 
+  void              construct(pointer p, const T& val)
                     { new ((T*) p) T(val); }
   void              destroy(pointer p) { p->~T(); }
 

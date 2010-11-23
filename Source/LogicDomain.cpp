@@ -21,12 +21,12 @@ namespace HAGE {
 		};
 
 		LogicDomain::LogicDomain()  : InputAI(-2),positions(0)
-		{			
+		{
 			printf("Init Logic\n");
 			Factory.RegisterObjectType<Actor<LogicDomain>>();
 			m_pUserInterface = new UserInterface(&Output.GetBasePin());
 
-			
+
 			testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
 			for(int i =0;i<500;++i)
 			{
@@ -55,7 +55,7 @@ namespace HAGE {
 		{
 
 			std::vector<Vector3<>>& rpos=positions;
-						
+
 			auto result = Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [rpos](Actor<LogicDomain>* o) -> Vector3<> {return o->Step(rpos);} , guidNull);
 			positions.assign(result.first,&result.first[result.second]);
 
@@ -63,7 +63,7 @@ namespace HAGE {
 
 		LogicDomain::~LogicDomain()
 		{
-			
+
 			delete m_pUserInterface;
 			printf("Destroy Logic\n");
 		}

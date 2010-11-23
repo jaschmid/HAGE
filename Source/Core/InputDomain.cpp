@@ -11,7 +11,7 @@ namespace HAGE {
 		{
 			int a,b,c;
 		};
-		
+
 		InputDomain::InputDomain()  :m_pDebugInterface(new DebugUI)
 		{
 			while(const Message* m=OSInputQueue.GetTopMessage())
@@ -35,7 +35,7 @@ namespace HAGE {
 
 				OSInputQueue.PopMessage();
 			}
-			/*
+            /*
 			auto result = Factory.ForEach<test_struct,IObject>( [](IObject* o) -> test_struct {test_struct t; t.a=1; return t;} , guidNull );*/
 		}
 

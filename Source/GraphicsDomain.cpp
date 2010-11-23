@@ -36,7 +36,7 @@ namespace HAGE {
 		void GraphicsDomain::DomainStep(u64 step)
 		{
 
-			
+
 			auto result = Factory.ForEach<int,Actor<GraphicsDomain>>( [](Actor<GraphicsDomain>* o) -> int {return o->Step();} , guidNull );
 
 		}

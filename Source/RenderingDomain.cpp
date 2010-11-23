@@ -136,7 +136,7 @@ const char* fragment_program =
 		RenderingDomain::RenderingDomain() : Input(1),
 			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
 		{
-			
+
 			Factory.RegisterObjectType<Actor<RenderingDomain>>();
 
 			//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
@@ -202,7 +202,7 @@ const char* fragment_program =
 		RenderingDomain::~RenderingDomain()
 		{
 			printf("Destroy Rendering\n");
-			
+
 			if(pInterface)delete pInterface;
 			if(pVertexBuffer)delete pVertexBuffer;
 			if(pVertexArray)delete pVertexArray;

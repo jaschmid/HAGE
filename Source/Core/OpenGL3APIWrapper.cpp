@@ -260,7 +260,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 	cgGLEnableProfile(GetVertexProfile());
 	checkForCgError("enabling vertex profile");
-	
+
 	cgGLEnableProfile(GetFragmentProfile());
 	checkForCgError("enabling fragment profile");
 

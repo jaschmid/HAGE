@@ -1,28 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
-	<ActiveTarget name="Debug" />
+	<ActiveTarget name="Release" />
 	<File name="Headers/guids.h" open="1" top="0" tabpos="1">
 		<Cursor position="589" topLine="0" />
 	</File>
-	<File name="Source/AIDomain.cpp" open="1" top="0" tabpos="9">
-		<Cursor position="872" topLine="3" />
+	<File name="Source/AIDomain.cpp" open="1" top="0" tabpos="8">
+		<Cursor position="537" topLine="0" />
 	</File>
-	<File name="Source/GActor.cpp" open="1" top="0" tabpos="10">
+	<File name="Source/GActor.cpp" open="1" top="0" tabpos="9">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source/GraphicsDomain.cpp" open="1" top="0" tabpos="8">
-		<Cursor position="1276" topLine="23" />
-	</File>
-	<File name="Source/InputDomain.cpp" open="1" top="0" tabpos="7">
-		<Cursor position="1482" topLine="15" />
+	<File name="Source/GraphicsDomain.cpp" open="1" top="0" tabpos="7">
+		<Cursor position="1007" topLine="1" />
 	</File>
 	<File name="Source/LogicDomain.cpp" open="1" top="0" tabpos="6">
-		<Cursor position="1700" topLine="33" />
+		<Cursor position="1700" topLine="23" />
 	</File>
 	<File name="Source/Main.cpp" open="1" top="0" tabpos="3">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source/RActor.cpp" open="1" top="0" tabpos="12">
+	<File name="Source/RActor.cpp" open="1" top="0" tabpos="11">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="Source/RenderingDomain.cpp" open="1" top="0" tabpos="2">
@@ -31,10 +28,10 @@
 	<File name="Source/ResourceDomain.cpp" open="1" top="0" tabpos="4">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source/SoundDomain.cpp" open="1" top="1" tabpos="5">
-		<Cursor position="951" topLine="15" />
+	<File name="Source/SoundDomain.cpp" open="1" top="0" tabpos="5">
+		<Cursor position="758" topLine="0" />
 	</File>
-	<File name="Source/UserInterface.cpp" open="1" top="0" tabpos="11">
+	<File name="Source/UserInterface.cpp" open="1" top="0" tabpos="10">
 		<Cursor position="0" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

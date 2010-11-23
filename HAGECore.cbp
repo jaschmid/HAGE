@@ -72,7 +72,6 @@
 		<Unit filename="Source/Core/FixedSizeKeyStorage.h" />
 		<Unit filename="Source/Core/InputDomain.cpp" />
 		<Unit filename="Source/Core/InputDomain.h" />
-		<Unit filename="Source/Core/Main.cpp" />
 		<Unit filename="Source/Core/OGL3ConstantBuffer.cpp" />
 		<Unit filename="Source/Core/OGL3Effect.cpp" />
 		<Unit filename="Source/Core/OGL3VertexArray.cpp" />
@@ -90,6 +89,7 @@
 		<Unit filename="Source/Core/TLS.cpp" />
 		<Unit filename="Source/Core/TaskManager.cpp" />
 		<Unit filename="Source/Core/WinMain.cpp" />
+		<Unit filename="Source/Core/XKeyConv.cpp" />
 		<Unit filename="Source/Core/XMain.cpp" />
 		<Unit filename="Source/Core/prec.cpp" />
 		<Extensions>
