@@ -31,7 +31,7 @@ namespace HAGE {
 			guid			testActorId;
 			testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
 			
-			for(int i =0;i<200;++i)
+			for(int i =0;i<1500;++i)
 			{
 				LogicActor*		testActor;
 				guid			testActorId;
@@ -67,7 +67,15 @@ namespace HAGE {
 			}*/
 			positions.resize(Factory.GetNumObjects());
 			u32 nObjects = Factory.ForEachEx<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , &positions[0], positions.size());
-			u32 nObjects2 = Factory.ForEachEx<Vector3<>,LogicActor>( [rpos](LogicActor* o) -> Vector3<> {return o->Step(rpos);} , &positions[0], positions.size());
+			guids.resize(nObjects);
+			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [rpos](LogicActor* o,guid& g) -> bool {return o->Step(rpos,g);} , &guids[0],positions.size());
+			for(int i = 0; i<nObjects2; ++i)
+			{
+				Factory.DestroyObject(guids[i]);
+				LogicActor*		testActor;
+				guid			testActorId;
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+			}
 
 		}
 

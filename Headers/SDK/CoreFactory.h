@@ -23,7 +23,10 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+
+#ifdef COMPILER_GCC
 #include <tr1/type_traits>
+#endif
 
 namespace HAGE {
 
@@ -53,7 +56,7 @@ public:
 		if(std::tr1::has_trivial_constructor<_Result>::value)
 		{
 			const boost::function<bool (void*,IObject*)> c(
-				[f] (void* v,IObject* o) -> bool { return f(static_cast<_Result*>(o),*reinterpret_cast<_Result*>(v)) ;}
+				[f] (void* v,IObject* o) -> bool { return f(static_cast<_ObjectType*>(o),*reinterpret_cast<_Result*>(v)) ;}
 			);
 			std::pair<const void*,u32> res= _ForEach(c,sizeof(_Result),capability,bSync,pOut,nOut,true);
 			return res.second;
@@ -162,7 +165,7 @@ private:
 					))
 					{
 						u32 nOutIndex = _InterlockedIncrement((i32*)&m_pFactory->m_ForEachGetSomeCounter);
-						memcpy(&m_pFactory->m_ForEachGetSomeOut[nOutIndex*element_size],&m_pFactory->m_ForEachOut[i*element_size],element_size);
+						memcpy(&m_pFactory->m_ForEachGetSomeOut[(nOutIndex-1)*element_size],&m_pFactory->m_ForEachOut[i*element_size],element_size);
 					}
 				}
 			}

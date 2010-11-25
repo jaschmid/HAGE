@@ -11,7 +11,7 @@ namespace HAGE {
 	LogicActor::LogicActor(guid ObjectId) : GenericActor(),ObjectBase<LogicActor,LogicDomain,Vector3<>>(ObjectId)
 	{
 		position=Vector3<>(getFRand()*20.0f,getFRand()*20.0f,getFRand()*20.0f);
-		speed=Vector3<>(getFRand()*.2f,getFRand()*.2f,getFRand()*.2f);
+		speed=Vector3<>(getFRand()*6.0f,getFRand()*6.0f,getFRand()*6.0f);
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		//PostMessage(MessageObjectOutputInit(ObjectId,TestOut.GetHandle()));
 	}

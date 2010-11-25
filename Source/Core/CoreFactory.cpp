@@ -115,6 +115,8 @@ namespace HAGE {
 		else
 		{
 			m_ForEachOut = &((u8*)pData)[0];
+			m_ForEachGetSomeOut = nullptr;
+			m_ForEachGetSomeCounter = 0;
 		}
 
 		m_ForEachFunction = f;
@@ -253,7 +255,12 @@ namespace HAGE {
 		{
 			// only master objects can explicity
 			if( it->second.bMaster)
+			{
 				DestroyObjectInternal(it);
+				return S_OK;
+			}
+			else
+				return E_FAIL;
 		}
 		return E_FAIL;
 	}

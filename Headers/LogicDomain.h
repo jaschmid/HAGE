@@ -27,7 +27,8 @@ class LogicDomain : public DomainBase<LogicDomain>
 
 		guid			testActorId;
 		
-		std::vector<Vector3<>> positions;
+		std::vector<Vector3<>>	positions;
+		std::vector<guid>		guids;
 
 		UserInterface*	m_pUserInterface;
 
