@@ -1,7 +1,7 @@
 #ifndef RESOURCE__DOMAIN__INCLUDED
 #define RESOURCE__DOMAIN__INCLUDED
 
-#include "header.h"
+#include "HAGE.h"
 
 namespace HAGE {
 

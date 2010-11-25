@@ -1,7 +1,6 @@
 #include "header.h"
-#include "GenericActor.h"
-#include "UserInterfaceRendering.h"
 #include "RenderingDomain.h"
+#include "UserInterfaceRendering.h"
 #include "RActor.h"
 
 namespace HAGE {
@@ -126,7 +125,7 @@ const char* fragment_program =
 		{
 			pWrapper->BeginFrame();
 
-			auto result = Factory.ForEach<int,Actor<RenderingDomain>>( [this](Actor<RenderingDomain>* o) -> int {return o->Step(this);} , guidNull ,true);
+			auto result = Factory.ForEach<int,RenderingActor>( [this](RenderingActor* o) -> int {return o->Step(this);} , guidNull ,true);
 
 
 			pWrapper->PresentFrame();
@@ -137,7 +136,7 @@ const char* fragment_program =
 			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
 		{
 
-			Factory.RegisterObjectType<Actor<RenderingDomain>>();
+			Factory.RegisterObjectType<RenderingActor>();
 
 			//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
 			pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();

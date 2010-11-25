@@ -1,5 +1,4 @@
-#include "header.h"
-#include "GenericActor.h"
+#include "HAGE.h"
 #include "ResourceDomain.h"
 const int nTasks = 1000;
 
@@ -30,6 +29,4 @@ namespace HAGE {
 			printf("Destroy Resource\n");
 		}
 
-		const guid& ResourceDomain::id = guidResourceDomain;
-		const bool ResourceDomain::continuous = false;
 }

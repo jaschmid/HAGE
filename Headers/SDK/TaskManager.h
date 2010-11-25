@@ -31,8 +31,8 @@ public:
 
 		template<class _T> void SetDomain()
 		{
-			TLS::domain_guid.reset(&_T::id);
-			TLS::domain_ptr.reset(_T::pDomain);
+			TLS::domain_guid.reset(&guid_of<_T>::value);
+			TLS::domain_ptr.reset(domain_access<_T>::Get());
 		}
 		void ClearDomain()
 		{
@@ -53,8 +53,8 @@ public:
 
 	template<class _T> void SetDomain(_T* p)
 	{
-		pGuid = &_T::id;
-		pDomain = (IDomain*)_T::pDomain;
+		pGuid = &guid_of<_T>::value;
+		pDomain = (IDomain*)domain_access<_T>::Get();
 	}
 
 	void Shutdown();
@@ -170,7 +170,7 @@ private:
 	const guid*	pGuid;
 	static SharedTaskManager* pSharedManager;
 	friend class SharedTaskManager;
-	template<class _T> friend class DomainBase;
+	friend class SharedDomainBase;
 };
 
 }

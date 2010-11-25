@@ -10,7 +10,7 @@ namespace HAGE {
 
 class InputDomain;
 
-class DebugUI : protected ObjectBase<InputDomain>
+class DebugUI : protected DomainMember<InputDomain>
 {
 public:
 	DebugUI();

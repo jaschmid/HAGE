@@ -1,7 +1,7 @@
 #include "header.h"
 #include "UserInterface.h"
-#include "GenericActor.h"
 #include "LogicDomain.h"
+#include "LActor.h"
 
 #include <boost/date_time.hpp>
 
@@ -23,20 +23,22 @@ namespace HAGE {
 		LogicDomain::LogicDomain()  : InputAI(-2),positions(0)
 		{
 			printf("Init Logic\n");
-			Factory.RegisterObjectType<Actor<LogicDomain>>();
+			Factory.RegisterObjectType<LogicActor>();
 			m_pUserInterface = new UserInterface(&Output.GetBasePin());
 
 
-			testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
+			LogicActor*		testActor;
+			guid			testActorId;
+			testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
 			
-			for(int i =0;i<10;++i)
+			for(int i =0;i<200;++i)
 			{
-				Actor<LogicDomain>*	testActor;
+				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
 			}
 
-			auto result = Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [](Actor<LogicDomain>* o) -> Vector3<> {return o->Init();} , guidNull );
+			auto result = Factory.ForEach<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , guidNull );
 			positions.assign(result.first,&result.first[result.second]);
 		}
 
@@ -56,17 +58,16 @@ namespace HAGE {
 		{
 
 			std::vector<Vector3<>>& rpos=positions;
-			
+			/*
 			for(int i =0;i<1;++i)
 			{
-				Actor<LogicDomain>*	testActor;
+				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
-			}
-
-			auto result = Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [](Actor<LogicDomain>* o) -> Vector3<> {return o->Init();} , guidNull);
-			positions.assign(result.first,&result.first[result.second]);
-			Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [rpos](Actor<LogicDomain>* o) -> Vector3<> {return o->Step(rpos);} , guidNull);
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+			}*/
+			positions.resize(Factory.GetNumObjects());
+			u32 nObjects = Factory.ForEachEx<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , &positions[0], positions.size());
+			u32 nObjects2 = Factory.ForEachEx<Vector3<>,LogicActor>( [rpos](LogicActor* o) -> Vector3<> {return o->Step(rpos);} , &positions[0], positions.size());
 
 		}
 

@@ -102,6 +102,9 @@
     <ClInclude Include="Source\Core\FixedSizeKeyStorage.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Core\ResourceDomain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">
@@ -180,6 +183,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\Messages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\ResourceDomain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

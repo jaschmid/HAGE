@@ -175,6 +175,7 @@
     <ClInclude Include="Source\Core\InputDomain.h" />
     <ClInclude Include="Source\Core\OpenGL3APIWrapper.h" />
     <ClInclude Include="Source\Core\RenderDebugUI.h" />
+    <ClInclude Include="Source\Core\ResourceDomain.h" />
     <ClInclude Include="Source\Core\SharedCoreFactory.h" />
     <ClInclude Include="Source\Core\SharedTaskManager.h" />
   </ItemGroup>
@@ -204,6 +205,7 @@
     </ClCompile>
     <ClCompile Include="Source\Core\RenderDebugUI.cpp" />
     <ClCompile Include="Source\Core\RenderingAPIWrapper.cpp" />
+    <ClCompile Include="Source\Core\ResourceDomain.cpp" />
     <ClCompile Include="Source\Core\SharedCoreFactory.cpp" />
     <ClCompile Include="Source\Core\SharedTaskManager.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />

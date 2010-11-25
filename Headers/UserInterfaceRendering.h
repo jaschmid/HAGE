@@ -8,7 +8,7 @@ namespace HAGE {
 
 class RenderingDomain;
 
-class UserInterfaceRendering : protected ObjectBase<RenderingDomain>
+class UserInterfaceRendering : protected DomainMember<RenderingDomain>
 {
 public:
 	UserInterfaceRendering(RenderingAPIWrapper* pWrapper);

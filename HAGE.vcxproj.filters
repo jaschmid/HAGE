@@ -25,9 +25,6 @@
     <ClCompile Include="Source\RenderingDomain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\ResourceDomain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\SoundDomain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -77,9 +74,6 @@
     <ClInclude Include="Headers\RenderingDomain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\ResourceDomain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\guids.h">
       <Filter>Header Files\Base Headers</Filter>
     </ClInclude>
@@ -87,6 +81,12 @@
       <Filter>Header Files\Base Headers</Filter>
     </ClInclude>
     <ClInclude Include="Headers\RActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\GActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\LActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

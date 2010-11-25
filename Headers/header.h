@@ -5,16 +5,6 @@
 
 #include <SDK/HAGE.h>
 
-namespace HAGE
-{
-	class LogicDomain;
-	class AIDomain;
-	class GraphicsDomain;
-	class RenderingDomain;
-	class ResourceDomain;
-	class SoundDomain;
-}
-
 #include "guids.h"
 
 #endif

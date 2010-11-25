@@ -1,6 +1,6 @@
 #include "header.h"
-#include "GenericActor.h"
 #include "GraphicsDomain.h"
+#include "GActor.h"
 
 const int nTasks = 1000;
 
@@ -18,7 +18,7 @@ namespace HAGE {
 
 		GraphicsDomain::GraphicsDomain()
 		{
-			Factory.RegisterObjectType<Actor<GraphicsDomain>>();
+			Factory.RegisterObjectType<GraphicsActor>();
 			printf("Init Graphic\n");
 		}
 
@@ -37,7 +37,7 @@ namespace HAGE {
 		{
 
 
-			auto result = Factory.ForEach<int,Actor<GraphicsDomain>>( [](Actor<GraphicsDomain>* o) -> int {return o->Step();} , guidNull );
+			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} , guidNull );
 
 		}
 

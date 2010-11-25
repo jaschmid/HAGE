@@ -1,41 +1,20 @@
 #include "header.h"
-#include "GenericActor.h"
-#include "GraphicsDomain.h"
+#include "GActor.h"
 
 namespace HAGE {
 
-	IObject* Actor<GraphicsDomain>::CreateInstance(guid objectId)
+	IObject* GraphicsActor::CreateInstance(guid objectId)
 	{
-		return (IObject*) new Actor<GraphicsDomain>(objectId);
+		return (IObject*) new GraphicsActor(objectId);
 	}
 
-	Actor<GraphicsDomain>::Actor(guid ObjectId) : 
-		GenericActor(ObjectId),
-		ColorOut(GetOutputPin()),
-		PositionIn(GetInputPin<LogicDomain>())
-	{
-		PostMessage(MessageObjectOutputInit(ObjectId,ColorOut.GetHandle()));
-	}
-
-	Actor<GraphicsDomain>::~Actor()
+	GraphicsActor::GraphicsActor(guid ObjectId) : 
+		BaseType(ObjectId)
 	{
 	}
 
-	result Actor<GraphicsDomain>::Step(u64 step)
+	GraphicsActor::~GraphicsActor()
 	{
-		return S_OK;
-	}
-
-	bool Actor<GraphicsDomain>::MessageProc(const MessageObjectUnknown* pMessage)
-	{
-		if(pMessage->GetMessageCode() == MESSAGE_OBJECT_OUTPUT_INIT)
-		{
-			MessageObjectOutputInit* pDetailed = (MessageObjectOutputInit*)pMessage;
-			if(pDetailed->GetSource() == guidLogicDomain)
-				PositionIn.Open(pDetailed->GetHandle());
-			return true;
-		}
-		return false;
 	}
 
 }

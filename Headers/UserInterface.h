@@ -9,7 +9,7 @@ namespace HAGE {
 
 class InputDomain;
 
-class UserInterface : protected ObjectBase<LogicDomain>
+class UserInterface : protected DomainMember<LogicDomain>
 {
 public:
 	UserInterface(PinBase* pOut);

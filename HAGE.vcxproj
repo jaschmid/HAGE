@@ -33,21 +33,21 @@
     </ClCompile>
     <ClCompile Include="Source\RActor.cpp" />
     <ClCompile Include="Source\RenderingDomain.cpp" />
-    <ClCompile Include="Source\ResourceDomain.cpp" />
     <ClCompile Include="Source\SoundDomain.cpp" />
     <ClCompile Include="Source\UserInterface.cpp" />
     <ClCompile Include="Source\UserInterfaceRendering.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers\AIDomain.h" />
+    <ClInclude Include="Headers\GActor.h" />
     <ClInclude Include="Headers\GenericActor.h" />
     <ClInclude Include="Headers\GraphicsDomain.h" />
     <ClInclude Include="Headers\guids.h" />
     <ClInclude Include="Headers\header.h" />
+    <ClInclude Include="Headers\LActor.h" />
     <ClInclude Include="Headers\LogicDomain.h" />
     <ClInclude Include="Headers\RActor.h" />
     <ClInclude Include="Headers\RenderingDomain.h" />
-    <ClInclude Include="Headers\ResourceDomain.h" />
     <ClInclude Include="Headers\SoundDomain.h" />
     <ClInclude Include="Headers\UserInterface.h" />
     <ClInclude Include="Headers\UserInterfaceRendering.h" />

@@ -7,36 +7,30 @@
 
 namespace HAGE {
 	
-
-template<> class Actor<RenderingDomain>  : public GenericActor, public ObjectBase<RenderingDomain>
+class RenderingActor  : public GenericActor, public RenderingActorBase
 {
 public:
 	static IObject* CreateInstance(guid ObjectId);
-	virtual bool MessageProc(const MessageObjectUnknown* pMessage);
 	
 	int Step(RenderingDomain* pRendering)
 	{
-		position = *PositionIn;
-		if(ColorIn.IsOpen())
-			color = *ColorIn;
+		position = Input1::Get();
+		if(Input2::IsReady())
+			color = Input2::Get();
 		pRendering->DrawIco(position);
 		return 1;
 	}
 
-	virtual result Step(u64 step);
-
 	static const bool isImplemented = true;
 private:
-	Actor<RenderingDomain>(guid ObjectId);
-	virtual ~Actor<RenderingDomain>();
+	RenderingActor(guid ObjectId);
+	virtual ~RenderingActor();
 
 
 	Vector3<>		position;
 	Vector3<u8>		color;
-
-	InputVar<Vector3<>>		PositionIn;
-	InputVar<Vector3<u8>>	ColorIn;
 };
 
+DECLARE_CLASS_GUID(RenderingActor,	0x9d008bfa,0x26d3,0x461c,0x917a,0xbd9f4acc446d);
 }
 #endif

@@ -25,7 +25,6 @@ class LogicDomain : public DomainBase<LogicDomain>
 		InputPin<AIDomain,LogicDomain>		InputAI;
 		OutputPin<LogicDomain>	Output;
 
-		Actor<LogicDomain>*	testActor;
 		guid			testActorId;
 		
 		std::vector<Vector3<>> positions;

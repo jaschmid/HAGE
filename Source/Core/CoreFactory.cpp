@@ -67,27 +67,62 @@ namespace HAGE {
 			return guidNull;
 	}
 
-	result CoreFactory::QueryObject(const guid& ObjectId, IObject** ppInterface)
+	IObject* CoreFactory::QueryObject(const guid& ObjectId)
 	{
-		return S_OK;
+		auto res = flatObjectList.find(ObjectId);
+		if(res == flatObjectList.end())
+			return nullptr;
+		else
+			return res->second.pObject;
 	}
 
-	std::pair<const void*,u32> CoreFactory::_ForEach(boost::function<void (void*,IObject*)> f,size_t size,const guid& capability,bool bSync)
+	u32 CoreFactory::GetNumObjects(const guid& capability)
+	{
+		auto found = capabilitiesObjectLists.find(capability);
+		assert(found !=capabilitiesObjectLists.end());
+
+		return (u32)found->second.size();
+	}
+
+	std::pair<const void*,u32> CoreFactory::_ForEach(boost::function<bool (void*,IObject*)> f,size_t size,const guid& capability,bool bSync,void* pData,u32 nData,bool bGetSome)
 	{
 		auto found = capabilitiesObjectLists.find(capability);
 		assert(found !=capabilitiesObjectLists.end());
 
 		u32 nItems = (u32)found->second.size();
 
-		m_ForEachReturnBuffer.resize(nItems * size);
+		assert( (!bGetSome) || pData);
+		assert( (!pData) || (nData >= nItems) );
+
+		if(!pData || bGetSome)
+		{
+			//gonna use the return buffer
+			m_ForEachReturnBuffer.resize(nItems * size);
+		}
+
+		if(!pData)
+		{
+			m_ForEachOut = &m_ForEachReturnBuffer[0];
+			m_ForEachGetSomeOut = nullptr;
+			m_ForEachGetSomeCounter = 0;
+		}
+		else if(bGetSome)
+		{
+			m_ForEachOut = &m_ForEachReturnBuffer[0];
+			m_ForEachGetSomeOut =  &((u8*)pData)[0];
+			m_ForEachGetSomeCounter = 0;
+		}
+		else
+		{
+			m_ForEachOut = &((u8*)pData)[0];
+		}
+
+		m_ForEachFunction = f;
+		m_ForEachList = &*found;
+		m_ForEachReturnSize = (u32)size;
 
 		if(!bSync)
 		{
-
-			m_ForEachFunction = f;
-			m_ForEachList = &*found;
-			m_ForEachReturnSize = (u32)size;
-
 			m_ForEachGroupSize = nItems/32;
 			m_ForEachTotalSize = nItems;
 
@@ -95,9 +130,7 @@ namespace HAGE {
 				m_ForEachGroupSize = 1;
 
 			u32 nTasks = (m_ForEachTotalSize-1) / m_ForEachGroupSize + 1;
-
 			u32 oldSize = (u32)m_ForEachTasks.size();
-
 			if(oldSize > nTasks)
 				oldSize = nTasks;
 			else
@@ -105,7 +138,6 @@ namespace HAGE {
 
 			for(u32 i = 0;i<oldSize;++i)
 				m_pTask->QueueTask(&m_ForEachTasks[i]);
-
 			if(oldSize < nTasks)
 			{
 				for(int i =oldSize;i<m_ForEachTasks.size();++i)
@@ -120,11 +152,27 @@ namespace HAGE {
 		}
 		else
 		{
-			for(u32 i=0;i<nItems;++i)
-				f(&m_ForEachReturnBuffer[i*size],found->second[i].pObject);
+			m_ForEachGroupSize = nItems;
+			m_ForEachTotalSize = nItems;
+
+			if(m_ForEachTasks.size() == 0)
+			{
+				m_ForEachTasks.resize(1);
+				m_ForEachTasks[0].m_pFactory = this;
+				m_ForEachTasks[0].m_nMyIndex = 0;
+			}
+
+			m_ForEachTasks[0]();
 		}
 
-		std::pair<const void*,u32> res(&m_ForEachReturnBuffer[0],nItems);
+		u32 nItemsOut;
+
+		if(bGetSome)
+			nItemsOut = m_ForEachGetSomeCounter;
+		else
+			nItemsOut = nItems;
+
+		std::pair<const void*,u32> res(&m_ForEachOut[0],nItemsOut);
 
 		return res;
 	}
@@ -162,8 +210,14 @@ namespace HAGE {
 		{
 			MessageFactoryObjectCreated* pDetailed = (MessageFactoryObjectCreated*)pMessage;
 			IObject* pObject;
-			TryCreateObjectWithGuid(pDetailed->GetObjectId(),pDetailed->GetObjectTypeId(),&pObject);
-			return true;
+
+			auto found = objectDependancyMap.find(pDetailed->GetObjectTypeId());
+
+			if(found != objectDependancyMap.end())
+			{
+				TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second,&pObject);
+				return true;
+			}
 		}
 		else if(pMessage->GetMessageCode() == MESSAGE_FACTORY_OBJECT_DESTROYED)
 		{

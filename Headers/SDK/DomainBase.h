@@ -19,10 +19,22 @@
 
 namespace HAGE {
 
-template<class _T> class Actor;
 class LockedMessageQueue;
 class PinBase;
 class Message;
+
+template<class _T> const _T* DomainCreator();
+
+template<class _Domain> class domain_access
+{
+public:
+	static _Domain* Get() {return p;}
+private:
+	static _Domain* p;
+	template<class _Domain> friend const _Domain* DomainCreator();
+};
+
+#define DECLARE_DOMAIN(x,l1,s1,s2,s3,x1) class x; DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x); x* domain_access<x>::p = nullptr
 
 class SharedDomainBase :public IDomain
 {
@@ -45,6 +57,14 @@ public:
 protected:
 
 	virtual bool MessageProc(const Message* pMessage);
+
+	void QueueItem(bool bInit)
+	{
+		if(bInit)
+			Tasks.QueueDomainInit();
+		else
+			Tasks.QueueDomainStep();
+	}
 
 	DomainMemory*	Memory;
 	TaskManager		Tasks;
@@ -93,9 +113,9 @@ class IFactory;
 template<class _T> const _T* DomainCreator()
 {
 	_T* r = static_cast<_T*>(TaskManager::ConstructDomain(sizeof(_T)));
-	_T::pDomain = (IDomain*)r;
+	domain_access<_T>::p = r;
 	TLS::mode.reset((int*)THREAD_MODE_ST);
-	TLS::domain_guid.reset(const_cast<guid*>(&_T::id));
+	TLS::domain_guid.reset(const_cast<guid*>(&guid_of<_T>::value));
 	TLS::domain_ptr.reset((IDomain*)r);
 
 	_T* result = new(r) _T;
@@ -110,18 +130,16 @@ template<class _T> const _T* DomainCreator()
 template<class _T> class DomainBase : public SharedDomainBase
 {
 public:
-	DomainBase() : SharedDomainBase(boost::function<void()>(&StaticCallback),boost::function<void(bool)>(&StaticQueueItem),_T::id)
+	DomainBase() : SharedDomainBase(boost::function<void()>(&StaticCallback),boost::function<void(bool)>(&StaticQueueItem),guid_of<_T>::value)
 
 	{
-		pDomain=this;
+		guid temp = guid_of<_T>::value;
 		Tasks.SetDomain((_T*)this);
 		Factory.SetDomain((_T*)this);
 	}
 	virtual ~DomainBase()
 	{
 	}
-
-	static IDomain*	pDomain;
 protected:
 
 	void* operator new (std::size_t size,_T* loc)
@@ -149,27 +167,17 @@ private:
 
 	static void StaticCallback()
 	{
-		((_T*)pDomain)->Callback();
+		domain_access<_T>::Get()->Callback();
 	}
 
 	static void StaticQueueItem(bool bInit)
 	{
-		((_T*)pDomain)->QueueItem(bInit);
+		domain_access<_T>::Get()->QueueItem(bInit);
 	}
 
 	friend class TaskManager;
 	friend const _T* DomainCreator<_T>();
-
-	void QueueItem(bool bInit)
-	{
-		if(bInit)
-			Tasks.QueueDomainInit();
-		else
-			Tasks.QueueDomainStep();
-	}
 };
-
-template<class _T> IDomain*	DomainBase<_T>::pDomain = nullptr;
 
 }
 

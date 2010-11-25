@@ -23,7 +23,7 @@ template<class _T> class OutputPin
 public:
 	OutputPin()
 	{
-		((SharedDomainBase*)DomainBase<_T>::pDomain)->RegisterOutput(pin);
+		domain_access<_T>::Get()->RegisterOutput(pin);
 	}
 	template<class _C> inline _C* GetMem(MemHandle p)
 	{
@@ -51,7 +51,8 @@ private:
 	template<class _1,class _2> friend class InputPin;
 	template <class _1> friend class OutputVar;
 	template <class _1> friend class InputVar;
-	template<class _1> friend class ObjectBase;
+	template<class _Domain>  friend class DomainMember;
+	template<class _Domain,class _OutputType> friend class _ObjectBaseOutput;
 };
 
 template<class _T> PinBase OutputPin<_T>::pin;
@@ -61,7 +62,7 @@ template<class _T,class _T2> class InputPin
 public:
 	InputPin(i32 delay = 0)
 	{
-		((SharedDomainBase*)DomainBase<_T2>::pDomain)->RegisterInput(pin,delay);
+		domain_access<_T2>::Get()->RegisterInput(pin,delay);
 	}
 	template<class _C> inline const _C* GetMem(MemHandle p)
 	{
@@ -83,7 +84,8 @@ public:
 private:
 	static PinBase& pin;
 	template<class _1> friend class InputVar;
-	template<class _1> friend class ObjectBase;
+	template<class _Domain>  friend class DomainMember;
+	template<class _Domain,class _Input> friend class _ObjectBaseInput;
 };
 
 template<class _T,class _T2> PinBase& InputPin<_T,_T2>::pin = OutputPin<_T>::pin;
@@ -165,7 +167,7 @@ template<class _T> class OutputMessages
 public:
 	OutputMessages()
 	{
-		((SharedDomainBase*)DomainBase<_T>::pDomain)->RegisterOutput(messageQueue);
+		domain_access<_T>::Get()->RegisterOutput(messageQueue);
 	}
 
 private:
@@ -180,7 +182,7 @@ template<class _T,class _T2> class InputMessages
 public:
 	InputMessages(u32 delay=0) : messageQueue(OutputMessages<_T>::messageQueue)
 	{
-		((SharedDomainBase*)DomainBase<_T2>::pDomain)->RegisterInput(messageQueue,delay);
+		domain_access<_T2>::Get()->RegisterInput(messageQueue,delay);
 	}
 
 private:

@@ -4,7 +4,6 @@
 #include "GraphicsDomain.h"
 #include "RenderingDomain.h"
 #include "SoundDomain.h"
-#include "ResourceDomain.h"
 
 namespace HAGE {
 
@@ -18,7 +17,6 @@ public:
 		m_pGraphics = DomainCreator<GraphicsDomain>();
 		m_pRendering= DomainCreator<RenderingDomain>();
 		m_pSound	= DomainCreator<SoundDomain>();
-		m_pResource = DomainCreator<ResourceDomain>();
 	}
 	~HAGEMain()
 	{
@@ -29,7 +27,6 @@ private:
 	const GraphicsDomain*		m_pGraphics;
 	const RenderingDomain*	m_pRendering;
 	const SoundDomain*		m_pSound;
-	const ResourceDomain*		m_pResource;
 };
 
 extern IMain* HAGECreateMain(void)
