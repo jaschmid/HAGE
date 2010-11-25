@@ -210,7 +210,7 @@ public:
 		return Vector3<_T>(c[0] / (_T)v[0],c[1] / (_T)v[1], c[2] / (_T)v[2]);
 	}
 
-	template<class _T2> _T& operator *(const Vector3<_T2>& v) const
+	template<class _T2> _T operator *(const Vector3<_T2>& v) const
 	{
 		return _T(c[0] * (_T)v[0] + c[1] * (_T)v[1] + c[2] * (_T)v[2]);
 	}

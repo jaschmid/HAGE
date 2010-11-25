@@ -19,6 +19,7 @@
 
 namespace HAGE {
 
+const u32 FRAME_BUFFER_COUNT = 2;
 
 class WrapMessage : public MessageHelper<WrapMessage>
 {
@@ -105,9 +106,23 @@ public:
 	LockedMessageQueue();
 	virtual ~LockedMessageQueue();
 
-	result			PostMessage(const Message& m);
-	result			ForwardMessage(const Message& m);
 	const Message*	GetNextMessage(const Message* prev) const;
+
+	template<class _C> result PostMessage(const _C& m)
+	{
+		if(std::has_trivial_destructor<_C>::value)
+			return _PostMessage(m);
+		else
+			return _PostPackage((const Package&)m);
+	}
+
+	template<class _C> result ForwardMessage(const _C& m)
+	{
+		if(std::has_trivial_destructor<_C>::value)
+			return _ForwardMessage(m);
+		else
+			return _ForwardPackage((const Package&)m);
+	}
 
 	result ClosePin();
 	result InitializeInputPin(boost::function<void()> f);
@@ -122,8 +137,14 @@ protected:
 
 private:
 
+	result			_PostMessage(const Message& m);
+	result			_PostPackage(const Package& m);
+	result			_ForwardMessage(const Message& m);
+	result			_ForwardPackage(const Package& m);
+
 	typedef std::vector<boost::function<void()>,global_allocator<boost::function<void()>>> callback_list;
 	typedef std::vector<u8,global_allocator<u8>> mm_vector;
+	typedef std::vector<u32,global_allocator<u32>> pd_vector;
 
 	// proper private
 	volatile i32	nClosedAccesses;
@@ -133,6 +154,7 @@ private:
 	boost::function<void()> fWriteReadyCallback;
 	guid			sourceStamp;
 	mm_vector*		pMem;
+	pd_vector*		m_pvpDestructors;
 	void*			pVoid;
 
 	template<class _T> friend class OutputPin;
@@ -163,8 +185,8 @@ public:
 		return ((u8*)entry)+sizeof(MemoryEntry)+size*nReadIndex;
 	}
 	MemHandle AllocateMemBlock(u32 size);
-	void ReferenceMemBlock(MemHandle Handle);
-	void FreeMemBlock(MemHandle Handle);
+	static void ReferenceMemBlock(MemHandle Handle);
+	static void FreeMemBlock(MemHandle Handle);
 
 private:
 	class MemoryEntry

@@ -1,27 +1,32 @@
 #include <HAGE.h>
 
 namespace HAGE {
-
-	const u32 FRAME_BUFFER_COUNT = 2;
-
+	
 	const WrapMessage WrapMessage::_wrap = WrapMessage();
 
 	LockedMessageQueue::LockedMessageQueue() :
 		nClosedAccesses(0),bInit(false),nShutdown(0),
 		nWriteIndex(0),nReadIndex(-1),
-		pMem((mm_vector*)DomainMemory::GlobalAllocate(sizeof(mm_vector)*FRAME_BUFFER_COUNT))
+		pMem((mm_vector*)DomainMemory::GlobalAllocate(sizeof(mm_vector)*FRAME_BUFFER_COUNT)),
+		m_pvpDestructors((pd_vector*)DomainMemory::GlobalAllocate(sizeof(pd_vector)*FRAME_BUFFER_COUNT))
 
 	{
 		for(int i=0;i<FRAME_BUFFER_COUNT;++i)
 		{
 			new (&pMem[i]) mm_vector;
+			new (&m_pvpDestructors[i]) pd_vector;
 		}
 	}
 
 	LockedMessageQueue::~LockedMessageQueue()
 	{
 		for(int i=0;i<FRAME_BUFFER_COUNT;++i)
+		{
+			for(auto j=m_pvpDestructors[i].begin();j!=m_pvpDestructors[i].end();++j)
+				((Package*)&pMem[i][*j])->~Package();
+			m_pvpDestructors[i].~vector();
 			pMem[i].~vector();
+		}
 		DomainMemory::GlobalFree(pMem);
 	}
 
@@ -33,7 +38,12 @@ namespace HAGE {
 			bInit=true;
 			nClosedAccesses=nShutdown;
 			if(nReadIndex>=0)
+			{
+				for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
+					((Package*)&pMem[nReadIndex][*i])->~Package();
+				m_pvpDestructors[nReadIndex].clear();
 				pMem[nReadIndex].clear();
+			}
 			nWriteIndex = (nWriteIndex+1) % FRAME_BUFFER_COUNT;
 			nReadIndex = (nReadIndex+1) % FRAME_BUFFER_COUNT;
 			fWriteReadyCallback();
@@ -78,8 +88,10 @@ namespace HAGE {
 		}
 	}
 
-	result LockedMessageQueue::PostMessage(const Message& m)
+	result LockedMessageQueue::_PostMessage(const Message& m)
 	{
+		if(m.GetMessageCode()&MESSAGE_IS_PACKAGE)
+			return _PostPackage((const Package&)m);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
 		Message* target = (Message*)(&pMem[nWriteIndex][0] + pMem[nWriteIndex].size() - m.GetSize());
 		m.CopyTo(target);
@@ -87,15 +99,39 @@ namespace HAGE {
 		return S_OK;
 	}
 
-	result LockedMessageQueue::ForwardMessage(const Message& m)
+	result LockedMessageQueue::_ForwardMessage(const Message& m)
 	{
+		if(m.GetMessageCode()&MESSAGE_IS_PACKAGE)
+			return _ForwardPackage((const Package&)m);
 		assert( m.GetSource() != guidNull);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
 		Message* target = (Message*)(&pMem[nWriteIndex][0] + pMem[nWriteIndex].size() - m.GetSize());
 		m.CopyTo(target);
 		return S_OK;
 	}
+	result LockedMessageQueue::_PostPackage(const Package& m)
+	{
+		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
+		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
+		u32 index =  pMem[nWriteIndex].size() - m.GetSize();
+		Package* target = (Package*)(&pMem[nWriteIndex][index]);
+		m_pvpDestructors[nWriteIndex].push_back(index);
+		m.CopyTo(target);
+		target->SetSource(sourceStamp);
+		return S_OK;
+	}
 
+	result LockedMessageQueue::_ForwardPackage(const Package& m)
+	{
+		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
+		assert( m.GetSource() != guidNull);
+		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
+		u32 index =  pMem[nWriteIndex].size() - m.GetSize();
+		Package* target = (Package*)(&pMem[nWriteIndex][index]);
+		m_pvpDestructors[nWriteIndex].push_back(index);
+		m.CopyTo(target);
+		return S_OK;
+	}
 	void LockedMessageQueue::Shutdown()
 	{
 		_InterlockedIncrement((i32*)&nShutdown);
@@ -123,8 +159,7 @@ namespace HAGE {
 	{
 		MemoryEntry* pEntry = (MemoryEntry*)handle._p;
 		i32 val =_InterlockedIncrement(&pEntry->references);
-		if(val == 0)
-			DomainMemory::GlobalFree(pEntry);
+		assert(val > 1);
 	}
 
 	void PinBase::FreeMemBlock(MemHandle handle)

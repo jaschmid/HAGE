@@ -52,6 +52,13 @@ private:
 	guid		source;
 };
 
+class Package : public Message
+{
+public:
+	virtual ~Package(){}
+	virtual Package* CopyTo(void* pTarget) const = 0;
+};
+
 
 template<class _C,class _C2 = Message> class MessageHelper : public _C2
 {
@@ -79,9 +86,8 @@ private:
 	const _C data;
 };
 
-const u32 MESSAGE_ITEM_CREATED = 0x1000;
-
-const u32 MESSAGE_UPPER_MASK	= 0xffff0000;
+const u32 MESSAGE_IS_PACKAGE	= 0x80000000;
+const u32 MESSAGE_UPPER_MASK	= 0x7fff0000;
 const u32 MESSAGE_LOWER_MASK	= 0x0000ffff;
 
 inline bool IsMessageType(u32 code,u32 type)
@@ -347,6 +353,7 @@ public:
 		objectTypeId(ObjectTypeId) {}
 	const guid& GetObjectTypeId() const{return objectTypeId;}
 	const guid& GetObjectId() const{return objectId;}
+
 private:
 	const guid	objectId;
 	const guid& objectTypeId;
@@ -365,7 +372,7 @@ private:
 enum {
 	// OBJECT MESSAGE 0010 0000
 	MESSAGE_OBJECT_UNKNOWN		= 0x00100000,
-	MESSAGE_OBJECT_OUTPUT_INIT	= 0x00100002
+	MESSAGE_OBJECT_OUTPUT_INIT	= 0x80100002
 };
 
 class MessageObjectUnknown : public Message
@@ -378,7 +385,7 @@ private:
 	const guid target;
 };
 
-template<class _C> class MessageObjectHelper : public MessageObjectUnknown
+template<class _C,class _C2=MessageObjectUnknown> class MessageObjectHelper : public MessageObjectUnknown
 {
 public:
 	MessageObjectHelper(const u32 id,const guid& target) : MessageObjectUnknown(id,sizeof(_C),target) { }
@@ -388,16 +395,19 @@ public:
 	}
 };
 
-class MessageObjectOutputInit : public MessageObjectHelper<MessageObjectOutputInit>
+class MessageObjectOutputInit : public MessageObjectHelper<MessageObjectOutputInit,Package>
 {
 public:
-	MessageObjectOutputInit(const guid& target,const MemHandle& Handle) : MessageObjectHelper<MessageObjectOutputInit>(id,target),handle(Handle) {}
+	MessageObjectOutputInit(const guid& target,const MemHandle& Handle);
+	MessageObjectOutputInit(const MessageObjectOutputInit& m);
+	virtual ~MessageObjectOutputInit();
 
 	const MemHandle& GetHandle() {return handle;}
 
 private:
 	static const u32 id = MESSAGE_OBJECT_OUTPUT_INIT;
 	const MemHandle handle;
+
 };
 
 enum {

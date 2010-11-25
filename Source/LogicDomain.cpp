@@ -28,7 +28,8 @@ namespace HAGE {
 
 
 			testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
-			for(int i =0;i<500;++i)
+			
+			for(int i =0;i<10;++i)
 			{
 				Actor<LogicDomain>*	testActor;
 				guid			testActorId;
@@ -45,7 +46,7 @@ namespace HAGE {
 				return true;
 			switch(m->GetMessageCode())
 			{
-				case MESSAGE_ITEM_CREATED:
+				case 0:
 				default:
 					return SharedDomainBase::MessageProc(m);
 			}
@@ -55,9 +56,17 @@ namespace HAGE {
 		{
 
 			std::vector<Vector3<>>& rpos=positions;
+			
+			for(int i =0;i<1;++i)
+			{
+				Actor<LogicDomain>*	testActor;
+				guid			testActorId;
+				testActorId = Factory.CreateObject(Actor<LogicDomain>::getClassGuid(),(IObject**)&testActor);
+			}
 
-			auto result = Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [rpos](Actor<LogicDomain>* o) -> Vector3<> {return o->Step(rpos);} , guidNull);
+			auto result = Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [](Actor<LogicDomain>* o) -> Vector3<> {return o->Init();} , guidNull);
 			positions.assign(result.first,&result.first[result.second]);
+			Factory.ForEach<Vector3<>,Actor<LogicDomain>>( [rpos](Actor<LogicDomain>* o) -> Vector3<> {return o->Step(rpos);} , guidNull);
 
 		}
 

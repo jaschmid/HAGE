@@ -17,7 +17,8 @@ public:
 	int Step(RenderingDomain* pRendering)
 	{
 		position = *PositionIn;
-		color = *ColorIn;
+		if(ColorIn.IsOpen())
+			color = *ColorIn;
 		pRendering->DrawIco(position);
 		return 1;
 	}

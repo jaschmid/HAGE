@@ -189,6 +189,7 @@
     <ClCompile Include="Source\Core\DomainBase.cpp" />
     <ClCompile Include="Source\Core\DomainMemory.cpp" />
     <ClCompile Include="Source\Core\InputDomain.cpp" />
+    <ClCompile Include="Source\Core\Messages.cpp" />
     <ClCompile Include="Source\Core\OGL3ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\OGL3Effect.cpp" />
     <ClCompile Include="Source\Core\OGL3VertexArray.cpp" />

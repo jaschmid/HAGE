@@ -73,13 +73,13 @@ public:
 
 	Vector3<> Init()
 	{
-		position=Vector3<>(getFRand()*20.0f,getFRand()*20.0f,getFRand()*20.0f);
-		speed=Vector3<>(getFRand()*.2f,getFRand()*.2f,getFRand()*.2f);
-		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		return position;
 	}
 	Vector3<> Step(const std::vector<Vector3<>>& positions)
 	{
+		speed = speed + acceleration * 0.05f;
+		position = position + speed *0.05f;
+
 		acceleration = Vector3<>(0.0f,0.0f,0.0f);
 		for(auto i=positions.begin();i!=positions.end();++i)
 		{
@@ -93,8 +93,6 @@ public:
 			}
 		}
 		
-		speed = speed + acceleration * 0.05f;
-		position = position + speed *0.05f;
 		if(position.x<=-100.0)
 			speed.x = -speed.x;
 		if(position.y<=-100.0)

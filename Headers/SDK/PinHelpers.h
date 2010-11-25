@@ -107,6 +107,10 @@ public:
 		pin.ReferenceMemBlock(h);
 		handle = h;
 	}
+	bool IsOpen()
+	{
+		return handle.isValid();
+	}
 	const _T* operator->()
 	{
 		assert(handle.isValid());

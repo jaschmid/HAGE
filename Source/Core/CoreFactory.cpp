@@ -100,13 +100,14 @@ namespace HAGE {
 
 			if(oldSize > nTasks)
 				oldSize = nTasks;
+			else
+				m_ForEachTasks.resize(nTasks);
 
 			for(u32 i = 0;i<oldSize;++i)
 				m_pTask->QueueTask(&m_ForEachTasks[i]);
 
 			if(oldSize < nTasks)
 			{
-				m_ForEachTasks.resize(nTasks);
 				for(int i =oldSize;i<m_ForEachTasks.size();++i)
 				{
 					m_ForEachTasks[i].m_pFactory = this;
