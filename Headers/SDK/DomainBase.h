@@ -23,18 +23,17 @@ class LockedMessageQueue;
 class PinBase;
 class Message;
 
-template<class _T> const _T* DomainCreator();
+#ifdef COMPILER_GCC
 
-template<class _Domain> class domain_access
-{
-public:
-	static _Domain* Get() {return p;}
-private:
-	static _Domain* p;
-	template<class _Domain> friend const _Domain* DomainCreator();
-};
+#define DECLARE_DOMAIN(x,l1,s1,s2,s3,x1) class x; DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x); template<> x* domain_access<x>::p
+#define DEFINE_DOMAIN(x) DEFINE_CLASS_GUID(x); template<> x* domain_access<x>::p = nullptr
 
-#define DECLARE_DOMAIN(x,l1,s1,s2,s3,x1) class x; DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x); x* domain_access<x>::p = nullptr
+#elif defined(COMPILER_MSVC)
+
+#define DECLARE_DOMAIN(x,l1,s1,s2,s3,x1) class x; DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x); template<> x* domain_access<x>::p=nullptr
+#define DEFINE_DOMAIN(x)
+
+#endif
 
 class SharedDomainBase :public IDomain
 {

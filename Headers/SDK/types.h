@@ -90,26 +90,37 @@ typedef struct _GUID
 	}
 } guid;
 
-template<class _C> class guid_of 
+template<class _C> class guid_of
 {
 public:
 	static const guid& value;
 };
 
 #ifdef COMPILER_MSVC
+
 #define DECLARE_GUID_WIN(x,l1,s1,s2,b1,b2,b3,b4,b5,b6,b7,b8) const guid guid##x = {{{ ( ((u64)(l1)<<32)|((u64)(s1)<<16)|((u64)(s2)<<0) ) , \
 	(((u64)(b1)<<56)|((u64)(b2)<<48)|((u64)(b3)<<40)|((u64)(b4)<<32)|((u64)(b5)<<24)|((u64)(b6)<<16)|((u64)(b7)<<8)|((u64)(b8)<<0)) }}}
 #define DECLARE_GUID(x,l1,s1,s2,s3,x1) const guid guid##x = {{{ ( ((u64)(l1)<<32)|((u64)(s1)<<16)|((u64)(s2)<<0) ) , \
 	(((u64)(s3)<<48)|((u64)(x1)<<0)) }}}
+#define DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,c) DECLARE_GUID(x,l1,s1,s2,s3,x1); template<> const guid& guid_of<c>::value = guid##x
+#define DECLARE_CLASS_GUID(x,l1,s1,s2,s3,x1) DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x)
+#define DEFINE_CLASS_GUID(x)
+#define DEFINE_CLASS_GUID_EX(x,c)
+
 #elif defined(COMPILER_GCC)
+
 #define DECLARE_GUID_WIN(x,l1,s1,s2,b1,b2,b3,b4,b5,b6,b7,b8) const guid guid##x = {{{ ( ((u64)(l1)<<32)|((u64)(s1)<<16)|((u64)(s2)<<0) ) , \
 	(((u64)(b1)<<56)|((u64)(b2)<<48)|((u64)(b3)<<40)|((u64)(b4)<<32)|((u64)(b5)<<24)|((u64)(b6)<<16)|((u64)(b7)<<8)|((u64)(b8)<<0)) }}}
 #define DECLARE_GUID(x,l1,s1,s2,s3,x1) const guid guid##x = {{{ ( ((u64)(l1)<<32)|((u64)(s1)<<16)|((u64)(s2)<<0) ) , \
 	(((u64)(s3)<<48)|((u64)(x1##LL)<<0)) }}}
+#define DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,c) DECLARE_GUID(x,l1,s1,s2,s3,x1); template<> const guid& guid_of<c>::value
+#define DECLARE_CLASS_GUID(x,l1,s1,s2,s3,x1) DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x)
+#define DEFINE_CLASS_GUID(x) template<> const guid& guid_of<x>::value = guid##x
+#define DEFINE_CLASS_GUID_EX(x,c) template<> const guid& guid_of<c>::value = guid##x
+
 #endif
 
-#define DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,c) DECLARE_GUID(x,l1,s1,s2,s3,x1); const guid& guid_of<c>::value = guid##x
-#define DECLARE_CLASS_GUID(x,l1,s1,s2,s3,x1) DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x)
+
 
 DECLARE_CLASS_GUID_EX(Null,0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000,void);
 

@@ -2,7 +2,7 @@
 /* FILE: ObjectBase.h                                   */
 /* DESCRIPTION: Defines ObjectBase class                */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #error Do not include this file directly, include HAGE.h instead
@@ -72,8 +72,8 @@ private:
 template<class _Domain,class _Input> class _ObjectBaseInput
 {
 protected:
-	typedef typename _Domain				Domain;
-	typedef typename _Input					SourceClass;
+	typedef _Domain				    Domain;
+	typedef _Input					SourceClass;
 	typedef typename _Input::Output::Domain	Source;
 	typedef typename _Input::Output::Type	Type;
 
@@ -92,7 +92,7 @@ protected:
 	{
 		return handle.isValid();
 	}
-	inline const typename Type& Get() const
+	inline const Type& Get() const
 	{
 		assert(handle.isValid());
 		return *(const Type*)pin.GetReadMem(handle,sizeof(Type));
@@ -110,23 +110,23 @@ private:
 	MemHandle handle;
 
 	friend class CoreFactory;
-	template<class _Final,class _Domain,class _OutputType,class _Input1,class _Input2> friend class ObjectBase;
+	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
 };
 
 template<u32 _Index> class _VoidInput
 {
 public:
-	typedef typename void	Domain;
+	typedef void	Domain;
 };
 
 template<class _Domain,u32 _Index> class _ObjectBaseInput< _Domain, _VoidInput<_Index> >
 {
 protected:
 	//empty
-	typedef typename void	Domain;
-	typedef typename void	Source;
-	typedef typename _VoidInput<_Index>	SourceClass;
-	typedef typename void	Type;
+	typedef void	Domain;
+	typedef void	Source;
+	typedef _VoidInput<_Index>	SourceClass;
+	typedef void	Type;
 private:
 
 	inline void Open(MemHandle h)
@@ -135,7 +135,7 @@ private:
 	}
 
 	friend class CoreFactory;
-	template<class _Final,class _Domain,class _OutputType,class _Input1,class _Input2> friend class ObjectBase;
+	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
 };
 
 template<class _Domain,class _OutputType> class _ObjectBaseOutput
@@ -186,7 +186,7 @@ private:
 	PinBase& pin;
 	MemHandle handle;
 
-	template<class _Domain,class _Input> friend class _ObjectBaseInput;
+	template<class _DomainX,class _InputX> friend class _ObjectBaseInput;
 };
 
 template<class _Domain> class _ObjectBaseOutput<_Domain,void>
@@ -196,14 +196,14 @@ protected:
 	typedef void		Domain;
 
 	//empty
-	_ObjectBaseOutput(const guid& objectId) 
+	_ObjectBaseOutput(const guid& objectId)
 	{
 	}
 
-	template<class _Domain,class _Input> friend class _ObjectBaseInput;
+	template<class _DomainX,class _InputX> friend class _ObjectBaseInput;
 };
 
-template<class _Final,class _Domain,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectBase : 
+template<class _Final,class _Domain,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectBase :
 	public	_ObjectBaseDomain<_Domain>,
 	public	_ObjectBaseOutput<_Domain,_OutputType>,
 	public	_ObjectBaseInput<_Domain,_Input1>,
@@ -219,7 +219,7 @@ protected:
 	typedef _Domain								Domain;
 	typedef ObjectBase<_Final,_Domain,_OutputType,_Input1,_Input2>		BaseType;
 
-	ObjectBase(const guid& rguid) : _ObjectBaseDomain<_Domain>(rguid),_ObjectBaseOutput<_Domain,_OutputType>(rguid) {}	
+	ObjectBase(const guid& rguid) : _ObjectBaseDomain<_Domain>(rguid),_ObjectBaseOutput<_Domain,_OutputType>(rguid) {}
 	virtual ~ObjectBase(){}
 
 private:
@@ -228,10 +228,10 @@ private:
 		if(pMessage->GetMessageCode() == MESSAGE_OBJECT_OUTPUT_INIT)
 		{
 			MessageObjectOutputInit* pDetailed = (MessageObjectOutputInit*)pMessage;
-			if(pDetailed->GetSource() == guid_of<Input1::SourceClass::Domain>::value )
+			if(pDetailed->GetSource() == guid_of<typename Input1::SourceClass::Domain>::value )
 				Input1::Open(pDetailed->GetHandle());
-			else if(pDetailed->GetSource() == guid_of<Input2::SourceClass::Domain>::value )
-				Input2::Open(pDetailed->GetHandle());	
+			else if(pDetailed->GetSource() == guid_of<typename Input2::SourceClass::Domain>::value )
+				Input2::Open(pDetailed->GetHandle());
 			else
 				assert("Recieved input from source, but no handler to recieve it!\n");
 			return true;
@@ -240,8 +240,8 @@ private:
 	}
 
 	friend class CoreFactory;
-	template<class _Domain,class _Input> friend  class _ObjectBaseInput;
-	template<class _Final,class _Domain,class _OutputType,class _Input1,class _Input2> friend class ObjectBase;
+	template<class _DomainX,class _InputX> friend  class _ObjectBaseInput;
+	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
 };
 
 template<class _Final,class _Domain,class _OutputType,class _Input1,class _Input2> class guid_of<ObjectBase<_Final,_Domain,_OutputType,_Input1,_Input2>> : public guid_of<_Final>

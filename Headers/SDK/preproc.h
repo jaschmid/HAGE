@@ -51,9 +51,11 @@
 
 #ifdef _MSC_VER
     #define COMPILER_MSVC
+    #define WEAK_EXTERNAL
     #pragma warning( disable :4996)
 #elif defined(__GNUC__)
     #define COMPILER_GCC
+    #define WEAK_EXTERNAL __attribute__ ((visibility("protected")))
 	//olol gcc does not support nullptr
 
 	const                        // this is a const object...

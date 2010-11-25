@@ -34,4 +34,10 @@ extern IMain* HAGECreateMain(void)
 	return new class HAGEMain;
 }
 
+DEFINE_DOMAIN(AIDomain);
+DEFINE_DOMAIN(LogicDomain);
+DEFINE_DOMAIN(GraphicsDomain);
+DEFINE_DOMAIN(SoundDomain);
+DEFINE_DOMAIN(RenderingDomain);
+
 }

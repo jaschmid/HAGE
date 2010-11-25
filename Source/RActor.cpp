@@ -8,7 +8,7 @@ namespace HAGE {
 		return (IObject*) new RenderingActor(objectId);
 	}
 
-	RenderingActor::RenderingActor(guid ObjectId) : 
+	RenderingActor::RenderingActor(guid ObjectId) :
 		BaseType(ObjectId)
 	{
 	}
@@ -16,4 +16,6 @@ namespace HAGE {
 	RenderingActor::~RenderingActor()
 	{
 	}
+
+	DEFINE_CLASS_GUID(RenderingActor);
 }

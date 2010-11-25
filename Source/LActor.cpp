@@ -20,4 +20,6 @@ namespace HAGE {
 	{
 	}
 
+	DEFINE_CLASS_GUID(LogicActor);
+
 }

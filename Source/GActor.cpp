@@ -8,7 +8,7 @@ namespace HAGE {
 		return (IObject*) new GraphicsActor(objectId);
 	}
 
-	GraphicsActor::GraphicsActor(guid ObjectId) : 
+	GraphicsActor::GraphicsActor(guid ObjectId) :
 		BaseType(ObjectId)
 	{
 	}
@@ -16,5 +16,7 @@ namespace HAGE {
 	GraphicsActor::~GraphicsActor()
 	{
 	}
+
+	DEFINE_CLASS_GUID(GraphicsActor);
 
 }

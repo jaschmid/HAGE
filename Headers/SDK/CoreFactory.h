@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+#include <tr1/type_traits>
 
 namespace HAGE {
 
@@ -49,7 +50,7 @@ public:
 	template<class _Result,class _ObjectType> u32 ForEachGetSome(const boost::function<bool (_ObjectType*,_Result&)>& f,_Result* pOut,u32 nOut,const guid& capability = guidNull,bool bSync = false)
 	{
 		static_assert( std::is_base_of<IObject,_ObjectType>::value ,"_T2 needs to have inherited from IObject!");
-		if(std::has_trivial_constructor<_Result>::value)
+		if(std::tr1::has_trivial_constructor<_Result>::value)
 		{
 			const boost::function<bool (void*,IObject*)> c(
 				[f] (void* v,IObject* o) -> bool { return f(static_cast<_Result*>(o),*reinterpret_cast<_Result*>(v)) ;}
@@ -114,14 +115,18 @@ public:
 				inserted->second.capabilities.push_back( c );
 			}
 
-			if(guid_of<_T::Input1::SourceClass>::value != guidNull)
+			const guid& guid1 = guid_of<typename _T::Input1::SourceClass>::value;
+
+			if(guid1 != guidNull)
 			{
-				assert(objectDependancyMap.find(guid_of<_T::Input1::SourceClass>::value) == objectDependancyMap.end());
-				objectDependancyMap.insert(object_dependancy_map_type::value_type(guid_of<_T::Input1::SourceClass>::value,guid_of<_T>::value));
-				if(guid_of<_T::Input2::SourceClass>::value != guidNull)
+				assert(objectDependancyMap.find(guid1) == objectDependancyMap.end());
+				objectDependancyMap.insert(object_dependancy_map_type::value_type(guid1,guid_of<_T>::value));
+
+				const guid& guid2 = guid_of<typename _T::Input2::SourceClass>::value;
+				if(guid2 != guidNull)
 				{
-					assert(objectDependancyMap.find(guid_of<_T::Input2::SourceClass>::value) == objectDependancyMap.end());
-					objectDependancyMap.insert(object_dependancy_map_type::value_type(guid_of<_T::Input2::SourceClass>::value,guid_of<_T>::value));	
+					assert(objectDependancyMap.find(guid2) == objectDependancyMap.end());
+					objectDependancyMap.insert(object_dependancy_map_type::value_type(guid2,guid_of<_T>::value));
 				}
 			}
 		}

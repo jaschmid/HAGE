@@ -1,37 +1,52 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
-	<ActiveTarget name="Release" />
-	<File name="Headers/guids.h" open="1" top="0" tabpos="1">
-		<Cursor position="589" topLine="0" />
+	<ActiveTarget name="Debug" />
+	<File name="Headers/GActor.h" open="1" top="0" tabpos="52">
+		<Cursor position="564" topLine="0" />
 	</File>
-	<File name="Source/AIDomain.cpp" open="1" top="0" tabpos="8">
+	<File name="Headers/GenericActor.h" open="1" top="0" tabpos="46">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Headers/GraphicsDomain.h" open="1" top="0" tabpos="47">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Headers/UserInterface.h" open="1" top="0" tabpos="48">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Headers/guids.h" open="1" top="0" tabpos="1">
+		<Cursor position="38" topLine="0" />
+	</File>
+	<File name="Headers/header.h" open="1" top="0" tabpos="50">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source/AIDomain.cpp" open="1" top="0" tabpos="6">
 		<Cursor position="537" topLine="0" />
 	</File>
-	<File name="Source/GActor.cpp" open="1" top="0" tabpos="9">
-		<Cursor position="0" topLine="0" />
+	<File name="Source/GActor.cpp" open="1" top="0" tabpos="7">
+		<Cursor position="286" topLine="0" />
 	</File>
-	<File name="Source/GraphicsDomain.cpp" open="1" top="0" tabpos="7">
-		<Cursor position="1007" topLine="1" />
+	<File name="Source/GraphicsDomain.cpp" open="1" top="0" tabpos="5">
+		<Cursor position="977" topLine="1" />
 	</File>
-	<File name="Source/LogicDomain.cpp" open="1" top="0" tabpos="6">
-		<Cursor position="1700" topLine="23" />
+	<File name="Source/LActor.cpp" open="1" top="0" tabpos="53">
+		<Cursor position="570" topLine="0" />
 	</File>
-	<File name="Source/Main.cpp" open="1" top="0" tabpos="3">
-		<Cursor position="0" topLine="0" />
+	<File name="Source/LogicDomain.cpp" open="1" top="0" tabpos="4">
+		<Cursor position="1700" topLine="18" />
 	</File>
-	<File name="Source/RActor.cpp" open="1" top="0" tabpos="11">
-		<Cursor position="0" topLine="0" />
+	<File name="Source/Main.cpp" open="1" top="0" tabpos="51">
+		<Cursor position="853" topLine="0" />
+	</File>
+	<File name="Source/RActor.cpp" open="1" top="0" tabpos="9">
+		<Cursor position="324" topLine="0" />
 	</File>
 	<File name="Source/RenderingDomain.cpp" open="1" top="0" tabpos="2">
-		<Cursor position="5864" topLine="159" />
+		<Cursor position="5864" topLine="158" />
 	</File>
-	<File name="Source/ResourceDomain.cpp" open="1" top="0" tabpos="4">
-		<Cursor position="0" topLine="0" />
-	</File>
-	<File name="Source/SoundDomain.cpp" open="1" top="0" tabpos="5">
+	<File name="Source/SoundDomain.cpp" open="1" top="0" tabpos="3">
 		<Cursor position="758" topLine="0" />
 	</File>
-	<File name="Source/UserInterface.cpp" open="1" top="0" tabpos="10">
+	<File name="Source/UserInterface.cpp" open="1" top="0" tabpos="8">
 		<Cursor position="0" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

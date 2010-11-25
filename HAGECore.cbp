@@ -72,6 +72,7 @@
 		<Unit filename="Source/Core/FixedSizeKeyStorage.h" />
 		<Unit filename="Source/Core/InputDomain.cpp" />
 		<Unit filename="Source/Core/InputDomain.h" />
+		<Unit filename="Source/Core/Messages.cpp" />
 		<Unit filename="Source/Core/OGL3ConstantBuffer.cpp" />
 		<Unit filename="Source/Core/OGL3Effect.cpp" />
 		<Unit filename="Source/Core/OGL3VertexArray.cpp" />
@@ -82,6 +83,8 @@
 		<Unit filename="Source/Core/RenderDebugUI.cpp" />
 		<Unit filename="Source/Core/RenderDebugUI.h" />
 		<Unit filename="Source/Core/RenderingAPIWrapper.cpp" />
+		<Unit filename="Source/Core/ResourceDomain.cpp" />
+		<Unit filename="Source/Core/ResourceDomain.h" />
 		<Unit filename="Source/Core/SharedCoreFactory.cpp" />
 		<Unit filename="Source/Core/SharedCoreFactory.h" />
 		<Unit filename="Source/Core/SharedTaskManager.cpp" />

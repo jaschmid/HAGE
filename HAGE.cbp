@@ -49,11 +49,13 @@
 			<Add library="HAGECore" />
 		</Linker>
 		<Unit filename="Headers/AIDomain.h" />
+		<Unit filename="Headers/GActor.h" />
 		<Unit filename="Headers/GenericActor.h" />
 		<Unit filename="Headers/GraphicsDomain.h" />
+		<Unit filename="Headers/LActor.h" />
 		<Unit filename="Headers/LogicDomain.h" />
+		<Unit filename="Headers/RActor.h" />
 		<Unit filename="Headers/RenderingDomain.h" />
-		<Unit filename="Headers/ResourceDomain.h" />
 		<Unit filename="Headers/SoundDomain.h" />
 		<Unit filename="Headers/UserInterface.h" />
 		<Unit filename="Headers/UserInterfaceRendering.h" />
@@ -67,7 +69,6 @@
 		<Unit filename="Source/Main.cpp" />
 		<Unit filename="Source/RActor.cpp" />
 		<Unit filename="Source/RenderingDomain.cpp" />
-		<Unit filename="Source/ResourceDomain.cpp" />
 		<Unit filename="Source/SoundDomain.cpp" />
 		<Unit filename="Source/UserInterface.cpp" />
 		<Unit filename="Source/UserInterfaceRendering.cpp" />
