@@ -256,9 +256,9 @@ namespace HAGE {
 
 		delete(p,p);
 
-		TLS::mode.release();
-		TLS::domain_guid.release();
 		TLS::domain_ptr.release();
+		TLS::domain_guid.release();
+		TLS::mode.release();
 
 		DomainMemory::GlobalFree(pMem);
 	}
