@@ -33,6 +33,9 @@ namespace HAGE
 {
 	DECLARE_DOMAIN(InputDomain,		0x8a601455,0xb21c,0x4870,0x902d,0x693abde180ba);
 	DECLARE_DOMAIN(ResourceDomain,	0x2ea6ccdf,0x6998,0x4968,0x8bde,0xf47a0de71b92);
+	
+	template<> class get_traits<InputDomain> : public DomainTraits<InputDomain,true> {};
+	template<> class get_traits<ResourceDomain> : public DomainTraits<ResourceDomain,false> {};
 }
 
 #endif

@@ -9,7 +9,7 @@ namespace HAGE {
 	}
 
 	RenderingActor::RenderingActor(guid ObjectId) :
-		BaseType(ObjectId)
+		ObjectBase<RenderingActor>(ObjectId)
 	{
 	}
 

@@ -17,7 +17,7 @@ namespace HAGE {
 			while(const Message* m=OSInputQueue.GetTopMessage())
 			{
 				if(failed(m_pDebugInterface->ProcessInputMessage(m)))
-					Output.PostMessage(*m);
+					PostMessage(*m);
 
 				OSInputQueue.PopMessage();
 			}
@@ -31,7 +31,7 @@ namespace HAGE {
 			while(const Message* m=OSInputQueue.GetTopMessage())
 			{
 				if(!(m_pDebugInterface->ProcessInputMessage(m)))
-					Output.PostMessage(*m);
+					PostMessage(*m);
 
 				OSInputQueue.PopMessage();
 			}

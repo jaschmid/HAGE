@@ -22,8 +22,6 @@ class InputDomain : public DomainBase<InputDomain>
 		static const guid& id;
 		static const bool continuous;
 	private:
-		OutputPin<InputDomain>	Output;
-
 		// non synced input
 		StaticMessageQueue<1024*128>	OSInputQueue;
 

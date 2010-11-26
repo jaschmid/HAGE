@@ -7,7 +7,7 @@
 
 namespace HAGE {
 
-class LogicActor : public GenericActor, public LogicActorBase
+class LogicActor : public GenericActor, public ObjectBase<LogicActor>
 {
 public:
 	static IObject* CreateInstance(guid ObjectId);
@@ -70,6 +70,5 @@ private:
 	Vector3<>		acceleration;
 };
 
-DECLARE_CLASS_GUID(LogicActor,		0xcc98d92a,0xc597,0x47cd,0xaaa8,0xd42c0dde5723);
 }
 #endif

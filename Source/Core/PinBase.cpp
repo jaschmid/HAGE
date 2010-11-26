@@ -32,9 +32,11 @@ namespace HAGE {
 
 	result LockedMessageQueue::ClosePin()
 	{
+		//printf("Pin %08x closed\n",this);
 		i32 count = _InterlockedIncrement(&nClosedAccesses);
 		if(count == (bInit?fReadReadyCallback.size():0) + 1)
 		{
+			//printf("Pin %08x ready\n",this);
 			bInit=true;
 			nClosedAccesses=nShutdown;
 			if(nReadIndex>=0)
@@ -65,6 +67,7 @@ namespace HAGE {
 	result LockedMessageQueue::InitializeInputPin(boost::function<void()> f)
 	{
 		fReadReadyCallback.push_back( f );
+		//printf("Pin %08x has %i Domains that use it as input now\n",this,fReadReadyCallback.size());
 		return S_OK;
 	}
 

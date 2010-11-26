@@ -17,9 +17,6 @@ class AIDomain : public DomainBase<AIDomain>
 	private:
 		virtual bool MessageProc(const Message* pMessage);
 
-		InputPin<LogicDomain,AIDomain>		Input;
-		OutputPin<AIDomain>					Output;
-
 		friend class SharedTaskManager;
 };
 

@@ -21,9 +21,6 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 	private:
 		virtual bool MessageProc(const Message* pMessage);
 
-		InputPin<GraphicsDomain,RenderingDomain>	Input;
-		InputPin<LogicDomain,RenderingDomain>		InputDirect;
-
 		float										fCameraX,fCameraY,fCameraZ;
 		
 		RenderingAPIWrapper*						pWrapper;

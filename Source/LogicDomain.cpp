@@ -20,22 +20,22 @@ namespace HAGE {
 		private:
 		};
 
-		LogicDomain::LogicDomain()  : InputAI(-2),positions(0)
+		LogicDomain::LogicDomain()  : positions(0)
 		{
 			printf("Init Logic\n");
 			Factory.RegisterObjectType<LogicActor>();
-			m_pUserInterface = new UserInterface(&Output.GetBasePin());
+			m_pUserInterface = new UserInterface();
 
 
 			LogicActor*		testActor;
 			guid			testActorId;
-			testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+			testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
 			
 			for(int i =0;i<1500;++i)
 			{
 				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
 			}
 
 			auto result = Factory.ForEach<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , guidNull );
@@ -56,14 +56,13 @@ namespace HAGE {
 
 		void LogicDomain::DomainStep(u64 step)
 		{
-
 			std::vector<Vector3<>>& rpos=positions;
 			/*
 			for(int i =0;i<1;++i)
 			{
 				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
 			}*/
 			positions.resize(Factory.GetNumObjects());
 			u32 nObjects = Factory.ForEachEx<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , &positions[0], positions.size());
@@ -74,7 +73,7 @@ namespace HAGE {
 				Factory.DestroyObject(guids[i]);
 				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::value,(IObject**)&testActor);
+				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
 			}
 
 		}

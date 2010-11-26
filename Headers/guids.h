@@ -1,11 +1,19 @@
 #include "header.h"
 
 namespace HAGE {
+
 DECLARE_DOMAIN(AIDomain,		0xd3f118db,0x7459,0x4cf1,0xb90d,0xe50ca79c056a);
 DECLARE_DOMAIN(LogicDomain,		0x59092f1f,0xf396,0x4fb1,0xa595,0x5de9b63caa97);
 DECLARE_DOMAIN(GraphicsDomain,	0x80775ebc,0x8636,0x423b,0x87f1,0xccb5c6d49efb);
 DECLARE_DOMAIN(SoundDomain,		0x003574fe,0x4222,0x4799,0x8b06,0xdbe4a549e1c8);
 DECLARE_DOMAIN(RenderingDomain,	0x4ca81f18,0x3084,0x47aa,0x8103,0x212c58a40e8e);
+
+
+template<> class get_traits<LogicDomain> : public		DomainTraits<LogicDomain,true,InputDomain,InputDelay<AIDomain,-2>> {};
+template<> class get_traits<AIDomain> : public			DomainTraits<AIDomain,true,LogicDomain> {};
+template<> class get_traits<GraphicsDomain> : public	DomainTraits<GraphicsDomain,true,LogicDomain> {};
+template<> class get_traits<SoundDomain> : public		DomainTraits<SoundDomain,false,LogicDomain,InputDelay<GraphicsDomain,1>> {};
+template<> class get_traits<RenderingDomain> : public	DomainTraits<RenderingDomain,false,LogicDomain,InputDelay<GraphicsDomain,1>> {};
 
 /*
 DECLARE_GUID(name,				0x12d47f0e,0x8813,0x4ad5,0xb13d,0x916b7ab4a618);

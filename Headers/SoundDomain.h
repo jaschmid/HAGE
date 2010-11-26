@@ -16,9 +16,6 @@ class SoundDomain : public DomainBase<SoundDomain>
 		static const bool continuous;
 	private:
 		virtual bool MessageProc(const Message* pMessage);
-
-		InputPin<GraphicsDomain,SoundDomain>	Input;
-		InputPin<LogicDomain,SoundDomain>		InputDirect;
 		
 		friend class SharedTaskManager;
 };

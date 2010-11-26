@@ -41,7 +41,7 @@ public:
 
 	template<class _T> void SetDomain(_T* p)
 	{
-		pGuid = &guid_of<_T>::value;
+		pGuid = &guid_of<_T>::Get();
 		pDomain = (IDomain*)domain_access<_T>::Get();
 	}
 
@@ -99,7 +99,7 @@ public:
 		if(_T::isImplemented)
 		{
 			RegistrationContainer r ={&_T::CreateInstance, std::vector<Capability>()};
-			const guid& classguid=guid_of<_T>::value;
+			const guid& classguid=guid_of<_T>::Get();
 			registeredFunctionCreation.insert(
 				function_map_type::value_type(classguid,r)
 			);
@@ -118,18 +118,18 @@ public:
 				inserted->second.capabilities.push_back( c );
 			}
 
-			const guid& guid1 = guid_of<typename _T::Input1::SourceClass>::value;
+			const guid& guid1 = guid_of<typename _T::Input1::SourceClass>::Get();
 
 			if(guid1 != guidNull)
 			{
 				assert(objectDependancyMap.find(guid1) == objectDependancyMap.end());
-				objectDependancyMap.insert(object_dependancy_map_type::value_type(guid1,guid_of<_T>::value));
+				objectDependancyMap.insert(object_dependancy_map_type::value_type(guid1,guid_of<_T>::Get()));
 
-				const guid& guid2 = guid_of<typename _T::Input2::SourceClass>::value;
+				const guid& guid2 = guid_of<typename _T::Input2::SourceClass>::Get();
 				if(guid2 != guidNull)
 				{
 					assert(objectDependancyMap.find(guid2) == objectDependancyMap.end());
-					objectDependancyMap.insert(object_dependancy_map_type::value_type(guid2,guid_of<_T>::value));
+					objectDependancyMap.insert(object_dependancy_map_type::value_type(guid2,guid_of<_T>::Get()));
 				}
 			}
 		}

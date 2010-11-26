@@ -32,12 +32,12 @@ namespace HAGE {
 
 		SoundDomain::SoundDomain()
 		{
-			printf("Init Rendering\n");
+			printf("Init Sound\n");
 		}
 
 		SoundDomain::~SoundDomain()
 		{
-			printf("Destroy Rendering\n");
+			printf("Destroy Sound\n");
 		}
 
 		const guid& SoundDomain::id = guidSoundDomain;

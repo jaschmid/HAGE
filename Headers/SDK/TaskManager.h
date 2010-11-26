@@ -31,7 +31,7 @@ public:
 
 		template<class _T> void SetDomain()
 		{
-			TLS::domain_guid.reset(&guid_of<_T>::value);
+			TLS::domain_guid.reset(&guid_of<_T>::Get());
 			TLS::domain_ptr.reset(domain_access<_T>::Get());
 		}
 		void ClearDomain()
@@ -53,7 +53,7 @@ public:
 
 	template<class _T> void SetDomain(_T* p)
 	{
-		pGuid = &guid_of<_T>::value;
+		pGuid = &guid_of<_T>::Get();
 		pDomain = (IDomain*)domain_access<_T>::Get();
 	}
 

@@ -18,6 +18,50 @@
 
 namespace HAGE {
 
+
+template<class _Domain,class _OutputType> class ObjectOutputTraits
+{
+	public:
+		typedef _OutputType Type;
+		typedef _Domain		Domain;
+		typedef ObjectOutputTraits<Domain,Type> Traits;					
+};
+template<class _Domain> class ObjectOutputTraits<_Domain,void> : public VoidTraits
+{
+	public:
+		typedef VoidTraits Traits;
+};
+
+template<class _Domain,class _Input> class ObjectInputTraits
+{
+	public:
+		typedef _Domain				    Domain;
+		typedef _Input					SourceClass;
+		typedef ObjectInputTraits<Domain,SourceClass> Traits;					
+};
+
+template<class _Domain> class ObjectInputTraits<_Domain,void>
+{
+	public:
+		typedef _VoidInput<0> Traits;
+};
+template<class _Domain,u32 i> class ObjectInputTraits<_Domain,_VoidInput<i>> 
+{
+	public:
+		typedef _VoidInput<i> Traits;
+};
+template<class _Final> class ObjectBase;
+template<class _Final,class _Domain,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectTraits
+{
+	public:
+		typedef typename ObjectOutputTraits<_Domain,_OutputType>::Traits		OutputTraits;
+		typedef typename ObjectInputTraits<_Domain,_Input1>::Traits			Input1Traits;
+		typedef typename ObjectInputTraits<_Domain,_Input2>::Traits			Input2Traits;
+		typedef _Final												ObjectType;
+		typedef _Domain												Domain;
+		typedef	ObjectBase<_Final>									ObjectBaseType;
+};
+
 template<class _Domain> class DomainMember
 {
 protected:
@@ -65,19 +109,20 @@ private:
 		return S_OK;
 	}
 
-	template<class _D,class _OutputType> friend class _ObjectBaseOutput;
-	template<class _D,class _Input> friend class _ObjectBaseInput;
+	template<class _D> friend class _ObjectBaseOutput;
+	template<class _D> friend class _ObjectBaseInput;
 };
 
-template<class _Domain,class _Input> class _ObjectBaseInput
+template<class _ObjectInputTraits> class _ObjectBaseInput
 {
 protected:
-	typedef _Domain				    Domain;
-	typedef _Input					SourceClass;
-	typedef typename _Input::Output::Domain	Source;
-	typedef typename _Input::Output::Type	Type;
+	typedef _ObjectInputTraits										Traits;
+	typedef typename _ObjectInputTraits::Domain						Domain;
+	typedef typename _ObjectInputTraits::SourceClass				SourceClass;
+	typedef typename get_traits<SourceClass>::OutputTraits::Domain		SourceDomain;
+	typedef typename get_traits<SourceClass>::OutputTraits::Type			Type;
 
-	_ObjectBaseInput() : pin(InputPin<Source,Domain>::pin)
+	_ObjectBaseInput() : pin(typename typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
 	{
 	}
 	~_ObjectBaseInput()
@@ -110,44 +155,40 @@ private:
 	MemHandle handle;
 
 	friend class CoreFactory;
-	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
+	template<class _TraintsX> friend class ObjectBase;
 };
 
-template<u32 _Index> class _VoidInput
-{
-public:
-	typedef void	Domain;
-};
-
-template<class _Domain,u32 _Index> class _ObjectBaseInput< _Domain, _VoidInput<_Index> >
+template<u32 i> class _ObjectBaseInput< _VoidInput<i> >
 {
 protected:
 	//empty
+	typedef VoidTraits							Traits;
 	typedef void	Domain;
-	typedef void	Source;
-	typedef _VoidInput<_Index>	SourceClass;
+	typedef void	SourceDomain;
+	typedef void	SourceClass;
 	typedef void	Type;
 private:
 
 	inline void Open(MemHandle h)
 	{
-		assert("Should never be called");
+		assert("Attempted to call void Object Input Open");
 	}
 
 	friend class CoreFactory;
-	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
+	template<class _FinalX> friend class ObjectBase;
 };
 
-template<class _Domain,class _OutputType> class _ObjectBaseOutput
+template<class _ObjectOutputTraits> class _ObjectBaseOutput
 {
 protected:
-	typedef _OutputType Type;
-	typedef _Domain		Domain;
+	typedef _ObjectOutputTraits				Traits;
+	typedef typename _ObjectOutputTraits::Type		Type;
+	typedef typename _ObjectOutputTraits::Domain		Domain;
 
-	_ObjectBaseOutput(const guid& objectId) : pin(OutputPin<_Domain>::pin)
+	_ObjectBaseOutput(const guid& objectId) : pin(typename get_traits<Domain>::DomainBaseType::Output::GetBasePin())
 	{
-		handle=pin.AllocateMemBlock(sizeof(_OutputType));
-		_ObjectBaseDomain<_Domain>::PostMessage(MessageObjectOutputInit(objectId,handle));
+		handle=pin.AllocateMemBlock(sizeof(Type));
+		_ObjectBaseDomain<Domain>::PostMessage(MessageObjectOutputInit(objectId,handle));
 	}
 	~_ObjectBaseOutput()
 	{
@@ -166,32 +207,33 @@ protected:
 	{
 		return handle.isValid();
 	}
-	inline const _OutputType& GetOld() const
+	inline const Type& GetOld() const
 	{
 		assert(handle.isValid());
-		return *(const _OutputType*)pin.GetReadMem(handle,sizeof(_OutputType));
+		return *(const Type*)pin.GetReadMem(handle,sizeof(Type));
 	}
-	inline void Set(const _OutputType& value)
+	inline void Set(const Type& value)
 	{
 		assert(handle.isValid());
-		*(_OutputType*)pin.GetWriteMem(handle,sizeof(_OutputType)) = value;
+		*(Type*)pin.GetWriteMem(handle,sizeof(Type)) = value;
 	}
 	inline Type* Access()
 	{
 		assert(handle.isValid());
-		return (_OutputType*)pin.GetWriteMem(handle,sizeof(_OutputType));
+		return (Type*)pin.GetWriteMem(handle,sizeof(Type));
 	}
 
 private:
 	PinBase& pin;
 	MemHandle handle;
 
-	template<class _DomainX,class _InputX> friend class _ObjectBaseInput;
+	template<class _DomainX> friend class _ObjectBaseInput;
 };
 
-template<class _Domain> class _ObjectBaseOutput<_Domain,void>
+template<> class _ObjectBaseOutput<VoidTraits>
 {
 protected:
+	typedef VoidTraits	Traits;
 	typedef void		Type;
 	typedef void		Domain;
 
@@ -200,26 +242,27 @@ protected:
 	{
 	}
 
-	template<class _DomainX,class _InputX> friend class _ObjectBaseInput;
+	template<class _DomainX> friend class _ObjectBaseInput;
 };
 
-template<class _Final,class _Domain,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectBase :
-	public	_ObjectBaseDomain<_Domain>,
-	public	_ObjectBaseOutput<_Domain,_OutputType>,
-	public	_ObjectBaseInput<_Domain,_Input1>,
-	public	_ObjectBaseInput<_Domain,_Input2>
-{
-public:
-	static const std::array<guid,2>& getCapabilities(){static const std::array<guid,2> val= {guidNull,guid_of<_Final>::value}; return val;}
-protected:
-	typedef _ObjectBaseOutput<_Domain,_OutputType> Output;
-	typedef _ObjectBaseInput<_Domain,_Input1>	Input1;
-	typedef _ObjectBaseInput<_Domain,_Input2>	Input2;
-	typedef _Final								ClassType;
-	typedef _Domain								Domain;
-	typedef ObjectBase<_Final,_Domain,_OutputType,_Input1,_Input2>		BaseType;
 
-	ObjectBase(const guid& rguid) : _ObjectBaseDomain<_Domain>(rguid),_ObjectBaseOutput<_Domain,_OutputType>(rguid) {}
+template<class _Final> class ObjectBase :
+	public	_ObjectBaseOutput<typename get_traits<_Final>::OutputTraits>,
+	public	_ObjectBaseInput<typename get_traits<_Final>::Input1Traits>,
+	public	_ObjectBaseInput<typename get_traits<_Final>::Input2Traits>,
+	public	_ObjectBaseDomain<typename get_traits<_Final>::Domain>
+{
+protected:
+	typedef	_Final												Final;
+	typedef get_traits<_Final>									Traits;
+	typedef _ObjectBaseOutput<typename Traits::OutputTraits>	Output;
+	typedef _ObjectBaseInput<typename Traits::Input1Traits>		Input1;
+	typedef _ObjectBaseInput<typename Traits::Input2Traits>		Input2;
+	typedef ObjectBase<_Final>									ObjectBaseType;
+public:
+	static const std::array<guid,2>& getCapabilities(){static const std::array<guid,2> val= {guidNull,guid_of<Final>::Get()}; return val;}
+protected:
+	ObjectBase(const guid& rguid) : _ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),_ObjectBaseOutput<typename Traits::OutputTraits>(rguid) {}
 	virtual ~ObjectBase(){}
 
 private:
@@ -228,9 +271,9 @@ private:
 		if(pMessage->GetMessageCode() == MESSAGE_OBJECT_OUTPUT_INIT)
 		{
 			MessageObjectOutputInit* pDetailed = (MessageObjectOutputInit*)pMessage;
-			if(pDetailed->GetSource() == guid_of<typename Input1::SourceClass::Domain>::value )
+			if(pDetailed->GetSource() == guid_of<get_traits<typename Input1::SourceDomain>>::Get() )
 				Input1::Open(pDetailed->GetHandle());
-			else if(pDetailed->GetSource() == guid_of<typename Input2::SourceClass::Domain>::value )
+			else if(pDetailed->GetSource() == guid_of<get_traits<typename Input2::SourceDomain>>::Get() )
 				Input2::Open(pDetailed->GetHandle());
 			else
 				assert("Recieved input from source, but no handler to recieve it!\n");
@@ -240,12 +283,8 @@ private:
 	}
 
 	friend class CoreFactory;
-	template<class _DomainX,class _InputX> friend  class _ObjectBaseInput;
-	template<class _FinalX,class _DomainX,class _OutputTypeX,class _Input1X,class _Input2X> friend class ObjectBase;
-};
-
-template<class _Final,class _Domain,class _OutputType,class _Input1,class _Input2> class guid_of<ObjectBase<_Final,_Domain,_OutputType,_Input1,_Input2>> : public guid_of<_Final>
-{
+	template<class _DomainX> friend  class _ObjectBaseInput;
+	template<class _FinalX> friend class ObjectBase;
 };
 
 template<u32 index> class guid_of<_VoidInput<index>> : public guid_of<void>

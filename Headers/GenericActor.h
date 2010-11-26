@@ -17,9 +17,13 @@ class LogicActor;
 class GraphicsActor;
 class RenderingActor;
 
-typedef ObjectBase<LogicActor,LogicDomain,Vector3<>>										LogicActorBase;
-typedef ObjectBase<GraphicsActor,GraphicsDomain,Vector3<u8>,LogicActorBase>					GraphicsActorBase;
-typedef ObjectBase<RenderingActor,RenderingDomain,void,LogicActorBase,GraphicsActorBase>	RenderingActorBase;
+DECLARE_CLASS_GUID(RenderingActor,	0x9d008bfa,0x26d3,0x461c,0x917a,0xbd9f4acc446d);
+DECLARE_CLASS_GUID(LogicActor,		0xcc98d92a,0xc597,0x47cd,0xaaa8,0xd42c0dde5723);
+DECLARE_CLASS_GUID(GraphicsActor,	0x9ecbcb76,0xa470,0x43d0,0xb1b5,0xfc57c3d0051b);
+
+template<> class get_traits<LogicActor> : public ObjectTraits<LogicActor,LogicDomain,Vector3<>> {};
+template<> class get_traits<GraphicsActor> : public ObjectTraits<GraphicsActor,GraphicsDomain,Vector3<u8>,LogicActor> {};
+template<> class get_traits<RenderingActor> : public ObjectTraits<RenderingActor,RenderingDomain,void,LogicActor,GraphicsActor> {};
 
 }
 

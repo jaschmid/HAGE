@@ -8,7 +8,7 @@ namespace HAGE {
 		return (IObject*) new LogicActor(objectId);
 	}
 
-	LogicActor::LogicActor(guid ObjectId) : GenericActor(),ObjectBase<LogicActor,LogicDomain,Vector3<>>(ObjectId)
+	LogicActor::LogicActor(guid ObjectId) : GenericActor(),ObjectBase<LogicActor>(ObjectId)
 	{
 		position=Vector3<>(getFRand()*20.0f,getFRand()*20.0f,getFRand()*20.0f);
 		speed=Vector3<>(getFRand()*6.0f,getFRand()*6.0f,getFRand()*6.0f);

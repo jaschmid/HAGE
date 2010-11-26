@@ -249,8 +249,8 @@ public:
 	MessageInputKey(const u32 id,const guid& device,const HAGE::u32 key,const HAGE::u16 _char) :
 	  MessageHelper<MessageInputKey>(id),m_Device(device),m_Key(key),m_Char(_char) {}
 	const guid& GetDevice() const{return m_Device;}
-	const u32 GetKey() const{return m_Key;}
-	const u16 GetCharacter() const{return m_Char;}
+	u32 GetKey() const{return m_Key;}
+	u16 GetCharacter() const{return m_Char;}
 private:
 	const guid m_Device;
 	const HAGE::u32 m_Key;
@@ -294,7 +294,7 @@ public:
 	MessageInputAxis(const u32 id,const guid& device,const u32 axis) :
 	  MessageHelper<_C,MessageInputUnknown>(id),m_Device(device),m_Axis(axis) {}
 	const guid& GetDevice() const{return m_Device;}
-	const u32 GetAxis() const{return m_Axis;}
+	u32 GetAxis() const{return m_Axis;}
 private:
 	const guid m_Device;
 	const u32 m_Axis;

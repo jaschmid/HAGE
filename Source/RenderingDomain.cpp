@@ -132,7 +132,7 @@ const char* fragment_program =
 
 		}
 
-		RenderingDomain::RenderingDomain() : Input(1),
+		RenderingDomain::RenderingDomain() : 
 			pVertexBuffer(nullptr),pEffect(nullptr),fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
 		{
 

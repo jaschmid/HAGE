@@ -16,9 +16,6 @@ class GraphicsDomain : public DomainBase<GraphicsDomain>
 		static const bool continuous;
 	private:
 		virtual bool MessageProc(const Message* pMessage);
-
-		InputPin<LogicDomain,GraphicsDomain>			LogicInput;
-		OutputPin<GraphicsDomain>		Output;
 };
 
 }

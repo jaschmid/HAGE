@@ -21,10 +21,6 @@ class LogicDomain : public DomainBase<LogicDomain>
 		
 		virtual bool MessageProc(const Message* pMessage);
 
-		InputPin<InputDomain,LogicDomain>	Input;
-		InputPin<AIDomain,LogicDomain>		InputAI;
-		OutputPin<LogicDomain>	Output;
-
 		guid			testActorId;
 		
 		std::vector<Vector3<>>	positions;

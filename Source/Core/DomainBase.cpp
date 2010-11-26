@@ -46,12 +46,19 @@ namespace HAGE {
 		if(!bShutdown)
 		{
 			// don't close pins in shutdown
+
 			if(outputPin)
+			{
+				//printf("%08x closes pin %08x\n",(SharedDomainBase*)this,outputPin);
 				outputPin->ClosePin();
+			}
 			for(u32 i=0;i<inputPins.size();++i)
 			{
 				if(inputPins[i].first == 0)
+				{
+					//printf("%08x closes pin %08x\n",(SharedDomainBase*)this,inputPins[i].second);
 					inputPins[i].second->ClosePin();
+				}
 				else if( inputPins[i].first < 0)
 					inputPins[i].first ++;
 				else if( inputPins[i].first > 0)
@@ -81,6 +88,7 @@ namespace HAGE {
 				++nDelayedInputCallbacks;
 			}
 		}
+		//printf("Domain %08x has %i Inputs and %i delayed inputs now\n",(SharedDomainBase*)this,nInputCallbacks,nDelayedInputCallbacks);
 	}
 
 	bool SharedDomainBase::MessageProc(const Message* pMessage)

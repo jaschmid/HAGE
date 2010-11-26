@@ -9,7 +9,7 @@ namespace HAGE {
 	}
 
 	GraphicsActor::GraphicsActor(guid ObjectId) :
-		BaseType(ObjectId)
+		ObjectBase<GraphicsActor>(ObjectId)
 	{
 	}
 

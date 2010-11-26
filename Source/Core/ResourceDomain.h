@@ -5,7 +5,7 @@
 
 namespace HAGE {
 
-class ResourceDomain : public DomainBase<ResourceDomain>
+class ResourceDomain : public get_traits<ResourceDomain>
 {
 	public:
 		ResourceDomain();

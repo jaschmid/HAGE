@@ -8,6 +8,8 @@
 #error Do not include this file directly, include HAGE.h instead
 #endif
 
+#ifdef INCLUDE_DEPRECATED_PIN_HELPERS
+
 #ifndef PIN_HELPERS_H_INCLUDED
 #define PIN_HELPERS_H_INCLUDED
 
@@ -190,5 +192,7 @@ private:
 };
 
 }
+
+#endif
 
 #endif

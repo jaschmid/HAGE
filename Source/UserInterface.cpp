@@ -8,7 +8,7 @@
 	*/
 namespace HAGE {
 
-	UserInterface::UserInterface(PinBase* pOut) : m_pPinOut(pOut)
+	UserInterface::UserInterface()
 	{
 		for(auto i = m_bKeyboardState.begin();i!=m_bKeyboardState.end();++i)
 			*i=0;
@@ -74,17 +74,17 @@ namespace HAGE {
 					case MOUSE_AXIS_X:
 						if(m_bMouseState[MOUSE_BUTTON_1])
 						{
-							m_pPinOut->PostMessage(MessageUIAdjustCamera(m->GetChange(),0,0));
+							PostMessage(MessageUIAdjustCamera(m->GetChange(),0,0));
 						}
 						break;
 					case MOUSE_AXIS_Y:
 						if(m_bMouseState[MOUSE_BUTTON_1])
 						{
-							m_pPinOut->PostMessage(MessageUIAdjustCamera(0,m->GetChange(),0));
+							PostMessage(MessageUIAdjustCamera(0,m->GetChange(),0));
 						}
 						break;
 					case MOUSE_AXIS_Z:
-						m_pPinOut->PostMessage(MessageUIAdjustCamera(0,0,m->GetChange()));
+						PostMessage(MessageUIAdjustCamera(0,0,m->GetChange()));
 						break;
 					}
 			}

@@ -147,12 +147,7 @@ namespace HAGE {
 
 	void TaskManager::QueueDomainStep()
 	{
-		if(bInStage)
-		{
-			int a=5;
-			a=a*a;
-			assert(bInStage == false);
-		}
+		assert(bInStage == false);
 		nStep++;
 		if( !pSharedManager->IsShutdown(nStep) )
 		{

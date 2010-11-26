@@ -7,7 +7,7 @@
 
 namespace HAGE {
 	
-class RenderingActor  : public GenericActor, public RenderingActorBase
+class RenderingActor  : public GenericActor, public ObjectBase<RenderingActor>
 {
 public:
 	static IObject* CreateInstance(guid ObjectId);
@@ -31,6 +31,5 @@ private:
 	Vector3<u8>		color;
 };
 
-DECLARE_CLASS_GUID(RenderingActor,	0x9d008bfa,0x26d3,0x461c,0x917a,0xbd9f4acc446d);
 }
 #endif
