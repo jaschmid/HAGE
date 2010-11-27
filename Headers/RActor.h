@@ -10,20 +10,12 @@ namespace HAGE {
 class RenderingActor  : public GenericActor, public ObjectBase<RenderingActor>
 {
 public:
-	static IObject* CreateInstance(guid ObjectId);
+	static RenderingActor* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
 	
-	int Step(RenderingDomain* pRendering)
-	{
-		position = Input1::Get();
-		if(Input2::IsReady())
-			color = Input2::Get();
-		pRendering->DrawIco(position);
-		return 1;
-	}
+	int Step(RenderingDomain* pRendering);
 
-	static const bool isImplemented = true;
 private:
-	RenderingActor(guid ObjectId);
+	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source);
 	virtual ~RenderingActor();
 
 

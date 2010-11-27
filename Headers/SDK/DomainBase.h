@@ -19,113 +19,6 @@
 
 namespace HAGE {
 
-class VoidTraits
-{
-};
-
-template<class _Final> class get_traits
-{
-	// abstract class
-};
-
-template<> class get_traits<void> : VoidTraits
-{
-	// abstract class
-};
-
-template<class _Final> class guid_of<get_traits<_Final>> : public guid_of<_Final>
-{
-};
-
-template<class _Final> class domain_access<get_traits<_Final>> : public domain_access<_Final>
-{
-};
-
-
-template<class _Domain> class DomainOutputTraits
-{
-	public:
-		typedef _Domain		Domain;		
-		typedef DomainOutputTraits<Domain> Traits;
-};
-template<> class DomainOutputTraits<void> : public VoidTraits
-{
-	public:
-		typedef void		Domain;
-		typedef VoidTraits	Traits;
-};
-
-template<class _Domain,bool bEnabled> class DomainOutputTraitsWrapper
-{
-	//abstract
-};
-
-template<class _Domain> class DomainOutputTraitsWrapper<_Domain,true>
-{
-	public:
-		typedef typename DomainOutputTraits<_Domain>::Traits	Traits;
-};
-template<class _Domain> class DomainOutputTraitsWrapper<_Domain,false>
-{
-	public:
-		typedef typename DomainOutputTraits<void>::Traits	Traits;
-};
-
-template<class _Input,i32 _Delay> class InputDelay
-{
-};
-template<class _Domain,class _Input> class DomainInputTraits
-{
-	public:
-		typedef _Domain				    Domain;
-		typedef _Input					SourceDomain;
-		typedef DomainInputTraits<Domain,SourceDomain> Traits;	
-		static	const i32				InputDelay = 0;
-};
-template<class _Domain,class _Input,i32 _Delay> class DomainInputTraits<_Domain,InputDelay<_Input,_Delay>>
-{
-	public:
-		typedef _Domain				    Domain;
-		typedef _Input					SourceDomain;
-		typedef DomainInputTraits<Domain,InputDelay<_Input,_Delay>> Traits;	
-		static	const i32				InputDelay = _Delay;
-};
-
-template<u32 _Index> class _VoidInput
-{
-public:
-	typedef void	Domain;
-};
-
-template<class _Domain> class DomainInputTraits<_Domain,void>
-{
-	public:
-		typedef void				    Domain;
-		typedef void					SourceDomain;
-		typedef _VoidInput<0>			Traits;
-		static	const i32				InputDelay = 0;
-};
-
-template<class _Domain,u32 i> class DomainInputTraits<_Domain,_VoidInput<i>> 
-{
-	public:
-		typedef void				    Domain;
-		typedef void					SourceDomain;
-		typedef _VoidInput<i>			Traits;
-		static	const i32				InputDelay = 0;
-};
-
-template<class _Domain> class DomainBase;
-template<class _Domain,bool bOutput = false,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class DomainTraits
-{
-	public:
-		typedef typename DomainOutputTraitsWrapper<_Domain,bOutput>::Traits		OutputTraits;
-		typedef typename DomainInputTraits<_Domain,_Input1>::Traits			Input1Traits;
-		typedef typename DomainInputTraits<_Domain,_Input2>::Traits			Input2Traits;
-		typedef _Domain												Domain;
-		typedef	DomainBase<_Domain>									DomainBaseType;
-};
-
 class LockedMessageQueue;
 class PinBase;
 class Message;
@@ -221,6 +114,8 @@ private:
 	template<class _Final> friend class _DomainBaseInput;
 	template<class _Final> friend class _DomainBaseOutput;
 	template<class _Final> friend class DomainBase;
+	template<class _ObjectOutputTraits> friend class _ObjectBaseOutput;
+	template<class _Domain> friend class DomainMember;
 };
 
 class IFactory;
@@ -355,6 +250,7 @@ protected:
 	}
 	template<class _TX> inline static void PostMessageOut(const _TX& message)
 	{
+
 		GetBasePin().PostMessage((const Message&)message);
 	}
 

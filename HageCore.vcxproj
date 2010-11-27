@@ -172,6 +172,7 @@
     <ClInclude Include="Headers\SDK\results.h" />
     <ClInclude Include="Headers\SDK\TaskManager.h" />
     <ClInclude Include="Headers\SDK\TLS.h" />
+    <ClInclude Include="Headers\SDK\traits.h" />
     <ClInclude Include="Headers\SDK\types.h" />
     <ClInclude Include="Source\Core\D3D11APIWrapper.h" />
     <ClInclude Include="Source\Core\DebugUI.h" />

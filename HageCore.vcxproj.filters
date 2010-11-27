@@ -105,6 +105,9 @@
     <ClInclude Include="Source\Core\ResourceDomain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\SDK\traits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">

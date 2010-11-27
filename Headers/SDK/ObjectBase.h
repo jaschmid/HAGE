@@ -18,72 +18,38 @@
 
 namespace HAGE {
 
-
-template<class _Domain,class _OutputType> class ObjectOutputTraits
-{
-	public:
-		typedef _OutputType Type;
-		typedef _Domain		Domain;
-		typedef ObjectOutputTraits<Domain,Type> Traits;					
-};
-template<class _Domain> class ObjectOutputTraits<_Domain,void> : public VoidTraits
-{
-	public:
-		typedef VoidTraits Traits;
-};
-
-template<class _Domain,class _Input> class ObjectInputTraits
-{
-	public:
-		typedef _Domain				    Domain;
-		typedef _Input					SourceClass;
-		typedef ObjectInputTraits<Domain,SourceClass> Traits;					
-};
-
-template<class _Domain> class ObjectInputTraits<_Domain,void>
-{
-	public:
-		typedef _VoidInput<0> Traits;
-};
-template<class _Domain,u32 i> class ObjectInputTraits<_Domain,_VoidInput<i>> 
-{
-	public:
-		typedef _VoidInput<i> Traits;
-};
-template<class _Final> class ObjectBase;
-template<class _Final,class _Domain,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectTraits
-{
-	public:
-		typedef typename ObjectOutputTraits<_Domain,_OutputType>::Traits		OutputTraits;
-		typedef typename ObjectInputTraits<_Domain,_Input1>::Traits			Input1Traits;
-		typedef typename ObjectInputTraits<_Domain,_Input2>::Traits			Input2Traits;
-		typedef _Final												ObjectType;
-		typedef _Domain												Domain;
-		typedef	ObjectBase<_Final>									ObjectBaseType;
-};
-
 template<class _Domain> class DomainMember
 {
 protected:
 
 	typedef	_Domain Domain;
 
-	static PinBase& GetOutputPin()
+	static inline PinBase& GetOutputPin()
 	{
 		return OutputPin<Domain>::pin;
 	}
 
-	static void GenerateShutdownMessage()
+	static inline void GenerateShutdownMessage()
 	{
 	    domain_access<_Domain>::Get()->GenerateShutdownMessage();
 	}
 
-	static void PostMessage(const Message& message)
+	static inline void PostMessage(const Message& message)
 	{
 		domain_access<_Domain>::Get()->PostMessage(message);
 	}
 
-	template<class _SourceDomain> static PinBase& GetInputPin()
+	static inline CoreFactory* GetFactory()
+	{
+		return &(domain_access<_Domain>::Get()->Factory);
+	}
+
+	static inline TaskManager* GetTasks()
+	{
+		return &(domain_access<_Domain>::Get()->Tasks);
+	}
+
+	template<class _SourceDomain> static inline PinBase& GetInputPin()
 	{
 		return InputPin<_SourceDomain,Domain>::pin;
 	}
@@ -125,6 +91,14 @@ protected:
 	_ObjectBaseInput() : pin(typename typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
 	{
 	}
+	_ObjectBaseInput(const MemHandle& h,const guid& source) : pin(typename typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
+	{
+		if(source == guid_of<SourceDomain>::Get())
+		{
+			handle = h;
+			pin.ReferenceMemBlock(handle);
+		}
+	}
 	~_ObjectBaseInput()
 	{
 		if(handle.isValid())
@@ -147,8 +121,8 @@ private:
 
 	inline void Open(MemHandle h)
 	{
-		pin.ReferenceMemBlock(h);
 		handle = h;
+		pin.ReferenceMemBlock(handle);
 	}
 
 	PinBase& pin;
@@ -161,6 +135,12 @@ private:
 template<u32 i> class _ObjectBaseInput< _VoidInput<i> >
 {
 protected:
+	_ObjectBaseInput()
+	{
+	}
+	_ObjectBaseInput(const MemHandle& h,const guid& source)
+	{
+	}
 	//empty
 	typedef VoidTraits							Traits;
 	typedef void	Domain;
@@ -187,47 +167,49 @@ protected:
 
 	_ObjectBaseOutput(const guid& objectId) : pin(typename get_traits<Domain>::DomainBaseType::Output::GetBasePin())
 	{
-		handle=pin.AllocateMemBlock(sizeof(Type));
-		_ObjectBaseDomain<Domain>::PostMessage(MessageObjectOutputInit(objectId,handle));
+		__out_handle=pin.AllocateMemBlock(sizeof(Type));
+		assert(__out_handle.isValid());
+		domain_access<Domain>::Get()->Factory.RegisterObjectOut(objectId,__out_handle,sizeof(Type));
 	}
 	~_ObjectBaseOutput()
 	{
-		if(handle.isValid())
+		if(__out_handle.isValid())
 		{
-			pin.FreeMemBlock(handle);
-			handle = MemHandle();
+			pin.FreeMemBlock(__out_handle);
+			__out_handle = MemHandle();
 		}
 	}
 	inline void Open(MemHandle h)
 	{
 		pin.ReferenceMemBlock(h);
-		handle = h;
+		__out_handle = h;
 	}
 	inline bool IsReady() const
 	{
-		return handle.isValid();
+		return __out_handle.isValid();
 	}
 	inline const Type& GetOld() const
 	{
-		assert(handle.isValid());
-		return *(const Type*)pin.GetReadMem(handle,sizeof(Type));
+		assert(__out_handle.isValid());
+		return *(const Type*)pin.GetReadMem(__out_handle,sizeof(Type));
 	}
 	inline void Set(const Type& value)
 	{
-		assert(handle.isValid());
-		*(Type*)pin.GetWriteMem(handle,sizeof(Type)) = value;
+		assert(__out_handle.isValid());
+		*(Type*)pin.GetWriteMem(__out_handle,sizeof(Type)) = value;
 	}
 	inline Type* Access()
 	{
-		assert(handle.isValid());
-		return (Type*)pin.GetWriteMem(handle,sizeof(Type));
+		assert(__out_handle.isValid());
+		return (Type*)pin.GetWriteMem(__out_handle,sizeof(Type));
 	}
 
 private:
 	PinBase& pin;
-	MemHandle handle;
+	MemHandle __out_handle;
 
 	template<class _DomainX> friend class _ObjectBaseInput;
+	friend class CoreFactory;
 };
 
 template<> class _ObjectBaseOutput<VoidTraits>
@@ -253,6 +235,7 @@ template<class _Final> class ObjectBase :
 	public	_ObjectBaseDomain<typename get_traits<_Final>::Domain>
 {
 protected:
+	typedef typename get_traits<_Final>::Domain					Domain;
 	typedef	_Final												Final;
 	typedef get_traits<_Final>									Traits;
 	typedef _ObjectBaseOutput<typename Traits::OutputTraits>	Output;
@@ -263,6 +246,11 @@ public:
 	static const std::array<guid,2>& getCapabilities(){static const std::array<guid,2> val= {guidNull,guid_of<Final>::Get()}; return val;}
 protected:
 	ObjectBase(const guid& rguid) : _ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),_ObjectBaseOutput<typename Traits::OutputTraits>(rguid) {}
+	ObjectBase(const guid& rguid,const MemHandle& h,const guid& source) 
+		:	_ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),
+			_ObjectBaseOutput<typename Traits::OutputTraits>(rguid),
+			_ObjectBaseInput<typename Traits::Input1Traits>(h,source),
+			_ObjectBaseInput<typename Traits::Input2Traits>(h,source) {}
 	virtual ~ObjectBase(){}
 
 private:

@@ -19,6 +19,7 @@
 
 #include "IObject.h"
 #include "IDomain.h"
+#include "traits.h"
 
 #include "global_allocator.h"
 

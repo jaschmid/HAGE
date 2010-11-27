@@ -1,4 +1,5 @@
 #include "header.h"
+#include "GenericActor.h"
 #include "RenderingDomain.h"
 #include "UserInterfaceRendering.h"
 #include "RActor.h"

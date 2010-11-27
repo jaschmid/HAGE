@@ -3,14 +3,25 @@
 
 namespace HAGE {
 
-	IObject* GraphicsActor::CreateInstance(guid objectId)
+	GraphicsActor* GraphicsActor::CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source)
 	{
-		return (IObject*) new GraphicsActor(objectId);
+		return new GraphicsActor(ObjectId,h,source);
 	}
 
-	GraphicsActor::GraphicsActor(guid ObjectId) :
-		ObjectBase<GraphicsActor>(ObjectId)
+	int GraphicsActor::Step()
 	{
+		position = Input1::Get();
+		color = Vector3<u8>(255,255,255);
+		Output::Set(color);
+		return 1;
+	}
+
+	GraphicsActor::GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source) :
+		ObjectBase<GraphicsActor>(ObjectId,h,source)
+	{
+		position = Input1::Get();
+		color = Vector3<u8>(255,255,255);
+		Output::Set(color);
 	}
 
 	GraphicsActor::~GraphicsActor()

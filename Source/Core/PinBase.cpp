@@ -17,6 +17,16 @@ namespace HAGE {
 			new (&m_pvpDestructors[i]) pd_vector;
 		}
 	}
+		
+	u32 PinBase::GetAll(MemHandle h,const void* (&values)[FRAME_BUFFER_COUNT])
+	{
+		MemoryEntry* entry = (MemoryEntry*)h._p;
+
+		for(int i =0;i<FRAME_BUFFER_COUNT;++i)
+			values[i]=((u8*)entry)+sizeof(MemoryEntry)+entry->size*i;
+
+		return entry->size;
+	}
 
 	LockedMessageQueue::~LockedMessageQueue()
 	{
@@ -116,7 +126,7 @@ namespace HAGE {
 	{
 		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
-		u32 index =  pMem[nWriteIndex].size() - m.GetSize();
+		u32 index =  (u32)(pMem[nWriteIndex].size() - m.GetSize());
 		Package* target = (Package*)(&pMem[nWriteIndex][index]);
 		m_pvpDestructors[nWriteIndex].push_back(index);
 		m.CopyTo(target);
@@ -129,7 +139,7 @@ namespace HAGE {
 		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
 		assert( m.GetSource() != guidNull);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
-		u32 index =  pMem[nWriteIndex].size() - m.GetSize();
+		u32 index =  (u32)(pMem[nWriteIndex].size() - m.GetSize());
 		Package* target = (Package*)(&pMem[nWriteIndex][index]);
 		m_pvpDestructors[nWriteIndex].push_back(index);
 		m.CopyTo(target);

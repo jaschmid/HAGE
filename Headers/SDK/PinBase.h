@@ -98,6 +98,7 @@ private:
 	typedef std::array<u8,size> mm_vector;
 
 	mm_vector		Mem;
+
 };
 
 class LockedMessageQueue
@@ -137,6 +138,9 @@ protected:
 
 private:
 
+	u32  GetRead(){return nReadIndex;}
+	u32  GetWrite(){return nWriteIndex;}
+
 	result			_PostMessage(const Message& m);
 	result			_PostPackage(const Package& m);
 	result			_ForwardMessage(const Message& m);
@@ -159,6 +163,7 @@ private:
 
 	template<class _T> friend class OutputPin;
 	template<class _T,class _T2> friend class InputPin;
+	friend class CoreFactory;
 
 };
 
@@ -189,12 +194,17 @@ public:
 	static void FreeMemBlock(MemHandle Handle);
 
 private:
+
+	u32 GetAll(MemHandle h,const void* (&values)[FRAME_BUFFER_COUNT]);
+
 	class MemoryEntry
 	{
 	public:
 		i32 size;
 		i32 references;
 	};
+
+	friend class CoreFactory;
 };
 
 }

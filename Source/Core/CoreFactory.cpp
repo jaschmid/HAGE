@@ -2,14 +2,48 @@
 
 namespace HAGE {
 
-	CoreFactory::CoreFactory(PinBase*& pOut,TaskManager* pTask) : m_pout(pOut),m_pTask(pTask)
+	CoreFactory::CoreFactory(PinBase*& pOut,TaskManager* pTask) : m_pout(pOut),m_pTask(pTask),m_nCurrentStep(0)
 	{
 	}
 	CoreFactory::~CoreFactory()
 	{
 	}
 
-	bool CoreFactory::TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId, IObject** ppInterface, bool bMaster)
+	CoreFactory::iterator	CoreFactory::begin(const guid& capability)
+	{
+		auto found = capabilitiesObjectLists.find(capability);
+		assert(found !=capabilitiesObjectLists.end());	
+		return iterator(found->second.begin(),this);
+	}
+
+	CoreFactory::iterator	CoreFactory::end(const guid& capability)
+	{
+		auto found = capabilitiesObjectLists.find(capability);
+		assert(found !=capabilitiesObjectLists.end());
+		return iterator(found->second.end(),this);
+	}
+	
+
+	u32 CoreFactory::size(const guid& capability)
+	{
+		auto found = capabilitiesObjectLists.find(capability);
+		assert(found !=capabilitiesObjectLists.end());
+
+		return (u32)found->second.size();
+	}
+	
+
+	void	CoreFactory::RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size)
+	{
+		object_map_type::iterator new_object = flatObjectList.find(guid);
+		assert(new_object != flatObjectList.end());
+		new_object->second.nResultSize=m_pout->GetAll(handle,new_object->second.pResultMem);	
+		assert(new_object->second.nResultSize==size);
+		if(m_pout)
+			m_pout->PostMessage(MessageFactoryObjectCreated(guid,new_object->second.registration_entry.first,handle));
+	}
+
+	bool CoreFactory::TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId,void* init_data, bool bMaster)
 	{
 		// check if already exists
 		object_map_type::iterator it = flatObjectList.find(ObjectId);
@@ -17,13 +51,15 @@ namespace HAGE {
 		{
 			if(bMaster || it->second.bMaster)
 			{
-				*ppInterface = nullptr;
 				return false;
 			}
 			else
 			{
+				std::pair<const MemHandle&,const guid&>* pPair=(std::pair<const MemHandle&,const guid&>*)init_data;
+				MessageObjectOutputInit Init(ObjectId,pPair->first);
+				Init.SetSource(pPair->second);
+				it->second.pObject->MessageProc(&Init);
 				it->second.uRefCounter++;
-				*ppInterface = it->second.pObject;
 				return true;
 			}
 		}
@@ -31,40 +67,56 @@ namespace HAGE {
 		function_map_type::iterator it2 =registeredFunctionCreation.find(ObjectTypeId);
 		if(it2 != registeredFunctionCreation.end())
 		{
-			if(m_pout)
-				m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,ObjectTypeId));
-			*ppInterface=it2->second.function(ObjectId);
+			ObjectRefContainer container = {nullptr, *it2, 1, bMaster , m_nCurrentStep};	
+			container.nResultSize = 0xffffffff;
+			flatObjectList.insert(std::pair<guid,ObjectRefContainer>(ObjectId,container));
+			object_map_type::iterator new_object = flatObjectList.find(ObjectId);
+			assert(new_object != flatObjectList.end());
+			IObject* pObject;
+			if(bMaster)
+				pObject=it2->second.init_function(ObjectId,init_data);
+			else
+				pObject=it2->second.sub_init(ObjectId,init_data);
+			assert(pObject);//currently don't support object creation failing
 
-			if(*ppInterface)
+			new_object->second.pObject=pObject;	
+			if(new_object->second.nResultSize == 0xffffffff)
 			{
-				ObjectRefContainer container = {*ppInterface, *it2, 1, bMaster };
-
-				flatObjectList.insert(std::pair<guid,ObjectRefContainer>(ObjectId,container));
-				object_map_type::iterator inserted = flatObjectList.find(ObjectId);
-				assert(inserted != flatObjectList.end());
-
-				for(auto caps = it2->second.capabilities.begin(); caps != it2->second.capabilities.end(); ++caps)
-				{
-					inserted->second.vCapabilitiesIndices.push_back((u32)caps->pEntry->second.size());
-					std::vector<u32>* vp = &(inserted->second.vCapabilitiesIndices);
-					u32 index = inserted->second.vCapabilitiesIndices.size()-1;
-					ObjectEntry o = {*ppInterface,vp,index};
-					caps->pEntry->second.push_back( o );
-				}
-
-				return true;
+				//output mem has not been set assume no output
+				new_object->second.nResultSize=0;	
+				
+				// generate the output message with empty memhandle
+				if(m_pout)
+					m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,ObjectTypeId,MemHandle()));
+			}		
+			
+			
+			for(auto caps = it2->second.capabilities.begin(); caps != it2->second.capabilities.end(); ++caps)
+			{
+				new_object->second.vCapabilitiesIndices.push_back((u32)caps->pEntry->second.size());
+				std::vector<u32>* vp = &(new_object->second.vCapabilitiesIndices);
+				u32 index = (u32)new_object->second.vCapabilitiesIndices.size()-1;
+				ObjectEntry o = {&new_object->first,&new_object->second,index};
+				caps->pEntry->second.push_back( o );
 			}
+
+			return true;
 		}
 		return false;
 	}
 
-	guid CoreFactory::CreateObject(const guid& ObjectTypeId, IObject** ppInterface)
+	guid CoreFactory::_CreateObject(const guid& ObjectTypeId, void* InitValue)
 	{
 		guid ObjectId = *(guid*)number_generator().data;
-		if(TryCreateObjectWithGuid(ObjectId,ObjectTypeId,ppInterface,true))
-			return ObjectId;
-		else
-			return guidNull;
+		function_map_type::iterator it2 =registeredFunctionCreation.find(ObjectTypeId);
+		if(it2 != registeredFunctionCreation.end())
+		{
+			assert(!it2->second.bNoInit);
+			if(TryCreateObjectWithGuid(ObjectId,ObjectTypeId,InitValue,true))
+				return ObjectId;
+			else
+				return guidNull;
+		}
 	}
 
 	IObject* CoreFactory::QueryObject(const guid& ObjectId)
@@ -76,20 +128,17 @@ namespace HAGE {
 			return res->second.pObject;
 	}
 
-	u32 CoreFactory::GetNumObjects(const guid& capability)
-	{
-		auto found = capabilitiesObjectLists.find(capability);
-		assert(found !=capabilitiesObjectLists.end());
-
-		return (u32)found->second.size();
-	}
-
 	std::pair<const void*,u32> CoreFactory::_ForEach(boost::function<bool (void*,IObject*)> f,size_t size,const guid& capability,bool bSync,void* pData,u32 nData,bool bGetSome)
 	{
 		auto found = capabilitiesObjectLists.find(capability);
 		assert(found !=capabilitiesObjectLists.end());
 
 		u32 nItems = (u32)found->second.size();
+
+		if(nItems == 0)
+		{
+			return std::pair<const void*,u32>(nullptr,0);
+		}
 
 		assert( (!bGetSome) || pData);
 		assert( (!pData) || (nData >= nItems) );
@@ -179,6 +228,45 @@ namespace HAGE {
 		return res;
 	}
 
+	void CoreFactory::_RegisterObjectType(
+			std::function<IObject* (const guid&,void*)>* fInit,
+			std::function<IObject* (const guid&,void*)>* fSub,
+			const guid& classType,const guid& guidInput1,const guid& guidInput2,const guid* guidCapabilities,u32 nCapabilities,u32 nMemOutOffset)
+	{
+		RegistrationContainer reg = {(fInit?*fInit:(std::function<IObject* (const guid&,void*)>())),(fInit?false:true),(fSub?*fSub:(std::function<IObject* (const guid&,void*)>())),nMemOutOffset};
+		registeredFunctionCreation.insert(
+			function_map_type::value_type(classType,reg) 
+		);
+
+		function_map_type::iterator inserted = registeredFunctionCreation.find(classType);
+		assert(inserted != registeredFunctionCreation.end());
+		inserted->second.capabilities.resize(nCapabilities);
+		for(int i =0;i<nCapabilities;++i)
+		{
+			const guid& icapability = guidCapabilities[i];
+			auto found = capabilitiesObjectLists.find(icapability);
+			if(found ==capabilitiesObjectLists.end())
+			{
+				capabilitiesObjectLists.insert(object_capabilties_map_type::value_type(icapability,std::vector<ObjectEntry>()));
+				found = capabilitiesObjectLists.find(icapability);
+			}
+			inserted->second.capabilities[i].cap_guid=icapability;
+			inserted->second.capabilities[i].pEntry = &(*found);
+		}
+
+		if(guidInput1 != guidNull)
+		{
+			assert(objectDependancyMap.find(guidInput1) == objectDependancyMap.end());
+			objectDependancyMap.insert(object_dependancy_map_type::value_type(guidInput1,std::pair<guid,u32>(classType,1)));
+
+			if(guidInput2 != guidNull)
+			{
+				assert(objectDependancyMap.find(guidInput2) == objectDependancyMap.end());
+				objectDependancyMap.insert(object_dependancy_map_type::value_type(guidInput2,std::pair<guid,u32>(classType,2)));
+			}
+		}
+	}
+
 	void CoreFactory::DestroyObjectInternal(object_map_type::iterator& item)
 	{
 		result res=item->second.pObject->Destroy();
@@ -196,7 +284,7 @@ namespace HAGE {
 			if(removed != swapped)
 			{
 				found->second[removed] = found->second[swapped];
-				(*found->second[removed].object_entry)[found->second[removed].index]=(u32)removed;
+				found->second[removed].pRef->vCapabilitiesIndices[found->second[removed].index]=(u32)removed;
 				found->second.pop_back();
 			}
 			else
@@ -211,13 +299,15 @@ namespace HAGE {
 		if(pMessage->GetMessageCode() == MESSAGE_FACTORY_OBJECT_CREATED)
 		{
 			MessageFactoryObjectCreated* pDetailed = (MessageFactoryObjectCreated*)pMessage;
-			IObject* pObject;
 
 			auto found = objectDependancyMap.find(pDetailed->GetObjectTypeId());
+			
+			std::pair<const MemHandle&,const guid&> pair(pDetailed->GetInitHandle(),pDetailed->GetSource());
 
 			if(found != objectDependancyMap.end())
 			{
-				TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second,&pObject);
+				assert(found->second.second < 3);
+				TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second.first,(void*)&pair,false);
 				return true;
 			}
 		}

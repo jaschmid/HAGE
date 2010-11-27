@@ -26,20 +26,24 @@ namespace HAGE {
 			Factory.RegisterObjectType<LogicActor>();
 			m_pUserInterface = new UserInterface();
 
-
-			LogicActor*		testActor;
-			guid			testActorId;
-			testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
+			Vector3<> Init;
+			Factory.CreateObject<LogicActor>(Init);
 			
 			for(int i =0;i<1500;++i)
 			{
 				LogicActor*		testActor;
 				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
+				Factory.CreateObject<LogicActor>(Init);
 			}
 
-			auto result = Factory.ForEach<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , guidNull );
-			positions.assign(result.first,&result.first[result.second]);
+			guids.resize(Factory.size());
+			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
+			for(int i = 0; i<nObjects2; ++i)
+			{
+				Factory.DestroyObject(guids[i]);
+				Vector3<> Init;
+				Factory.CreateObject<LogicActor>(Init);
+			}
 		}
 
 		bool LogicDomain::MessageProc(const Message* m)
@@ -56,24 +60,13 @@ namespace HAGE {
 
 		void LogicDomain::DomainStep(u64 step)
 		{
-			std::vector<Vector3<>>& rpos=positions;
-			/*
-			for(int i =0;i<1;++i)
-			{
-				LogicActor*		testActor;
-				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
-			}*/
-			positions.resize(Factory.GetNumObjects());
-			u32 nObjects = Factory.ForEachEx<Vector3<>,LogicActor>( [](LogicActor* o) -> Vector3<> {return o->Init();} , &positions[0], positions.size());
-			guids.resize(nObjects);
-			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [rpos](LogicActor* o,guid& g) -> bool {return o->Step(rpos,g);} , &guids[0],positions.size());
+			guids.resize(Factory.size());
+			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
 			for(int i = 0; i<nObjects2; ++i)
 			{
 				Factory.DestroyObject(guids[i]);
-				LogicActor*		testActor;
-				guid			testActorId;
-				testActorId = Factory.CreateObject(guid_of<LogicActor>::Get(),(IObject**)&testActor);
+				Vector3<> Init;
+				Factory.CreateObject<LogicActor>(Init);
 			}
 
 		}

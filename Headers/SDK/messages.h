@@ -55,8 +55,9 @@ private:
 class Package : public Message
 {
 public:
+	Package(u32 MessageCode,u32 Size) : Message(MessageCode,Size){}
 	virtual ~Package(){}
-	virtual Package* CopyTo(void* pTarget) const = 0;
+	virtual Message* CopyTo(void* pTarget) const = 0;
 };
 
 
@@ -334,7 +335,7 @@ private:
 enum {
 	// FACTORY MESSAGES 000f 0000
 	MESSAGE_FACTORY_UNKNOWN				= 0x000f0000,
-	MESSAGE_FACTORY_OBJECT_CREATED		= 0x000f0001,
+	MESSAGE_FACTORY_OBJECT_CREATED		= 0x800f0001,
 	MESSAGE_FACTORY_OBJECT_DESTROYED	= 0x000f0002
 };
 
@@ -344,19 +345,20 @@ private:
 	static const u32 id = MESSAGE_FACTORY_UNKNOWN;
 };
 
-class MessageFactoryObjectCreated : public MessageHelper<MessageFactoryObjectCreated>
+class MessageFactoryObjectCreated  : public MessageHelper<MessageFactoryObjectCreated,Package>
 {
 public:
-	MessageFactoryObjectCreated(const guid& ObjectId,const guid& ObjectTypeId) :
-		MessageHelper<MessageFactoryObjectCreated>(id),
-		objectId(ObjectId),
-		objectTypeId(ObjectTypeId) {}
+	MessageFactoryObjectCreated(const guid& ObjectId,const guid& ObjectTypeId,const MemHandle& h);
+	MessageFactoryObjectCreated(const MessageFactoryObjectCreated& m) ;
+	virtual ~MessageFactoryObjectCreated();
 	const guid& GetObjectTypeId() const{return objectTypeId;}
 	const guid& GetObjectId() const{return objectId;}
+	const MemHandle& GetInitHandle() {return handle;}
 
 private:
 	const guid	objectId;
 	const guid& objectTypeId;
+	MemHandle	handle;
 	static const u32 id = MESSAGE_FACTORY_OBJECT_CREATED;
 };
 

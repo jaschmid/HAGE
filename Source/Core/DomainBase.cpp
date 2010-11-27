@@ -115,11 +115,13 @@ namespace HAGE {
 
 	void SharedDomainBase::Init(u64 step)
 	{
+		Factory.Step(step);
 		ProcessMessages();
 	}
 
 	void SharedDomainBase::Step(u64 step)
 	{
+		Factory.Step(step);
 		ProcessMessages();
 
 		DomainStep(step);
@@ -127,6 +129,7 @@ namespace HAGE {
 
 	void SharedDomainBase::Shutdown(u64 step)
 	{
+		Factory.Step(step);
 		ProcessMessages();
 
 		Factory.Shutdown();

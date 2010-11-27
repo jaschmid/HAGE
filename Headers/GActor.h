@@ -10,19 +10,12 @@ namespace HAGE {
 class GraphicsActor  : public GenericActor, public ObjectBase<GraphicsActor>
 {
 public:
-	static IObject* CreateInstance(guid ObjectId);
+	static GraphicsActor* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
 	
-	int Step()
-	{
-		position = Input1::Get();
-		color = Vector3<u8>(255,255,255);
-		Output::Set(color);
-		return 1;
-	}
+	int Step();
 
-	static const bool isImplemented = true;
 private:
-	GraphicsActor(guid ObjectId);
+	GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source);
 	virtual ~GraphicsActor();
 
 	Vector3<>		position;
