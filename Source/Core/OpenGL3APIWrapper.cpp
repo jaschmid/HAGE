@@ -378,7 +378,7 @@ void OpenGL3APIWrapper::PresentFrame()
 #endif
 }
 
-HAGE::APIWVertexBuffer* OpenGL3APIWrapper::CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData)
+HAGE::APIWVertexBuffer* OpenGL3APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData)
 {
 	return new OGL3VertexBuffer(this,szVertexFormat,pData,nElements,bInstanceData);
 }
@@ -422,7 +422,7 @@ const OpenGL3APIWrapper::VertexFormatEntry*	OpenGL3APIWrapper::GetVertexFormat(H
 	return &m_VertexFormatList[code];
 }
 
-void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
+void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
 {
 	std::string s_name(szName);
 	assert( m_VertexStringTable.find(s_name) == m_VertexStringTable.end());
@@ -562,8 +562,8 @@ void		OpenGL3APIWrapper::SetBlendState(HAGE::u16 code)
 		glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB);
 
 	assert(state.nBlendStates == 1);
-	int i;
-	for(i =0;i<state.nBlendStates;++i)
+
+	for(HAGE::u32 i =0;i<state.nBlendStates;++i)
 	{
 		if(state.BlendStates[i].bBlendEnable)
 		{

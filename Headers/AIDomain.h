@@ -12,8 +12,6 @@ class AIDomain : public DomainBase<AIDomain>
 		~AIDomain();
 		void DomainStep(u64 step);
 
-		static const guid& id;
-		static const bool continuous;
 	private:
 		virtual bool MessageProc(const Message* pMessage);
 

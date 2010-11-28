@@ -117,6 +117,7 @@ namespace HAGE {
 			else
 				return guidNull;
 		}
+		return guidNull;
 	}
 
 	IObject* CoreFactory::QueryObject(const guid& ObjectId)

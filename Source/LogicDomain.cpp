@@ -27,18 +27,13 @@ namespace HAGE {
 			m_pUserInterface = new UserInterface();
 
 			Vector3<> Init;
-			Factory.CreateObject<LogicActor>(Init);
 			
 			for(int i =0;i<1500;++i)
-			{
-				LogicActor*		testActor;
-				guid			testActorId;
 				Factory.CreateObject<LogicActor>(Init);
-			}
 
 			guids.resize(Factory.size());
-			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
-			for(int i = 0; i<nObjects2; ++i)
+			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
+			for(u32 i = 0; i<nObjects2; ++i)
 			{
 				Factory.DestroyObject(guids[i]);
 				Vector3<> Init;
@@ -50,19 +45,14 @@ namespace HAGE {
 		{
 			if(m_pUserInterface->ProcessInputMessage(m))
 				return true;
-			switch(m->GetMessageCode())
-			{
-				case 0:
-				default:
-					return SharedDomainBase::MessageProc(m);
-			}
+			return SharedDomainBase::MessageProc(m);
 		}
 
 		void LogicDomain::DomainStep(u64 step)
 		{
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
-			for(int i = 0; i<nObjects2; ++i)
+			for(u32 i = 0; i<nObjects2; ++i)
 			{
 				Factory.DestroyObject(guids[i]);
 				Vector3<> Init;
@@ -77,7 +67,4 @@ namespace HAGE {
 			delete m_pUserInterface;
 			printf("Destroy Logic\n");
 		}
-
-		const guid& LogicDomain::id = guidLogicDomain;
-		const bool LogicDomain::continuous = false;
 }

@@ -16,8 +16,6 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 
 		void DrawIco(Vector3<> Location);
 
-		static const guid& id;
-		static const bool continuous;
 	private:
 		virtual bool MessageProc(const Message* pMessage);
 

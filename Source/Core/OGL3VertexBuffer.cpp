@@ -3,7 +3,7 @@
 
 #ifndef NO_OGL
 
-OGL3VertexBuffer::OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData) : m_pWrapper(pWrapper)
+OGL3VertexBuffer::OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData) : m_pWrapper(pWrapper)
 {
 	m_code = pWrapper->GetVertexFormatCode(szVertexFormat);
 

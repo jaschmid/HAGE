@@ -29,7 +29,4 @@ namespace HAGE {
 	{
 		printf("Destroy AI\n");
 	}
-
-	const guid& AIDomain::id(guidAIDomain);
-	const bool AIDomain::continuous = false;
 }

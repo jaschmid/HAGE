@@ -54,7 +54,6 @@ namespace HAGE {
 		speed=Vector3<>(getFRand()*3.0f,getFRand()*3.0f,getFRand()*3.0f);
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		Output::Set(position);
-		//PostMessage(MessageObjectOutputInit(ObjectId,TestOut.GetHandle()));
 	}
 
 	LogicActor::~LogicActor()

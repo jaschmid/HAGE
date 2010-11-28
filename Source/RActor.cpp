@@ -16,6 +16,7 @@ namespace HAGE {
 	int RenderingActor::Step(RenderingDomain* pRendering)
 	{
 		position = Input1::Get();
+
 		if(Input2::IsReady())
 			color = Input2::Get();
 		pRendering->DrawIco(position);

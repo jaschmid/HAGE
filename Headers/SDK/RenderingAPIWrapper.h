@@ -125,13 +125,13 @@ public:
 	virtual void BeginFrame() = 0;
 	virtual void PresentFrame() = 0;
 
-	virtual void RegisterVertexFormat(const char* szName,VertexDescriptionEntry* pDescription,u32 nNumEntries) = 0;
+	virtual void RegisterVertexFormat(const char* szName,const VertexDescriptionEntry* pDescription,u32 nNumEntries) = 0;
 	virtual APIWVertexArray* CreateVertexArray(HAGE::u32 nPrimitives,
 		HAGE::APIWPrimitiveType PrimitiveType,
 		HAGE::APIWVertexBuffer** pBuffers,
 		HAGE::u32 nBuffers = 1,
 		const HAGE::u32* pIndexBufferData = nullptr) = 0;
-	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,u32 nElements,bool bInstanceData = false) = 0;
+	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,u32 nElements,bool bInstanceData = false) = 0;
 	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
 	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
 		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,

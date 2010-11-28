@@ -12,8 +12,6 @@ class GraphicsDomain : public DomainBase<GraphicsDomain>
 		~GraphicsDomain();
 		void DomainStep(u64 step);
 
-		static const guid& id;
-		static const bool continuous;
 	private:
 		virtual bool MessageProc(const Message* pMessage);
 };

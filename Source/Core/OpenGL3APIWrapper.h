@@ -79,7 +79,7 @@ template<> class hash<BlendStateEX>
              std::size_t seed = 0;
              boost::hash_combine(seed,state.bAlphaToCoverage);
              boost::hash_combine(seed,state.nBlendStates);
-             for(int i =0;i<state.nBlendStates;++i)
+             for(HAGE::u32 i =0;i<state.nBlendStates;++i)
              {
                  boost::hash_combine(seed,state.BlendStates[i].bBlendEnable);
                  if(state.BlendStates[i].bBlendEnable)
@@ -111,14 +111,14 @@ public:
 	void BeginFrame();
 	void PresentFrame();
 
-	void RegisterVertexFormat(const char* szName,HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
+	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
 		HAGE::u32 nPrimitives,
 		HAGE::APIWPrimitiveType PrimitiveType,
 		HAGE::APIWVertexBuffer** pBuffers,
 		HAGE::u32 nBuffers,
 		const HAGE::u32* pIndexBufferData);
-	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
+	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
 	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
@@ -186,7 +186,7 @@ private:
 class OGL3VertexBuffer : public HAGE::APIWVertexBuffer
 {
 public:
-	OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
+	OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
 	~OGL3VertexBuffer();
 
 private:

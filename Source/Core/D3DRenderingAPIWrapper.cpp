@@ -244,7 +244,7 @@ void D3D11APIWrapper::PresentFrame()
         printf("Average %.02f - current %.02f\n",sum/(float)nSum,1.0f/(float)diff*(float)freq);
 }
 
-HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData)
+HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData)
 {
 	return new D3D11VertexBuffer(this,szVertexFormat,pData,nElements,bInstanceData);
 }
@@ -415,7 +415,7 @@ HAGE::u32	D3D11APIWrapper::GetVertexSize(HAGE::u8 code)
 	return m_VertexFormatList[code].uVertexSize;
 }
 
-void D3D11APIWrapper::RegisterVertexFormat(const char* szName,HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
+void D3D11APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
 {
 	std::string s_name(szName);
 	assert( m_VertexStringTable.find(s_name) == m_VertexStringTable.end());

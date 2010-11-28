@@ -39,7 +39,4 @@ namespace HAGE {
 		{
 			printf("Destroy Sound\n");
 		}
-
-		const guid& SoundDomain::id = guidSoundDomain;
-		const bool SoundDomain::continuous = false;
 }

@@ -36,14 +36,14 @@ public:
 	void BeginFrame();
 	void PresentFrame();
 
-	void RegisterVertexFormat(const char* szName,HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
+	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
 		HAGE::u32 nPrimitives,
 		HAGE::APIWPrimitiveType PrimitiveType,
 		HAGE::APIWVertexBuffer** pBuffers,
 		HAGE::u32 nBuffers,
 		const HAGE::u32* pIndexBufferData);
-	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
+	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
 	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
@@ -118,7 +118,7 @@ private:
 class D3D11VertexBuffer : public HAGE::APIWVertexBuffer
 {
 public:
-	D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData);
+	D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
 	~D3D11VertexBuffer();
 
 	HAGE::u8					GetCode() const{return m_nCode;}

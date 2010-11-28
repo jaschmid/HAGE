@@ -15,13 +15,9 @@ class LogicDomain : public DomainBase<LogicDomain>
 		~LogicDomain();
 		void DomainStep(u64 step);
 
-		static const guid& id;
-		static const bool continuous;
 	private:
 		
 		virtual bool MessageProc(const Message* pMessage);
-
-		guid			testActorId;
 		
 		std::vector<Vector3<>>	positions;
 		std::vector<guid>		guids;

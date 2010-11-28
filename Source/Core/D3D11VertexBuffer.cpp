@@ -4,7 +4,7 @@
 #ifndef NO_D3D
 
 
-D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,void* pData,HAGE::u32 nElements,bool bInstanceData) :
+D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData) :
 	m_pWrapper(pWrapper),
 	m_pVertexBuffer(nullptr),
 	m_nElements(nElements),
