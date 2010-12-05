@@ -165,6 +165,15 @@ template<class _Final,class _Domain,class _InitType=void,class _OutputType = voi
 		typedef	ObjectBase<_Final>									ObjectBaseType;
 };
 
+template<class _Type, class _Stage0Loader,class _Stage1Loader = void,class _Stage2Loader = void> class ResourceTraits
+{
+	public:
+		typedef _Type	ResourceType;
+		typedef _Stage0Loader Stage0Loader;
+		typedef _Stage1Loader Stage1Loader;
+		typedef _Stage2Loader Stage2Loader;
+};
+
 }
 
 #endif

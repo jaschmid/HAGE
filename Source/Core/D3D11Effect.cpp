@@ -128,7 +128,7 @@ ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 }
 
 
-void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants)
+void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants)
 {
 	for(HAGE::u32 i = 0; i<nConstants; ++i)
 	{

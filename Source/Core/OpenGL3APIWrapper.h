@@ -1,7 +1,12 @@
 #ifndef OPENGL3__API__WRAPPER
 #define OPENGL3__API__WRAPPER
 
+#ifdef DEBUG_GL
+#include "SDK/Hage.h"
+#else
 #include <HAGE.h>
+#endif
+
 #include "RenderDebugUI.h"
 
 #ifndef NO_OGL
@@ -36,6 +41,18 @@
 #include <Cg/cg.h>    /* Can't include this?  Is Cg Toolkit installed! */
 #include <Cg/cgGL.h>
 #include <boost/functional/hash.hpp>
+
+#if _DEBUG
+#define glError() { \
+	GLenum err = glGetError(); \
+	while (err != GL_NO_ERROR) { \
+		printf("glError: %08x caught at %s:%u\n", err, __FILE__, __LINE__); \
+		err = glGetError(); \
+	} \
+}
+#else
+#define glError() 
+#endif
 
 class OGL3ConstantBuffer;
 
@@ -110,6 +127,8 @@ public:
 
 	void BeginFrame();
 	void PresentFrame();
+	void BeginAllocation();
+	void EndAllocation();
 
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
@@ -123,10 +142,6 @@ public:
 	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
-
-#ifdef TARGET_WINDOWS
-	HGLRC GetRC(){return m_hrc;}
-#endif
 
 	CGcontext& GetCGC(){return myCgContext;}
 	CGprofile& GetVertexProfile(){return myCgVertexProfile;}
@@ -170,10 +185,14 @@ private:
 	HWND                        m_hWnd;
 	HDC							m_hDC;
 	HGLRC						m_hrc;                 // OpenGL Rendering Context
+	HGLRC						m_hrcL;                // OpenGL Rendering Context for Loading
+	static boost::thread_specific_ptr<HGLRC> _currentRC;
 #elif defined(TARGET_LINUX)
     GLXContext                  m_hrc;
+	GLXContext                  m_hrcL;
     Window*                     m_pWindow;
     Display*                    m_pDisplay;
+	static boost::thread_specific_ptr<GLXContext> _currentRC;
 #endif
 	CGcontext					myCgContext;
 	CGprofile					myCgVertexProfile, myCgFragmentProfile;
@@ -203,6 +222,8 @@ public:
 	OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitives,HAGE::APIWPrimitiveType PrimitiveType,HAGE::APIWVertexBuffer** pBuffers,HAGE::u32 nBuffers, const HAGE::u32* pIndexBufferData);
 	~OGL3VertexArray();
 
+	void Init();
+
 private:
 	unsigned int				m_vaoID;
 	unsigned int				m_vboIndexID;
@@ -210,6 +231,7 @@ private:
 	HAGE::u32					m_nBuffers;
 	HAGE::u32					m_nPrimitives;
 	HAGE::APIWPrimitiveType		m_PrimitiveType;
+	bool						_bInit;
 	OpenGL3APIWrapper*			m_pWrapper;
 	friend class OGL3Effect;
 };
@@ -234,14 +256,19 @@ public:
 	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
 	~OGL3Effect();
 
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1);
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1);
 private:
 	CGprogram					m_CgVertexProgram;
+	static CGprogram			testProgram;
 	CGprogram					m_CgFragmentProgram;
 
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u16					m_RastState;
 	HAGE::u16					m_BlendState;
+	char*						_cVertexShader;
+	char*						_cPixelShader;
+	GLuint						_glVShader,_glFShader,_glProgram;
+	bool						_bInit;
 };
 
 #endif

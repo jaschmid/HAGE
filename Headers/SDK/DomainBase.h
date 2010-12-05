@@ -16,6 +16,7 @@
 #include "TaskManager.h"
 #include "CoreFactory.h"
 #include "DomainMemory.h"
+#include "ResourceManager.h"
 
 namespace HAGE {
 
@@ -76,6 +77,7 @@ protected:
 	DomainMemory*	Memory;
 	TaskManager		Tasks;
 	CoreFactory		Factory;
+	CResourceManager* Resource;
 
 private:
 
@@ -367,9 +369,15 @@ protected:
 	{
 		Tasks.SetDomain((Domain*)this);
 		Factory.SetDomain((Domain*)this);
+		if(guid_of<Domain>::Get() != guid_of<ResourceDomain>::Get())
+			Resource = new CResourceManager();
+		else
+			Resource = nullptr;
 	}
 	virtual ~DomainBase()
 	{
+		if(Resource)
+			delete Resource;
 	}
 
 	

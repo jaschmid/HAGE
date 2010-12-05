@@ -259,6 +259,7 @@ int CALLBACK WinMain(
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Message queue
+
     MSG         Msg;
     while( GetMessage(&Msg, NULL, 0, 0) )
     {

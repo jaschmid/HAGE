@@ -13,6 +13,10 @@
 
 #undef NDEBUG
 
+#ifndef DATA_COLLECTION_LEVEL
+#define DATA_COLLECTION_LEVEL 5
+#endif
+
 #ifndef _Windows
  #if defined(_WIN32)
   #define _Win32

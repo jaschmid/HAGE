@@ -66,8 +66,6 @@ namespace HAGE {
 							PostMessageUI(MessageUIHide());
 							return true;
 						}
-
-						printf("%08x\n",m->GetKey());
 					}
 				}
 				else if(m->GetDevice() == guidDefMouse)

@@ -25,10 +25,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 
 		UserInterfaceRendering*						pInterface;
 
-		APIWVertexBuffer*							pVertexBuffer;
-		APIWVertexArray*							pVertexArray;
-		APIWConstantBuffer*							pConstants;
-		APIWEffect*									pEffect;
+		TResourceAccess<IDrawableMesh>						Ico;
 };
 
 }

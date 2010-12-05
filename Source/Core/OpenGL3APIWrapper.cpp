@@ -1,6 +1,7 @@
 #include <HAGE.h>
 #include "OpenGL3APIWrapper.h"
 #include <string.h>
+#include "ResourceDomain.h"
 
 #ifndef NO_OGL
 
@@ -40,7 +41,6 @@ void OpenGL3APIWrapper::checkForCgError(const char *situation)
       "HAGE", situation, string);
     if (error == CG_COMPILER_ERROR) {
       printf("%s\n", cgGetLastListing(myCgContext));
-      printf("%s\n", cgGetLastListing(myCgContext));
     }
     exit(1);
   }
@@ -48,7 +48,10 @@ void OpenGL3APIWrapper::checkForCgError(const char *situation)
 
 HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateOpenGL3Wrapper()
 {
-	return new OpenGL3APIWrapper();
+	RenderingAPIWrapper* pResult = new OpenGL3APIWrapper();
+	_pAllocator= pResult;
+	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
+	return pResult;
 }
 
 OpenGL3APIWrapper::OpenGL3APIWrapper() :
@@ -65,6 +68,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	m_CurrentRS(-1),
 	m_CurrentBS(-1)
 {
+	myCgContext = cgCreateContext();
+	checkForCgError("creating context");
 
 #ifdef TARGET_WINDOWS
 	PIXELFORMATDESCRIPTOR pfd;
@@ -103,13 +108,19 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
     if(wglewIsSupported("WGL_ARB_create_context") == 1)
     {
 		m_hrc = wglCreateContextAttribsARB(m_hDC,0, attribs);
+		m_hrcL = wglCreateContextAttribsARB(m_hDC,m_hrc, attribs);
 		wglMakeCurrent(NULL,NULL);
 		wglDeleteContext(tempContext);
+		//wglCreateContextAttribsARB(m_hDC,m_hrc, attribs);
+		assert(m_hrc);
+		assert(m_hrcL);
 		wglMakeCurrent(m_hDC, m_hrc);
 	}
 	else
 	{	//It's not possible to make a GL 3.x context. Use the old style context (GL 2.1 and before)
-		m_hrc = tempContext;
+		m_hrc = tempContext;		
+		m_hrcL = wglCreateContext(m_hDC);
+		wglShareLists(m_hrc,m_hrcL);
 	}
 
 	assert(m_hrc);
@@ -172,7 +183,12 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
         // Sync to ensure any errors generated are processed.
         XSync( m_pDisplay, False );
         if ( !ctxErrorOccurred && m_hrc )
+		{
           printf( "Created GL 3.0 context\n" );
+	      m_hrcL = glXCreateContextAttribsARB( m_pDisplay, GetPFBC(), m_hrc,
+                                          True, context_attribs );		
+		  assert(m_hrcL);
+		}
         else
         {
           // Couldn't create GL 3.0 context.  Fall back to old-style 2.x context.
@@ -190,7 +206,12 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
                   " ... using old-style GLX context\n" );
           m_hrc = glXCreateContextAttribsARB( m_pDisplay, GetPFBC(), 0,
                                             True, context_attribs );
-        }
+          m_hrcL = glXCreateContextAttribsARB( m_pDisplay, GetPFBC(), m_hrc,
+                                            True, context_attribs );
+
+		  assert(m_hrc);
+		  assert(m_hrcL);
+		}
     }
 
     // Sync to ensure any errors generated are processed.
@@ -234,6 +255,9 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	glGetIntegerv(GL_MINOR_VERSION, &OpenGLVersion[1]);
 
 	printf("Initializing Open GL %i.%i\n",OpenGLVersion[0],OpenGLVersion[1]);
+	
+	 //prepare the loading context
+	glEnableClientState(GL_VERTEX_ARRAY);
 
 #ifdef TARGET_WINDOWS
 	//disable VSync
@@ -242,49 +266,59 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 	glClearColor(0.5f, 0.1f, 0.2f, 0.0f);  /* Red background */
 
-	myCgContext = cgCreateContext();
-	checkForCgError("creating context");
+	myCgVertexProfile = cgGLGetLatestProfile(CG_GL_VERTEX);
+	cgGLSetOptimalOptions(myCgVertexProfile);
+	myCgFragmentProfile = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+	cgGLSetOptimalOptions(myCgFragmentProfile);
+	cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
+
+	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
+	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
+	
+	glFlush();
+#ifdef TARGET_WINDOWS
+	wglMakeCurrent(NULL, NULL);
+	wglMakeCurrent(m_hDC, m_hrcL);
+#elif defined(TARGET_LINUX)
+    glXMakeCurrent( m_pDisplay, 0, 0 );
+	glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrcL );
+#endif
+
+	 //prepare the loading context
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+#ifdef TARGET_WINDOWS
+	//disable VSync
+	wglSwapIntervalEXT(0);
+#endif
+
+	glClearColor(0.5f, 0.1f, 0.2f, 0.0f);  /* Red background */
+
 	cgGLSetDebugMode(CG_FALSE);
 	cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
 
-	myCgVertexProfile = cgGLGetLatestProfile(CG_GL_VERTEX);
 	cgGLSetOptimalOptions(myCgVertexProfile);
 	checkForCgError("selecting vertex profile");
 
-	myCgFragmentProfile = cgGLGetLatestProfile(CG_GL_FRAGMENT);
 	cgGLSetOptimalOptions(myCgFragmentProfile);
 	checkForCgError("selecting fragment profile");
 
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
-
-	cgGLEnableProfile(GetVertexProfile());
-	checkForCgError("enabling vertex profile");
-
-	cgGLEnableProfile(GetFragmentProfile());
-	checkForCgError("enabling fragment profile");
-
+	
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
-
+	
+	glFlush();
 #ifdef TARGET_WINDOWS
 	wglMakeCurrent(NULL, NULL);
 #elif defined(TARGET_LINUX)
     glXMakeCurrent( m_pDisplay, 0, 0 );
 #endif
-
 }
 
 OpenGL3APIWrapper::~OpenGL3APIWrapper()
 {
 	delete m_DebugUIRenderer;
-
-	// Cleanup CG
-	cgGLDisableProfile(GetVertexProfile());
-	checkForCgError("disabling vertex profile");
-
-	cgGLDisableProfile(GetFragmentProfile());
-	checkForCgError("disabling fragment profile");
-
 
     cgDestroyContext( myCgContext );
 
@@ -301,24 +335,65 @@ OpenGL3APIWrapper::~OpenGL3APIWrapper()
 		wglDeleteContext(m_hrc);
 		m_hrc = NULL;
 	}
+	if(m_hrcL)
+	{
+		wglDeleteContext(m_hrcL);
+		m_hrcL = NULL;
+	}
+
 #elif defined(TARGET_LINUX)
 
     glXMakeCurrent( m_pDisplay, 0, 0 );
     glXDestroyContext(m_pDisplay,m_hrc);
+	glXDestroyContext(m_pDisplay,m_hrcL);
+#endif
+}
 
+void OpenGL3APIWrapper::BeginAllocation()
+{
+#ifdef TARGET_WINDOWS
+	if(!wglMakeCurrent(m_hDC, m_hrcL))
+	{
+		printf("Could not begin allocation");
+	}
+#elif defined(TARGET_LINUX)
+    glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrcL );
+#endif
+}
+
+void OpenGL3APIWrapper::EndAllocation()
+{
+	glFlush();
+#ifdef TARGET_WINDOWS
+	if(!wglMakeCurrent(NULL, NULL))
+	{
+		printf("Could not begin allocation");
+	}
+#elif defined(TARGET_LINUX)
+    glXMakeCurrent( m_pDisplay, 0, 0 );
 #endif
 }
 
 void OpenGL3APIWrapper::BeginFrame()
 {
 #ifdef TARGET_WINDOWS
-	wglMakeCurrent(m_hDC, m_hrc);
+	if(!wglMakeCurrent(m_hDC, m_hrc))
+	{
+		printf("Could not begin frame");
+	}
 #elif defined(TARGET_LINUX)
     glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrc );
     // might aswell do that here...
     ProcessXEvents();
 #endif
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	cgGLEnableProfile(GetVertexProfile());
+	checkForCgError("enabling vertex profile");
+
+	cgGLEnableProfile(GetFragmentProfile());
+	checkForCgError("enabling fragment profile");
 }
 
 void OpenGL3APIWrapper::PresentFrame()
@@ -326,9 +401,21 @@ void OpenGL3APIWrapper::PresentFrame()
 	// Debug UI
 	m_DebugUIRenderer->Draw();
 
+	cgGLDisableProfile(GetVertexProfile());
+	checkForCgError("disabling vertex profile");
+
+	cgGLDisableProfile(GetFragmentProfile());
+	checkForCgError("disabling fragment profile");
+	
+	glFlush();
+
 #ifdef TARGET_WINDOWS
 	SwapBuffers(m_hDC);
-	wglMakeCurrent(NULL, NULL);
+
+	if(!wglMakeCurrent(NULL, NULL))
+	{
+		printf("Could not end frame");
+	}
 
 	//framerate hack yay
     static HAGE::u64 last = 0;

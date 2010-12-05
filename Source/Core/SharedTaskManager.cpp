@@ -1,6 +1,7 @@
 #include <HAGE.h>
 #include "SharedTaskManager.h"
 #include "InputDomain.h"
+#include "ResourceDomain.h"
 #include <assert.h>
 
 extern void OSMessageQueue();
@@ -8,7 +9,7 @@ extern void OSLeaveMessageQueue();
 
 namespace HAGE {
 
-	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0),m_pInputDomain(nullptr),
+	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0),
 		m_nThreads(boost::thread::hardware_concurrency()),
 		m_initbarrier(m_nThreads + 1)
 	{
@@ -27,15 +28,15 @@ namespace HAGE {
 
 	void SharedTaskManager::InitUserland()
 	{
+		DomainCreator<ResourceDomain>();
 		DomainCreator<InputDomain>();
 		m_pMain = HAGECreateMain();
 	}
 
 	void SharedTaskManager::EndUserland()
 	{
-		DestructDomains();
 		delete m_pMain;
-		DestructInput();
+		DestructDomains();
 	}
 
 	InputDomain* SharedTaskManager::StartThreads()
@@ -59,9 +60,7 @@ namespace HAGE {
 		printf("%u threads init \n",m_nThreads);
 		// program is running
 
-		assert(m_pInputDomain);
-
-		return m_pInputDomain;
+		return domain_access<InputDomain>::Get();
 	}
 
 	void SharedTaskManager::StopThreads()
@@ -90,6 +89,8 @@ namespace HAGE {
 	{
 		//boost::this_thread::bin
 
+		TLS::thread_id.reset(&nThreadId);
+
 		if(nThreadId == 0)
 			pTaskManager->InitUserland();
 
@@ -115,6 +116,8 @@ namespace HAGE {
 		// run thread
 		printf("pthread %i completed as %i\n",nThreadId,count);
 		initbarrier.wait();
+
+		TLS::thread_id.release();
 	}
 
 	TaskManager* SharedTaskManager::getNextTask(TaskManager::genericTask** ppTask)
@@ -241,8 +244,6 @@ namespace HAGE {
 		SharedDomainBase* r = (SharedDomainBase*)pMem->Allocate(size);
 		r->Memory = pMem;
 		m_DomainsToDestruct.push_back(r);
-		if(!m_pInputDomain)
-			m_pInputDomain =(InputDomain*)r;
 		return r;
 	}
 
@@ -266,13 +267,7 @@ namespace HAGE {
 	void SharedTaskManager::DestructDomains()
 	{
 		for(auto i = m_DomainsToDestruct.begin();i!=m_DomainsToDestruct.end();++i)
-			if(*i != m_pInputDomain)
-				DestructDomain(*i);
-	}
-
-	void SharedTaskManager::DestructInput()
-	{
-		DestructDomain(m_pInputDomain);
+			DestructDomain(*i);
 	}
 
 }

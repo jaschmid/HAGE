@@ -153,6 +153,8 @@ namespace HAGE {
 						outputPin->ForwardMessage(*m);
 					}
 				}
+		if(Resource)
+			Resource->ProcessMessages();
 	}
 
 }

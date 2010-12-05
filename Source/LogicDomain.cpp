@@ -28,7 +28,7 @@ namespace HAGE {
 
 			Vector3<> Init;
 			
-			for(int i =0;i<1500;++i)
+			for(int i =0;i<1000;++i)
 				Factory.CreateObject<LogicActor>(Init);
 
 			guids.resize(Factory.size());

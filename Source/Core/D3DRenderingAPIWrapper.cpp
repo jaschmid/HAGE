@@ -1,5 +1,6 @@
 #include <HAGE.h>
 #include "D3D11APIWrapper.h"
+#include "ResourceDomain.h"
 
 #ifndef NO_D3D
 
@@ -23,7 +24,10 @@ void D3D11APIWrapper::checkForCgError(const char *situation)
 
 HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateD3D11Wrapper()
 {
-	return new D3D11APIWrapper();
+	RenderingAPIWrapper* pResult = new D3D11APIWrapper();
+	_pAllocator= pResult;
+	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
+	return pResult;
 }
 
 D3D11APIWrapper::D3D11APIWrapper() :
@@ -200,6 +204,15 @@ D3D11APIWrapper::~D3D11APIWrapper()
 	m_pContext->ClearState();
 	if(m_pContext)m_pContext->Release();
 	if(m_pDevice)m_pDevice->Release();
+}
+
+void D3D11APIWrapper::BeginAllocation()
+{
+    
+}
+void D3D11APIWrapper::EndAllocation()
+{
+    
 }
 
 void D3D11APIWrapper::BeginFrame()

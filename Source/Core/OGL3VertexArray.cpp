@@ -64,63 +64,11 @@ const char* vertex_slot_names[] =
 };
 
 OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitives,HAGE::APIWPrimitiveType PrimitiveType,HAGE::APIWVertexBuffer** pBuffers,HAGE::u32 nBuffers, const HAGE::u32* pIndexBufferData)
-	: m_pWrapper(pWrapper),m_pBuffers(new OGL3VertexBuffer*[nBuffers]),m_nBuffers(nBuffers),m_PrimitiveType(PrimitiveType),m_nPrimitives(nPrimitives)
+	: m_pWrapper(pWrapper),m_pBuffers(new OGL3VertexBuffer*[nBuffers]),m_nBuffers(nBuffers),m_PrimitiveType(PrimitiveType),m_nPrimitives(nPrimitives),_bInit(false)
 {
-	glGenVertexArrays(1, &m_vaoID);
-
-	// VAO setup
-	glBindVertexArray(m_vaoID);
 
 	for(HAGE::u32 i = 0;i<nBuffers;++i)
-	{
 		m_pBuffers[i]=(OGL3VertexBuffer*)pBuffers[i];
-		glBindBuffer(GL_ARRAY_BUFFER, m_pBuffers[i]->m_vboID);
-
-		int nOffset = 0;
-
-		const OpenGL3APIWrapper::VertexFormatEntry* pFormat=m_pWrapper->GetVertexFormat(m_pBuffers[i]->m_code);
-		for(HAGE::u32 j=0;j<pFormat->nElements;++j)
-		{
-			GLint nAttributes;
-			GLenum Type;
-			int size = 0;
-			switch(pFormat->pOriginalDescription[j].fFormat)
-			{
-			case HAGE::R32G32B32A32_FLOAT:
-				nAttributes = 4;
-				Type = GL_FLOAT;
-				size += 4*sizeof(HAGE::f32);
-				break;
-			case HAGE::R32G32B32_FLOAT:
-				nAttributes = 3;
-				Type = GL_FLOAT;
-				size += 3*sizeof(HAGE::f32);
-				break;
-			case HAGE::R32G32_FLOAT:
-				nAttributes = 2;
-				Type = GL_FLOAT;
-				size += 2*sizeof(HAGE::f32);
-				break;
-			case HAGE::R32_FLOAT:
-				nAttributes = 1;
-				Type = GL_FLOAT;
-				size += 1*sizeof(HAGE::f32);
-				break;
-			}
-			int nProperty = -1;
-			for(int k=0;k<16;++k)
-				if(stricmp(pFormat->pOriginalDescription[j].pName,vertex_slot_names[k])==0)
-				{
-					nProperty = k;
-					break;
-				}
-			assert(nProperty!=-1);
-			glVertexAttribPointer((GLuint)nProperty, nAttributes, Type, GL_FALSE, pFormat->uVertexSize, (const GLvoid*)nOffset);
-			glEnableVertexAttribArray(nProperty);
-			nOffset += size;
-		}
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
 
 	if(pIndexBufferData)
 	{
@@ -151,8 +99,76 @@ OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 	}
 	else
 		m_vboIndexID = 0;
+	printf("Created %08x in context %08x\n",this->m_vaoID,wglGetCurrentContext());
+}
 
-	glBindVertexArray(0);
+void OGL3VertexArray::Init()
+{
+	if(!_bInit)
+	{
+		_bInit=true;
+		glGenVertexArrays(1, &m_vaoID);
+		glError();
+
+		// VAO setup
+		glBindVertexArray(m_vaoID);
+		glError();
+
+		for(HAGE::u32 i = 0;i<m_nBuffers;++i)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_pBuffers[i]->m_vboID);
+
+			int nOffset = 0;
+
+			const OpenGL3APIWrapper::VertexFormatEntry* pFormat=m_pWrapper->GetVertexFormat(m_pBuffers[i]->m_code);
+			for(HAGE::u32 j=0;j<pFormat->nElements;++j)
+			{
+				GLint nAttributes;
+				GLenum Type;
+				int size = 0;
+				switch(pFormat->pOriginalDescription[j].fFormat)
+				{
+				case HAGE::R32G32B32A32_FLOAT:
+					nAttributes = 4;
+					Type = GL_FLOAT;
+					size += 4*sizeof(HAGE::f32);
+					break;
+				case HAGE::R32G32B32_FLOAT:
+					nAttributes = 3;
+					Type = GL_FLOAT;
+					size += 3*sizeof(HAGE::f32);
+					break;
+				case HAGE::R32G32_FLOAT:
+					nAttributes = 2;
+					Type = GL_FLOAT;
+					size += 2*sizeof(HAGE::f32);
+					break;
+				case HAGE::R32_FLOAT:
+					nAttributes = 1;
+					Type = GL_FLOAT;
+					size += 1*sizeof(HAGE::f32);
+					break;
+				}
+				int nProperty = -1;
+				for(int k=0;k<16;++k)
+					if(stricmp(pFormat->pOriginalDescription[j].pName,vertex_slot_names[k])==0)
+					{
+						nProperty = k;
+						break;
+					}
+				assert(nProperty!=-1);
+				glVertexAttribPointer((GLuint)nProperty, nAttributes, Type, GL_FALSE, pFormat->uVertexSize, (const GLvoid*)nOffset);
+				glEnableVertexAttribArray(nProperty);
+				nOffset += size;
+			}
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+
+		glBindVertexArray(0);
+	}
+
+
+
 }
 
 OGL3VertexArray::~OGL3VertexArray()

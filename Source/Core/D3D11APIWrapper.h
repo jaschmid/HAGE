@@ -35,6 +35,8 @@ public:
 
 	void BeginFrame();
 	void PresentFrame();
+	void BeginAllocation();
+	void EndAllocation();
 
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
@@ -171,7 +173,7 @@ public:
 	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
 	~D3D11Effect();
 
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1);
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1);
 private:
 
 	ID3D11VertexShader* CompileVertexShader(const char* shader);

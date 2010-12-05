@@ -1,7 +1,7 @@
 #ifndef DEBUG_USER__INTERFACERENDERING__INCLUDED
 #define DEBUG_USER__INTERFACERENDERING__INCLUDED
 
-#include "HAGE.h"
+//#include "HAGE.h"
 
 namespace HAGE {
 class DebugUI;

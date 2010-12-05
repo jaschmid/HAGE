@@ -213,7 +213,7 @@ namespace HAGE {
 				m_ForEachTasks[0].m_pFactory = this;
 				m_ForEachTasks[0].m_nMyIndex = 0;
 			}
-
+			
 			m_ForEachTasks[0]();
 		}
 
@@ -232,9 +232,9 @@ namespace HAGE {
 	void CoreFactory::_RegisterObjectType(
 			std::function<IObject* (const guid&,void*)>* fInit,
 			std::function<IObject* (const guid&,void*)>* fSub,
-			const guid& classType,const guid& guidInput1,const guid& guidInput2,const guid* guidCapabilities,u32 nCapabilities,u32 nMemOutOffset)
+			const guid& classType,const guid& guidInput1,const guid& guidInput2,const guid* guidCapabilities,u32 nCapabilities)
 	{
-		RegistrationContainer reg = {(fInit?*fInit:(std::function<IObject* (const guid&,void*)>())),(fInit?false:true),(fSub?*fSub:(std::function<IObject* (const guid&,void*)>())),nMemOutOffset};
+		RegistrationContainer reg = {(fInit?*fInit:(std::function<IObject* (const guid&,void*)>())),(fInit?false:true),(fSub?*fSub:(std::function<IObject* (const guid&,void*)>()))};
 		registeredFunctionCreation.insert(
 			function_map_type::value_type(classType,reg) 
 		);

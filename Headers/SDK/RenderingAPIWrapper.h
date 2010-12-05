@@ -108,7 +108,30 @@ typedef struct _APIWBlendState
 extern const APIWBlendState DefaultBlendState;
 extern const APIWRasterizerState DefaultRasterizerState;
 
-class RenderingAPIWrapper
+class RenderingAPIAllocator
+{
+public:
+	virtual void RegisterVertexFormat(const char* szName,const VertexDescriptionEntry* pDescription,u32 nNumEntries) = 0;
+	virtual APIWVertexArray* CreateVertexArray(HAGE::u32 nPrimitives,
+		HAGE::APIWPrimitiveType PrimitiveType,
+		HAGE::APIWVertexBuffer** pBuffers,
+		HAGE::u32 nBuffers = 1,
+		const HAGE::u32* pIndexBufferData = nullptr) = 0;
+	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,u32 nElements,bool bInstanceData = false) = 0;
+	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
+	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
+		const u32 nBlendStates = 1, bool AlphaToCoverage = false) = 0;
+
+	virtual void BeginAllocation() = 0;
+	virtual void EndAllocation() = 0;
+
+	static RenderingAPIAllocator* QueryAPIAllocator(){return _pAllocator;}
+protected:
+	static RenderingAPIAllocator* _pAllocator;
+};
+
+class RenderingAPIWrapper : public RenderingAPIAllocator
 {
 public:
 #ifndef NO_D3D
@@ -125,17 +148,7 @@ public:
 	virtual void BeginFrame() = 0;
 	virtual void PresentFrame() = 0;
 
-	virtual void RegisterVertexFormat(const char* szName,const VertexDescriptionEntry* pDescription,u32 nNumEntries) = 0;
-	virtual APIWVertexArray* CreateVertexArray(HAGE::u32 nPrimitives,
-		HAGE::APIWPrimitiveType PrimitiveType,
-		HAGE::APIWVertexBuffer** pBuffers,
-		HAGE::u32 nBuffers = 1,
-		const HAGE::u32* pIndexBufferData = nullptr) = 0;
-	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,u32 nElements,bool bInstanceData = false) = 0;
-	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
-	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
-		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
-		const u32 nBlendStates = 1, bool AlphaToCoverage = false) = 0;
+
 };
 
 class APIWVertexBuffer
@@ -161,7 +174,7 @@ class APIWEffect
 {
 public:
 	virtual ~APIWEffect(){}
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer** pConstants,HAGE::u32 nConstants = 1)=0;
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1)=0;
 };
 
 struct VertexDescriptionEntry

@@ -169,6 +169,7 @@
     <ClInclude Include="Headers\SDK\PinHelpers.h" />
     <ClInclude Include="Headers\SDK\preproc.h" />
     <ClInclude Include="Headers\SDK\RenderingAPIWrapper.h" />
+    <ClInclude Include="Headers\SDK\ResourceManager.h" />
     <ClInclude Include="Headers\SDK\results.h" />
     <ClInclude Include="Headers\SDK\TaskManager.h" />
     <ClInclude Include="Headers\SDK\TLS.h" />
@@ -185,6 +186,22 @@
     <ClInclude Include="Source\Core\SharedTaskManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ply\etc\convert.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ply\etc\dump.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ply\etc\sconvert.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ply\rply.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\Core\CoreFactory.cpp" />
     <ClCompile Include="Source\Core\D3D11ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\D3D11Effect.cpp" />
@@ -195,6 +212,7 @@
     <ClCompile Include="Source\Core\DomainBase.cpp" />
     <ClCompile Include="Source\Core\DomainMemory.cpp" />
     <ClCompile Include="Source\Core\InputDomain.cpp" />
+    <ClCompile Include="Source\Core\MeshLoader.cpp" />
     <ClCompile Include="Source\Core\Messages.cpp" />
     <ClCompile Include="Source\Core\OGL3ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\OGL3Effect.cpp" />
@@ -211,6 +229,7 @@
     <ClCompile Include="Source\Core\RenderDebugUI.cpp" />
     <ClCompile Include="Source\Core\RenderingAPIWrapper.cpp" />
     <ClCompile Include="Source\Core\ResourceDomain.cpp" />
+    <ClCompile Include="Source\Core\ResourceManager.cpp" />
     <ClCompile Include="Source\Core\SharedCoreFactory.cpp" />
     <ClCompile Include="Source\Core\SharedTaskManager.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />

@@ -24,4 +24,7 @@ extern const APIWRasterizerState DefaultRasterizerState = {
 	false
 };
 
+
+RenderingAPIAllocator* RenderingAPIAllocator::_pAllocator = nullptr;
+
 }

@@ -146,7 +146,7 @@ public:
 		std::function<IObject* (const guid&,void*)> operator()()
 		{
 			const func fd=&_ObjectType::CreateSub;
-			std::function<IObject* (const guid&,void*)> f = [fd] (const guid& g,void* v) -> IObject* {
+			static std::function<IObject* (const guid&,void*)> f = [fd] (const guid& g,void* v) -> IObject* {
 					std::pair<const MemHandle&,const guid&>* pPair = (std::pair<const MemHandle&,const guid&>*)v;
 					return (IObject*)(fd(g,pPair->first,pPair->second));
 				};
@@ -167,26 +167,6 @@ public:
 	{
 	};
 
-	template<class _T,class _OutputTraits> class HandleOffset
-	{
-		public:
-			static u32 generate()
-			{
-				_T* t=reinterpret_cast<_T*>(0);
-				_ObjectBaseOutput<_OutputTraits>* out = static_cast<_ObjectBaseOutput<_OutputTraits>*>(t);
-				u32 offset = (u32)&(t->__out_handle);
-				return offset;
-			}
-	};	
-	template<class _T> class HandleOffset<_T,VoidTraits>
-	{
-		public:
-			static u32 generate()
-			{
-				return 0xffffffff;
-			}
-	};
-
 	template<class _T> void RegisterObjectType()
 	{
 		InitFunction<_T,get_traits<_T>::ObjectInitType> InitGenerator;
@@ -198,9 +178,8 @@ public:
 		const guid& guidInput2 = guid_of<typename _T::Input2::SourceClass>::Get();
 		const guid* guidCapabilities = &(_T::getCapabilities()[0]);
 		u32			nCapabilities = (u32)_T::getCapabilities().size();
-		u32			nMemHandleOffset = HandleOffset<_T,typename get_traits<_T>::OutputTraits>::generate();
 
-		_RegisterObjectType(((std::is_same<NoDirectInstantiation, typename get_traits<_T>::ObjectInitType>::value)?(nullptr):(&init)),&sub,guidType,guidInput1,guidInput2,guidCapabilities,nCapabilities,nMemHandleOffset);
+		_RegisterObjectType(((std::is_same<NoDirectInstantiation, typename get_traits<_T>::ObjectInitType>::value)?(nullptr):(&init)),&sub,guidType,guidInput1,guidInput2,guidCapabilities,nCapabilities);
 	}
 
 private:
@@ -221,8 +200,8 @@ private:
 		{
 			u32 begin =  m_nMyIndex*m_pFactory->m_ForEachGroupSize;
 			u32 end = begin+m_pFactory->m_ForEachGroupSize;
-			if( end >= m_pFactory->m_ForEachTotalSize)
-				end = m_pFactory->m_ForEachTotalSize-1;
+			if( end > m_pFactory->m_ForEachTotalSize)
+				end = m_pFactory->m_ForEachTotalSize;
 			u32 element_size = m_pFactory->m_ForEachReturnSize;
 			if(m_pFactory->m_ForEachGetSomeOut)
 			{
@@ -276,7 +255,6 @@ private:
 		std::function<IObject* (const guid&,void*)>		init_function;
 		bool											bNoInit;
 		std::function<IObject* (const guid&,void*)>		sub_init;
-		u32												nMemHandleOffset;
 		std::vector<Capability>							capabilities;
 	};
 
@@ -378,7 +356,7 @@ private:
 	void _RegisterObjectType(
 			std::function<IObject* (const guid&,void*)>* fInit,
 			std::function<IObject* (const guid&,void*)>* fSub,
-			const guid& classType,const guid& guidInput1,const guid& guidInput2,const guid* guidCapabilities,u32 nCapabilities,u32 nMemHandleOffset);
+			const guid& classType,const guid& guidInput1,const guid& guidInput2,const guid* guidCapabilities,u32 nCapabilities);
 	void DestroyObjectInternal(object_map_type::iterator& item);
 	bool TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId, void* pInitData, bool bMaster = false);
 

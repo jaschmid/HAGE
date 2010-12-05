@@ -16,6 +16,9 @@
     <Filter Include="Header Files\Internal">
       <UniqueIdentifier>{7fb23aef-46e3-40f6-99df-d05c1bb84a83}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{470e4fa0-3581-44e6-9df3-dccf0c70aae4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers\SDK\types.h">
@@ -102,11 +105,14 @@
     <ClInclude Include="Source\Core\FixedSizeKeyStorage.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Core\ResourceDomain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\traits.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\ResourceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\ResourceDomain.h">
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -190,6 +196,24 @@
     </ClCompile>
     <ClCompile Include="Source\Core\ResourceDomain.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\ResourceManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\MeshLoader.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="ply\rply.c">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="ply\etc\convert.c">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="ply\etc\dump.c">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="ply\etc\sconvert.c">
+      <Filter>Source Files\Resources</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

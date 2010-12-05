@@ -62,7 +62,6 @@ public:
 
 private:
 	void DestructDomains();
-	void DestructInput();
 	void DestructDomain(SharedDomainBase* p);
 
 	typedef std::multimap<TaskEntry,TaskManager*,std::less<TaskEntry>,global_allocator<TaskEntry> > jobqueue;
@@ -78,7 +77,6 @@ private:
 	volatile bool						bShutdown;
 	boost::posix_time::ptime			lastTick;
 
-	InputDomain*						m_pInputDomain;
 	IMain*								m_pMain;
 	const int							m_nThreads;
 	boost::barrier						m_initbarrier;
