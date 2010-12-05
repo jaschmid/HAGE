@@ -45,22 +45,22 @@ namespace HAGE {
 	void RenderingDomain::DomainStep(u64 step)
 	{
 		pWrapper->BeginFrame();
-		
-		auto result = Factory.ForEach<int,RenderingActor>( [this](RenderingActor* o) -> int {return o->Step(this);} , guidNull ,true);	
+
+		auto result = Factory.ForEach<int,RenderingActor>( [this](RenderingActor* o) -> int {return o->Step(this);} , guidNull ,true);
 
 		pWrapper->PresentFrame();
 	}
 
-	RenderingDomain::RenderingDomain() : 
+	RenderingDomain::RenderingDomain() :
 		fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
 	{
 		Factory.RegisterObjectType<RenderingActor>();
 
-		pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-		//pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+		//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
+		pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 
 		pWrapper->BeginAllocation();
-		
+
 		// Create the vertex buffer
 
 		pInterface = new UserInterfaceRendering(pWrapper);

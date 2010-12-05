@@ -8,13 +8,23 @@ void __InternalHAGEMain();
 }
 
 #ifdef TARGET_WINDOWS
+#define UNICODE
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+
 #include <windows.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <io.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
+
+#include <stdio.h>
+
+#ifdef COMPILER_GCC
+_CRTIMP FILE* __cdecl __MINGW_NOTHROW	_fdopen (int, const char*);
+#endif
 
 #include <boost/uuid/string_generator.hpp>
 
@@ -185,8 +195,8 @@ int CALLBACK WinMain(
 		// try to register it
 		if(Devices[i].dwType == RIM_TYPEKEYBOARD)
 		{
-			rid.usUsagePage = 0x01; 
-			rid.usUsage = 0x06; 
+			rid.usUsagePage = 0x01;
+			rid.usUsage = 0x06;
 
 			if(!bKeyboardRegistered) // only once for all keyboards
 			{
@@ -200,9 +210,9 @@ int CALLBACK WinMain(
 		}
 		else if(Devices[i].dwType == RIM_TYPEMOUSE)
 		{
-			rid.usUsagePage = 0x01; 
-			rid.usUsage = 0x02; 
-			
+			rid.usUsagePage = 0x01;
+			rid.usUsage = 0x02;
+
 			if(!bMouseRegistered) // only once for all mice
 			{
 				// register mouse
@@ -221,8 +231,8 @@ int CALLBACK WinMain(
 			if(info.hid.usUsagePage == 0xd)
 				continue;
 
-			rid.usUsagePage = info.hid.usUsagePage; 
-			rid.usUsage = info.hid.usUsage; 
+			rid.usUsagePage = info.hid.usUsagePage;
+			rid.usUsage = info.hid.usUsage;
 			rid.dwFlags = RIDEV_NOLEGACY;   // adds HID mouse and also ignores legacy mouse messages
 			rid.hwndTarget = hWnd;
 
@@ -255,7 +265,7 @@ int CALLBACK WinMain(
 	}
 
 	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
-	
+
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Message queue
@@ -265,7 +275,7 @@ int CALLBACK WinMain(
     {
 		if( Msg.message == WM_CLOSE )
 		{
-			bShutdown= true;	
+			bShutdown= true;
 			pSharedTaskManager->StopThreads();
 		}
         TranslateMessage(&Msg);
@@ -274,7 +284,7 @@ int CALLBACK WinMain(
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_NORMAL);
 
 	delete pSharedTaskManager;
-	
+
 	return 0;
 }
 
@@ -382,7 +392,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 						printf("\n");
 						for(HAGE::u32 j=0;j<raw->data.hid.dwSizeHid;++j)
 						{
-							printf("%02x ",raw->data.hid.bRawData[pos]);
+							//printf("%02x ",raw->data.hid.bRawData[pos]);
 							++pos;
 						}
 					}

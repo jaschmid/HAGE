@@ -47,7 +47,7 @@ public:
 		pGuid = &guid_of<_T>::Get();
 		pDomain = (IDomain*)domain_access<_T>::Get();
 	}
-	
+
 	template<class _C> guid CreateObject(typename get_traits<_C>::ObjectInitType init)
 	{
 		return _CreateObject(guid_of<_C>::Get(),(void*)&init);
@@ -122,7 +122,6 @@ public:
 		std::function<IObject* (const guid&,void*)> operator()()
 		{
 			return std::function<IObject* (const guid&,void*)>(
-				nullptr
 			);
 		}
 	};
@@ -142,7 +141,7 @@ public:
 	{
 	public:
 		typedef _ObjectType* (*func)(const guid&,const MemHandle&,const guid&);
-		
+
 		std::function<IObject* (const guid&,void*)> operator()()
 		{
 			const func fd=&_ObjectType::CreateSub;
@@ -159,7 +158,6 @@ public:
 		std::function<IObject* (const guid&,void*)> operator()()
 		{
 			return std::function<IObject* (const guid&,void*)>(
-				nullptr
 			);
 		}
 	};
@@ -169,8 +167,8 @@ public:
 
 	template<class _T> void RegisterObjectType()
 	{
-		InitFunction<_T,get_traits<_T>::ObjectInitType> InitGenerator;
-		SubFunction<_T,get_traits<_T>::Input1Traits>	SubGenerator;
+		InitFunction<_T,typename get_traits<_T>::ObjectInitType> InitGenerator;
+		SubFunction<_T,typename get_traits<_T>::Input1Traits>	SubGenerator;
 		std::function<IObject* (const guid&,void*)> init	= InitGenerator();
 		std::function<IObject* (const guid&,void*)> sub		= SubGenerator();
 		const guid& guidType  = guid_of<_T>::Get();
@@ -277,15 +275,20 @@ private:
 	typedef std::unordered_map<guid,std::pair<guid,u32>,guid_hasher>			object_dependancy_map_type;
 
 public:
-	
+
 	/***********************************/
 	/* Indexing/Iterator Functionality */
 	/***********************************/
-
+#ifdef COMPILER_GCC
+#define TYPENAME typename
+#else
+#define TYPENAME 
+#endif
 
 	class iterator : protected std::vector<ObjectEntry>::iterator
 	{
-		typedef std::vector<ObjectEntry>::iterator base;
+		typedef TYPENAME std::vector<ObjectEntry>::iterator base;
+#undef TYPENAME
 		public:
 			inline iterator operator ++()
 			{
@@ -327,17 +330,17 @@ public:
 			}
 			inline const bool operator ==(const iterator& other) const
 			{
-				return (m_pFactory == other.m_pFactory) && base::operator ==(other);
+				return (m_pFactory == other.m_pFactory) && ((base)*this) ==((base)other);
 			}
 			inline const bool operator !=(const iterator& other) const
 			{
-				return (m_pFactory != other.m_pFactory) || base::operator !=(other);
+				return (m_pFactory != other.m_pFactory) || ((base)*this) !=((base)other);
 			}
 		private:
-			iterator(std::vector<ObjectEntry>::iterator& item,CoreFactory* pFactory) : std::vector<ObjectEntry>::iterator(item),m_pFactory(pFactory)
+			iterator(const std::vector<ObjectEntry>::iterator& item,CoreFactory* pFactory) : std::vector<ObjectEntry>::iterator(item),m_pFactory(pFactory)
 			{
 			}
-			
+
 			CoreFactory* m_pFactory;
 			friend class CoreFactory;
 	};

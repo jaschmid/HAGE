@@ -206,14 +206,5 @@
     <ClCompile Include="ply\rply.c">
       <Filter>Source Files\Resources</Filter>
     </ClCompile>
-    <ClCompile Include="ply\etc\convert.c">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="ply\etc\dump.c">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="ply\etc\sconvert.c">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

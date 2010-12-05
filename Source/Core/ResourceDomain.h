@@ -14,7 +14,7 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 		void DomainStep(u64 step);
 
 	private:
-		
+
 		class CNullStream : public IDataStream
 		{
 		public:
@@ -42,8 +42,8 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 
 		struct RegisteredResourceManager
 		{
-			CResourceManager::QueueInType& inQueue;
-			CResourceManager::QueueOutType& outQueue;
+			CResourceManager::QueueInType* inQueue;
+			CResourceManager::QueueOutType* outQueue;
 		};
 
 		SStagedResource* _LoadResource(const char* pName,const guid& type);

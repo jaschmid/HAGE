@@ -74,13 +74,13 @@ public:
 	TResourceAccess() : _data(nullptr)
 	{
 	}
-	
-	TResourceAccess(TResourceAccess<_T>& in) : _data(in._data)
+
+	TResourceAccess(const TResourceAccess<_T>& in) : _data(in._data)
 	{
 		if(_data)
 			_data->nRefCount++;
 	}
-	
+
 	~TResourceAccess()
 	{
 		if(_data)
@@ -98,7 +98,7 @@ public:
 	}
 
 	inline const _T* operator ->() const {return (const _T*)_data->pCurrentStage;}
-	inline u32 getStage() const {return data->nCurrentStage;}
+	inline u32 getStage() const {return _data->nCurrentStage;}
 
 private:
 
@@ -123,7 +123,7 @@ struct guid_hasher
 	}
 };
 
-		
+
 typedef	std::pair<std::string,guid> tResourceKey;
 
 struct key_hasher
@@ -133,7 +133,7 @@ struct key_hasher
 		size_t seed = 0xbadf00d;
 		boost::hash_combine<std::string>(seed,key.first);
 		boost::hash_combine<HAGE::u64>(seed,key.second.ll[0] ^ key.second.ll[1]);
-				
+
 		return seed;
 	}
 };

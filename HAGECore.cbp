@@ -7,9 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="out_lib/CB/debug/libHAGECore" prefix_auto="1" extension_auto="1" />
+				<Option output="out_lib\CB\debug\libHAGECore" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="out_lib/CB/obj/Debug/" />
+				<Option object_output="out_lib\CB\obj\Debug\" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -19,9 +19,9 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="out_lib/CB/release/libHAGECore" prefix_auto="1" extension_auto="1" />
+				<Option output="out_lib\CB\release\libHAGECore" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
-				<Option object_output="out_lib/CB/obj/Release/" />
+				<Option object_output="out_lib\CB\obj\Release\" />
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -36,65 +36,68 @@
 		</Build>
 		<Compiler>
 			<Add option="-std=c++0x" />
-			<Add directory="Headers/SDK" />
+			<Add directory="Headers\SDK" />
 		</Compiler>
-		<Unit filename="Headers/SDK/CoreFactory.h" />
-		<Unit filename="Headers/SDK/DomainBase.h" />
-		<Unit filename="Headers/SDK/DomainMemory.h" />
-		<Unit filename="Headers/SDK/HAGE.h" />
-		<Unit filename="Headers/SDK/IDomain.h" />
-		<Unit filename="Headers/SDK/IObject.h" />
-		<Unit filename="Headers/SDK/MainClass.h" />
-		<Unit filename="Headers/SDK/ObjectBase.h" />
-		<Unit filename="Headers/SDK/PinBase.h" />
-		<Unit filename="Headers/SDK/PinHelpers.h" />
-		<Unit filename="Headers/SDK/RenderingAPIWrapper.h" />
-		<Unit filename="Headers/SDK/TLS.h" />
-		<Unit filename="Headers/SDK/TaskManager.h" />
-		<Unit filename="Headers/SDK/global_allocator.h" />
-		<Unit filename="Headers/SDK/hage_math.h" />
-		<Unit filename="Headers/SDK/interlocked_functions.h" />
-		<Unit filename="Headers/SDK/messages.h" />
-		<Unit filename="Headers/SDK/preproc.h" />
-		<Unit filename="Headers/SDK/results.h" />
-		<Unit filename="Headers/SDK/types.h" />
-		<Unit filename="Source/Core/CoreFactory.cpp" />
-		<Unit filename="Source/Core/D3D11APIWrapper.h" />
-		<Unit filename="Source/Core/D3D11ConstantBuffer.cpp" />
-		<Unit filename="Source/Core/D3D11Effect.cpp" />
-		<Unit filename="Source/Core/D3D11VertexArray.cpp" />
-		<Unit filename="Source/Core/D3D11VertexBuffer.cpp" />
-		<Unit filename="Source/Core/D3DRenderingAPIWrapper.cpp" />
-		<Unit filename="Source/Core/DebugUI.cpp" />
-		<Unit filename="Source/Core/DebugUI.h" />
-		<Unit filename="Source/Core/DomainBase.cpp" />
-		<Unit filename="Source/Core/DomainMemory.cpp" />
-		<Unit filename="Source/Core/FixedSizeKeyStorage.h" />
-		<Unit filename="Source/Core/InputDomain.cpp" />
-		<Unit filename="Source/Core/InputDomain.h" />
-		<Unit filename="Source/Core/Messages.cpp" />
-		<Unit filename="Source/Core/OGL3ConstantBuffer.cpp" />
-		<Unit filename="Source/Core/OGL3Effect.cpp" />
-		<Unit filename="Source/Core/OGL3VertexArray.cpp" />
-		<Unit filename="Source/Core/OGL3VertexBuffer.cpp" />
-		<Unit filename="Source/Core/OpenGL3APIWrapper.cpp" />
-		<Unit filename="Source/Core/OpenGL3APIWrapper.h" />
-		<Unit filename="Source/Core/PinBase.cpp" />
-		<Unit filename="Source/Core/RenderDebugUI.cpp" />
-		<Unit filename="Source/Core/RenderDebugUI.h" />
-		<Unit filename="Source/Core/RenderingAPIWrapper.cpp" />
-		<Unit filename="Source/Core/ResourceDomain.cpp" />
-		<Unit filename="Source/Core/ResourceDomain.h" />
-		<Unit filename="Source/Core/SharedCoreFactory.cpp" />
-		<Unit filename="Source/Core/SharedCoreFactory.h" />
-		<Unit filename="Source/Core/SharedTaskManager.cpp" />
-		<Unit filename="Source/Core/SharedTaskManager.h" />
-		<Unit filename="Source/Core/TLS.cpp" />
-		<Unit filename="Source/Core/TaskManager.cpp" />
-		<Unit filename="Source/Core/WinMain.cpp" />
-		<Unit filename="Source/Core/XKeyConv.cpp" />
-		<Unit filename="Source/Core/XMain.cpp" />
-		<Unit filename="Source/Core/prec.cpp" />
+		<Unit filename="Headers\SDK\CoreFactory.h" />
+		<Unit filename="Headers\SDK\DomainBase.h" />
+		<Unit filename="Headers\SDK\DomainMemory.h" />
+		<Unit filename="Headers\SDK\HAGE.h" />
+		<Unit filename="Headers\SDK\IDomain.h" />
+		<Unit filename="Headers\SDK\IObject.h" />
+		<Unit filename="Headers\SDK\MainClass.h" />
+		<Unit filename="Headers\SDK\ObjectBase.h" />
+		<Unit filename="Headers\SDK\PinBase.h" />
+		<Unit filename="Headers\SDK\PinHelpers.h" />
+		<Unit filename="Headers\SDK\RenderingAPIWrapper.h" />
+		<Unit filename="Headers\SDK\ResourceManager.h" />
+		<Unit filename="Headers\SDK\TLS.h" />
+		<Unit filename="Headers\SDK\TaskManager.h" />
+		<Unit filename="Headers\SDK\global_allocator.h" />
+		<Unit filename="Headers\SDK\hage_math.h" />
+		<Unit filename="Headers\SDK\interlocked_functions.h" />
+		<Unit filename="Headers\SDK\messages.h" />
+		<Unit filename="Headers\SDK\preproc.h" />
+		<Unit filename="Headers\SDK\results.h" />
+		<Unit filename="Headers\SDK\traits.h" />
+		<Unit filename="Headers\SDK\types.h" />
+		<Unit filename="Source\Core\CoreFactory.cpp" />
+		<Unit filename="Source\Core\D3D11APIWrapper.h" />
+		<Unit filename="Source\Core\D3D11ConstantBuffer.cpp" />
+		<Unit filename="Source\Core\D3D11Effect.cpp" />
+		<Unit filename="Source\Core\D3D11VertexArray.cpp" />
+		<Unit filename="Source\Core\D3D11VertexBuffer.cpp" />
+		<Unit filename="Source\Core\D3DRenderingAPIWrapper.cpp" />
+		<Unit filename="Source\Core\DebugUI.cpp" />
+		<Unit filename="Source\Core\DebugUI.h" />
+		<Unit filename="Source\Core\DomainBase.cpp" />
+		<Unit filename="Source\Core\DomainMemory.cpp" />
+		<Unit filename="Source\Core\FixedSizeKeyStorage.h" />
+		<Unit filename="Source\Core\InputDomain.cpp" />
+		<Unit filename="Source\Core\InputDomain.h" />
+		<Unit filename="Source\Core\Messages.cpp" />
+		<Unit filename="Source\Core\OGL3ConstantBuffer.cpp" />
+		<Unit filename="Source\Core\OGL3Effect.cpp" />
+		<Unit filename="Source\Core\OGL3VertexArray.cpp" />
+		<Unit filename="Source\Core\OGL3VertexBuffer.cpp" />
+		<Unit filename="Source\Core\OpenGL3APIWrapper.cpp" />
+		<Unit filename="Source\Core\OpenGL3APIWrapper.h" />
+		<Unit filename="Source\Core\PinBase.cpp" />
+		<Unit filename="Source\Core\RenderDebugUI.cpp" />
+		<Unit filename="Source\Core\RenderDebugUI.h" />
+		<Unit filename="Source\Core\RenderingAPIWrapper.cpp" />
+		<Unit filename="Source\Core\ResourceDomain.cpp" />
+		<Unit filename="Source\Core\ResourceDomain.h" />
+		<Unit filename="Source\Core\ResourceManager.cpp" />
+		<Unit filename="Source\Core\SharedCoreFactory.cpp" />
+		<Unit filename="Source\Core\SharedCoreFactory.h" />
+		<Unit filename="Source\Core\SharedTaskManager.cpp" />
+		<Unit filename="Source\Core\SharedTaskManager.h" />
+		<Unit filename="Source\Core\TLS.cpp" />
+		<Unit filename="Source\Core\TaskManager.cpp" />
+		<Unit filename="Source\Core\WinMain.cpp" />
+		<Unit filename="Source\Core\XKeyConv.cpp" />
+		<Unit filename="Source\Core\XMain.cpp" />
+		<Unit filename="Source\Core\prec.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

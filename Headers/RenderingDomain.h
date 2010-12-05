@@ -14,7 +14,8 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		~RenderingDomain();
 		void DomainStep(u64 step);
 
-		void DrawIco(Vector3<> Location);
+		const Matrix4<>& GetViewMatrix();
+		const Matrix4<>& GetProjectionMatrix();
 
 	private:
 		virtual bool MessageProc(const Message* pMessage);
@@ -24,6 +25,9 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		RenderingAPIWrapper*						pWrapper;
 
 		UserInterfaceRendering*						pInterface;
+		Matrix4<>		_viewMatrix;
+		Matrix4<>		_projectionMatrix;
+
 
 		TResourceAccess<IDrawableMesh>						Ico;
 };

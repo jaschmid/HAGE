@@ -39,7 +39,7 @@ template<class _Final> class domain_access<get_traits<_Final>> : public domain_a
 template<class _Domain> class DomainOutputTraits
 {
 	public:
-		typedef _Domain		Domain;		
+		typedef _Domain		Domain;
 		typedef DomainOutputTraits<Domain> Traits;
 };
 template<> class DomainOutputTraits<void> : public VoidTraits
@@ -73,16 +73,16 @@ template<class _Domain,class _Input> class DomainInputTraits
 	public:
 		typedef _Domain				    Domain;
 		typedef _Input					SourceDomain;
-		typedef DomainInputTraits<Domain,SourceDomain> Traits;	
-		static	const i32				InputDelay = 0;
+		typedef DomainInputTraits<Domain,SourceDomain> Traits;
+		static	const i32				SInputDelay = 0;
 };
 template<class _Domain,class _Input,i32 _Delay> class DomainInputTraits<_Domain,InputDelay<_Input,_Delay>>
 {
 	public:
 		typedef _Domain				    Domain;
 		typedef _Input					SourceDomain;
-		typedef DomainInputTraits<Domain,InputDelay<_Input,_Delay>> Traits;	
-		static	const i32				InputDelay = _Delay;
+		typedef DomainInputTraits<Domain,InputDelay<_Input,_Delay>> Traits;
+		static	const i32				SInputDelay = _Delay;
 };
 
 template<u32 _Index> class _VoidInput
@@ -97,16 +97,16 @@ template<class _Domain> class DomainInputTraits<_Domain,void>
 		typedef void				    Domain;
 		typedef void					SourceDomain;
 		typedef _VoidInput<0>			Traits;
-		static	const i32				InputDelay = 0;
+		static	const i32				SInputDelay = 0;
 };
 
-template<class _Domain,u32 i> class DomainInputTraits<_Domain,_VoidInput<i>> 
+template<class _Domain,u32 i> class DomainInputTraits<_Domain,_VoidInput<i>>
 {
 	public:
 		typedef void				    Domain;
 		typedef void					SourceDomain;
 		typedef _VoidInput<i>			Traits;
-		static	const i32				InputDelay = 0;
+		static	const i32				SInputDelay = 0;
 };
 
 template<class _Domain> class DomainBase;
@@ -126,7 +126,7 @@ template<class _Domain,class _OutputType> class ObjectOutputTraits
 	public:
 		typedef _OutputType Type;
 		typedef _Domain		Domain;
-		typedef ObjectOutputTraits<Domain,Type> Traits;					
+		typedef ObjectOutputTraits<Domain,Type> Traits;
 };
 template<class _Domain> class ObjectOutputTraits<_Domain,void> : public VoidTraits
 {
@@ -139,7 +139,7 @@ template<class _Domain,class _Input> class ObjectInputTraits
 	public:
 		typedef _Domain				    Domain;
 		typedef _Input					SourceClass;
-		typedef ObjectInputTraits<Domain,SourceClass> Traits;					
+		typedef ObjectInputTraits<Domain,SourceClass> Traits;
 };
 
 template<class _Domain> class ObjectInputTraits<_Domain,void>
@@ -147,7 +147,7 @@ template<class _Domain> class ObjectInputTraits<_Domain,void>
 	public:
 		typedef _VoidInput<0> Traits;
 };
-template<class _Domain,u32 i> class ObjectInputTraits<_Domain,_VoidInput<i>> 
+template<class _Domain,u32 i> class ObjectInputTraits<_Domain,_VoidInput<i>>
 {
 	public:
 		typedef _VoidInput<i> Traits;

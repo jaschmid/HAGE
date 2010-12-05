@@ -44,6 +44,10 @@ private:
 #define DEFINE_DOMAIN(x)
 
 
+
+DECLARE_DOMAIN(InputDomain,		0x8a601455,0xb21c,0x4870,0x902d,0x693abde180ba);
+DECLARE_DOMAIN(ResourceDomain,	0x2ea6ccdf,0x6998,0x4968,0x8bde,0xf47a0de71b92);
+
 class SharedDomainBase :public IDomain
 {
 public:
@@ -166,17 +170,17 @@ protected:
 	}
 	inline static int GetDelay()
 	{
-		return _DomainBaseInputTraits::InputDelay;
+		return _DomainBaseInputTraits::SInputDelay;
 	}
 
 private:
 
 	inline static PinBase& GetBasePin()
 	{
-		return typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin();
+		return get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin();
 	}
 
-	
+
 	template<class _1> friend class InputVar;
 	template<class _Domain>  friend class DomainMember;
 	template<class _Domain> friend class _ObjectBaseInput;
@@ -221,7 +225,7 @@ private:
 		return *(PinBase*)nullptr;
 	}
 
-	
+
 	template<class _1> friend class InputVar;
 	template<class _Domain>  friend class DomainMember;
 	template<class _Domain> friend class _ObjectBaseInput;
@@ -232,7 +236,7 @@ template<class _DomainBaseOutputTraits> class _DomainBaseOutput
 {
 protected:
 	typedef typename _DomainBaseOutputTraits::Domain Domain;
-	
+
 	_DomainBaseOutput()
 	{
 		((SharedDomainBase*)domain_access<Domain>::Get())->RegisterOutput(GetBasePin());
@@ -277,7 +281,7 @@ template<> class _DomainBaseOutput<VoidTraits>
 {
 protected:
 	typedef void Domain;
-	
+
 	_DomainBaseOutput()
 	{
 	}
@@ -338,8 +342,6 @@ private:
 	void operator delete(void* l)
 	{
 	}
-	
-	friend class _Final;
 
 	#endif
 
@@ -347,7 +349,7 @@ private:
 	friend const _Final* DomainCreator<_Final>();
 };
 
-template<class _Domain> class DomainBase : 
+template<class _Domain> class DomainBase :
 	public	SharedDomainBase,
 		//order of construction of these is important
 			_DomainBaseInput<typename get_traits<_Domain>::Input1Traits>,
@@ -355,7 +357,7 @@ template<class _Domain> class DomainBase :
 			_DomainBaseOutput<typename get_traits<_Domain>::OutputTraits>
 {
 protected:
-	typedef typename get_traits<_Domain>				Traits;
+	typedef get_traits<_Domain>				            Traits;
 	typedef typename Traits::Domain						Domain;
 	typedef typename Traits::DomainBaseType				Base;
 	typedef _DomainBaseInput<typename Traits::Input1Traits> Input1;
@@ -380,7 +382,7 @@ protected:
 			delete Resource;
 	}
 
-	
+
 private:
 
 	static void StaticCallback()
@@ -394,7 +396,7 @@ private:
 	}
 
 	friend class TaskManager;
-	friend const Domain* DomainCreator<Domain>();
+	template<class _DomainX> friend const _DomainX* DomainCreator();
 	template<class _DomainX> friend class _ObjectBaseOutput;
 	template<class _DomainX> friend class _ObjectBaseInput;
 	template<class _FinalX> friend class _DomainBaseInput;

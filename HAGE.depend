@@ -851,3 +851,219 @@
 	"GenericActor.h"
 	"LogicDomain.h"
 
+1290950665 source:c:\git\hage\source\aidomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"AIDomain.h"
+	"LogicDomain.h"
+
+1290702969 c:\git\hage\headers\header.h
+	<stdlib.h>
+	<SDK/HAGE.h>
+	"guids.h"
+
+1291560262 c:\git\hage\headers\sdk\hage.h
+	"preproc.h"
+	"types.h"
+	"results.h"
+	"messages.h"
+	"TLS.h"
+	"hage_math.h"
+	"interlocked_functions.h"
+	"IObject.h"
+	"IDomain.h"
+	"traits.h"
+	"global_allocator.h"
+	"MainClass.h"
+	"DomainBase.h"
+	"ObjectBase.h"
+	"PinHelpers.h"
+	"RenderingAPIWrapper.h"
+
+1291061356 c:\git\hage\headers\sdk\preproc.h
+
+1290786012 c:\git\hage\headers\sdk\types.h
+	"preproc.h"
+
+1290353976 c:\git\hage\headers\sdk\results.h
+	"types.h"
+
+1291476579 c:\git\hage\headers\sdk\messages.h
+	"types.h"
+
+1291328224 c:\git\hage\headers\sdk\tls.h
+	"types.h"
+	"IDomain.h"
+	<boost/thread.hpp>
+
+1290785267 c:\git\hage\headers\sdk\idomain.h
+
+1291547426 c:\git\hage\headers\sdk\hage_math.h
+	"types.h"
+
+1290353976 c:\git\hage\headers\sdk\interlocked_functions.h
+	<boost/detail/interlocked.hpp>
+	"types.h"
+
+1290412253 c:\git\hage\headers\sdk\iobject.h
+
+1291565350 c:\git\hage\headers\sdk\traits.h
+
+1290541511 c:\git\hage\headers\sdk\global_allocator.h
+	"DomainMemory.h"
+
+1290421179 c:\git\hage\headers\sdk\domainmemory.h
+	"HAGE.h"
+
+1290677041 c:\git\hage\headers\sdk\mainclass.h
+
+1291565772 c:\git\hage\headers\sdk\domainbase.h
+	"HAGE.h"
+	"TaskManager.h"
+	"CoreFactory.h"
+	"DomainMemory.h"
+	"ResourceManager.h"
+
+1290785947 c:\git\hage\headers\sdk\taskmanager.h
+	"HAGE.h"
+	<boost/bind.hpp>
+	<boost/function.hpp>
+	<vector>
+
+1291565826 c:\git\hage\headers\sdk\corefactory.h
+	"HAGE.h"
+	"PinBase.h"
+	<boost/function.hpp>
+	<map>
+	<boost/random/mersenne_twister.hpp>
+	<boost/uuid/random_generator.hpp>
+	<unordered_map>
+	<functional>
+	<type_traits>
+	<tr1/type_traits>
+
+1291556804 c:\git\hage\headers\sdk\pinbase.h
+	"HAGE.h"
+	"global_allocator.h"
+	<boost/function.hpp>
+	<vector>
+	<array>
+
+1291565605 c:\git\hage\headers\sdk\resourcemanager.h
+	<unordered_map>
+	<boost/functional/hash.hpp>
+
+1291564712 c:\git\hage\headers\sdk\objectbase.h
+	"HAGE.h"
+	"TaskManager.h"
+	"PinHelpers.h"
+	<map>
+
+1290766044 c:\git\hage\headers\sdk\pinhelpers.h
+	"PinBase.h"
+	"DomainBase.h"
+
+1291298886 c:\git\hage\headers\sdk\renderingapiwrapper.h
+	"HAGE.h"
+
+1291110565 c:\git\hage\headers\guids.h
+	"header.h"
+
+1290817718 c:\git\hage\headers\genericactor.h
+	"header.h"
+	<boost/random/mersenne_twister.hpp>
+
+1290976908 c:\git\hage\headers\aidomain.h
+	"header.h"
+
+1290976908 c:\git\hage\headers\logicdomain.h
+	"header.h"
+
+1291065168 source:c:\git\hage\source\gactor.cpp
+	"header.h"
+	"GActor.h"
+
+1290874707 c:\git\hage\headers\gactor.h
+	"header.h"
+	"GenericActor.h"
+	"GraphicsDomain.h"
+
+1290976908 c:\git\hage\headers\graphicsdomain.h
+	"header.h"
+
+1290950665 source:c:\git\hage\source\graphicsdomain.cpp
+	"header.h"
+	"GraphicsDomain.h"
+	"GActor.h"
+
+1291163515 source:c:\git\hage\source\lactor.cpp
+	"header.h"
+	"LActor.h"
+
+1290874835 c:\git\hage\headers\lactor.h
+	"header.h"
+	"GenericActor.h"
+	"LogicDomain.h"
+
+1291558137 source:c:\git\hage\source\logicdomain.cpp
+	"header.h"
+	"UserInterface.h"
+	"LogicDomain.h"
+	"LActor.h"
+	<boost/date_time.hpp>
+
+1290766695 c:\git\hage\headers\userinterface.h
+	"header.h"
+	"LogicDomain.h"
+	<array>
+
+1290725016 source:c:\git\hage\source\main.cpp
+	"header.h"
+	"LogicDomain.h"
+	"AIDomain.h"
+	"GraphicsDomain.h"
+	"RenderingDomain.h"
+	"SoundDomain.h"
+
+1291549640 c:\git\hage\headers\renderingdomain.h
+	"header.h"
+
+1290976908 c:\git\hage\headers\sounddomain.h
+	"header.h"
+
+1291549801 source:c:\git\hage\source\ractor.cpp
+	"header.h"
+	"RActor.h"
+
+1291549640 c:\git\hage\headers\ractor.h
+	"header.h"
+	"GenericActor.h"
+	"RenderingDomain.h"
+
+1291558558 source:c:\git\hage\source\renderingdomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"RenderingDomain.h"
+	"UserInterfaceRendering.h"
+	"RActor.h"
+
+1290693729 c:\git\hage\headers\userinterfacerendering.h
+	"header.h"
+	"RenderingDomain.h"
+
+1290950665 source:c:\git\hage\source\sounddomain.cpp
+	"header.h"
+	"GenericActor.h"
+	"SoundDomain.h"
+
+1290767557 source:c:\git\hage\source\userinterface.cpp
+	"header.h"
+	"UserInterface.h"
+
+1290976908 source:c:\git\hage\source\userinterfacerendering.cpp
+	"header.h"
+	"UserInterfaceRendering.h"
+
+1290196714 source:c:\git\hage\source\prec.cpp
+	"header.h"
+

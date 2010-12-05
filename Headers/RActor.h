@@ -18,6 +18,8 @@ private:
 	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source);
 	virtual ~RenderingActor();
 
+	
+	TResourceAccess<IDrawableMesh>						_mesh;
 
 	Vector3<>		position;
 	Vector3<u8>		color;

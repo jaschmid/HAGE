@@ -2,7 +2,7 @@
 /* FILE: HAGE.h                                         */
 /* DESCRIPTION: HAGE Main Header                        */
 /* AUTHOR: Jan Schmid (jaschmid@eml.cc)                 */
-/********************************************************/ 
+/********************************************************/
 
 #ifndef HAGE__MAIN__HEADER
 #define HAGE__MAIN__HEADER
@@ -32,9 +32,7 @@
 
 namespace HAGE
 {
-	DECLARE_DOMAIN(InputDomain,		0x8a601455,0xb21c,0x4870,0x902d,0x693abde180ba);
-	DECLARE_DOMAIN(ResourceDomain,	0x2ea6ccdf,0x6998,0x4968,0x8bde,0xf47a0de71b92);
-	
+
 	class IDataStream
 	{
 		public:
@@ -93,7 +91,7 @@ namespace HAGE
 			virtual ~CDrawableMesh();
 			CDrawableMesh(const IMeshData* pData);
 		private:
-			
+
 			APIWVertexBuffer*							_pVertexBuffer;
 			APIWVertexArray*							_pVertexArray;
 			APIWConstantBuffer*							_pConstants;
@@ -127,7 +125,7 @@ namespace HAGE
 			virtual ~CMeshData();
 			CMeshData(const IDataStream* pData);
 		private:
-			
+
 			u32		_vertexSize;
 			u32		_nVertices;
 			u32		_nIndices;

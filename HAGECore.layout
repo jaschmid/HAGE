@@ -1,106 +1,136 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="Headers/SDK/CoreFactory.h" open="1" top="0" tabpos="7">
-		<Cursor position="3068" topLine="67" />
+	<File name="Headers\SDK\CoreFactory.h" open="1" top="0" tabpos="7">
+		<Cursor position="5963" topLine="122" />
 	</File>
-	<File name="Headers/SDK/DomainBase.h" open="1" top="0" tabpos="28">
-		<Cursor position="745" topLine="15" />
+	<File name="Headers\SDK\DomainBase.h" open="1" top="0" tabpos="28">
+		<Cursor position="9951" topLine="356" />
 	</File>
-	<File name="Headers/SDK/HAGE.h" open="1" top="0" tabpos="19">
-		<Cursor position="734" topLine="0" />
+	<File name="Headers\SDK\HAGE.h" open="1" top="0" tabpos="19">
+		<Cursor position="785" topLine="17" />
 	</File>
-	<File name="Headers/SDK/IDomain.h" open="1" top="0" tabpos="33">
+	<File name="Headers\SDK\IDomain.h" open="1" top="0" tabpos="32">
 		<Cursor position="627" topLine="0" />
 	</File>
-	<File name="Headers/SDK/ObjectBase.h" open="1" top="1" tabpos="8">
-		<Cursor position="4583" topLine="189" />
+	<File name="Headers\SDK\ObjectBase.h" open="1" top="0" tabpos="8">
+		<Cursor position="2180" topLine="120" />
 	</File>
-	<File name="Headers/SDK/PinHelpers.h" open="1" top="0" tabpos="30">
+	<File name="Headers\SDK\PinHelpers.h" open="1" top="0" tabpos="30">
 		<Cursor position="2233" topLine="42" />
 	</File>
-	<File name="Headers/SDK/RenderingAPIWrapper.h" open="1" top="0" tabpos="10">
+	<File name="Headers\SDK\RenderingAPIWrapper.h" open="1" top="0" tabpos="10">
 		<Cursor position="207" topLine="0" />
 	</File>
-	<File name="Headers/SDK/TLS.h" open="1" top="0" tabpos="2">
+	<File name="Headers\SDK\TLS.h" open="1" top="0" tabpos="2">
 		<Cursor position="196" topLine="0" />
 	</File>
-	<File name="Headers/SDK/TaskManager.h" open="1" top="0" tabpos="27">
+	<File name="Headers\SDK\TaskManager.h" open="1" top="0" tabpos="27">
 		<Cursor position="816" topLine="0" />
 	</File>
-	<File name="Headers/SDK/interlocked_functions.h" open="1" top="0" tabpos="4">
+	<File name="Headers\SDK\interlocked_functions.h" open="1" top="0" tabpos="4">
 		<Cursor position="276" topLine="0" />
 	</File>
-	<File name="Headers/SDK/messages.h" open="1" top="0" tabpos="3">
+	<File name="Headers\SDK\messages.h" open="1" top="0" tabpos="3">
 		<Cursor position="693" topLine="40" />
 	</File>
-	<File name="Headers/SDK/preproc.h" open="1" top="0" tabpos="5">
-		<Cursor position="1382" topLine="9" />
+	<File name="Headers\SDK\preproc.h" open="1" top="0" tabpos="5">
+		<Cursor position="1958" topLine="50" />
 	</File>
-	<File name="Headers/SDK/types.h" open="1" top="0" tabpos="6">
-		<Cursor position="3678" topLine="92" />
+	<File name="Headers\SDK\traits.h" open="1" top="0" tabpos="35">
+		<Cursor position="1791" topLine="67" />
 	</File>
-	<File name="Source/Core/CoreFactory.cpp" open="1" top="0" tabpos="1">
+	<File name="Headers\SDK\types.h" open="1" top="0" tabpos="6">
+		<Cursor position="2319" topLine="75" />
+	</File>
+	<File name="Source\Core\CoreFactory.cpp" open="1" top="1" tabpos="1">
 		<Cursor position="6953" topLine="223" />
 	</File>
-	<File name="Source/Core/D3D11APIWrapper.h" open="1" top="0" tabpos="9">
+	<File name="Source\Core\D3D11APIWrapper.h" open="1" top="0" tabpos="9">
 		<Cursor position="119" topLine="0" />
 	</File>
-	<File name="Source/Core/D3D11ConstantBuffer.cpp" open="1" top="0" tabpos="12">
+	<File name="Source\Core\D3D11ConstantBuffer.cpp" open="1" top="0" tabpos="12">
 		<Cursor position="65" topLine="0" />
 	</File>
-	<File name="Source/Core/D3D11Effect.cpp" open="1" top="0" tabpos="13">
+	<File name="Source\Core\D3D11Effect.cpp" open="1" top="0" tabpos="13">
 		<Cursor position="65" topLine="0" />
 	</File>
-	<File name="Source/Core/D3D11VertexArray.cpp" open="1" top="0" tabpos="14">
+	<File name="Source\Core\D3D11VertexArray.cpp" open="1" top="0" tabpos="14">
 		<Cursor position="69" topLine="0" />
 	</File>
-	<File name="Source/Core/D3D11VertexBuffer.cpp" open="1" top="0" tabpos="15">
+	<File name="Source\Core\D3D11VertexBuffer.cpp" open="1" top="0" tabpos="15">
 		<Cursor position="65" topLine="0" />
 	</File>
-	<File name="Source/Core/D3DRenderingAPIWrapper.cpp" open="1" top="0" tabpos="11">
+	<File name="Source\Core\D3DRenderingAPIWrapper.cpp" open="1" top="0" tabpos="11">
 		<Cursor position="65" topLine="0" />
 	</File>
-	<File name="Source/Core/DebugUI.cpp" open="1" top="0" tabpos="36">
+	<File name="Source\Core\DebugUI.cpp" open="1" top="0" tabpos="33">
 		<Cursor position="3082" topLine="96" />
 	</File>
-	<File name="Source/Core/DomainBase.cpp" open="1" top="0" tabpos="16">
+	<File name="Source\Core\DomainBase.cpp" open="1" top="0" tabpos="16">
 		<Cursor position="637" topLine="0" />
 	</File>
-	<File name="Source/Core/InputDomain.cpp" open="1" top="0" tabpos="26">
+	<File name="Source\Core\DomainMemory.cpp" open="1" top="0" tabpos="45">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\InputDomain.cpp" open="1" top="0" tabpos="26">
 		<Cursor position="226" topLine="0" />
 	</File>
-	<File name="Source/Core/OGL3VertexArray.cpp" open="1" top="0" tabpos="18">
+	<File name="Source\Core\Messages.cpp" open="1" top="0" tabpos="44">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\OGL3VertexArray.cpp" open="1" top="0" tabpos="18">
 		<Cursor position="280" topLine="0" />
 	</File>
-	<File name="Source/Core/OpenGL3APIWrapper.cpp" open="1" top="0" tabpos="24">
+	<File name="Source\Core\OGL3VertexBuffer.cpp" open="1" top="0" tabpos="43">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\OpenGL3APIWrapper.cpp" open="1" top="0" tabpos="24">
 		<Cursor position="8969" topLine="307" />
 	</File>
-	<File name="Source/Core/OpenGL3APIWrapper.h" open="1" top="0" tabpos="17">
+	<File name="Source\Core\OpenGL3APIWrapper.h" open="1" top="0" tabpos="17">
 		<Cursor position="424" topLine="7" />
 	</File>
-	<File name="Source/Core/PinBase.cpp" open="1" top="0" tabpos="29">
+	<File name="Source\Core\PinBase.cpp" open="1" top="0" tabpos="29">
 		<Cursor position="471" topLine="0" />
 	</File>
-	<File name="Source/Core/SharedTaskManager.cpp" open="1" top="0" tabpos="23">
+	<File name="Source\Core\RenderDebugUI.cpp" open="1" top="0" tabpos="42">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\RenderingAPIWrapper.cpp" open="1" top="0" tabpos="41">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\ResourceDomain.cpp" open="1" top="0" tabpos="40">
+		<Cursor position="610" topLine="48" />
+	</File>
+	<File name="Source\Core\ResourceDomain.h" open="1" top="0" tabpos="46">
+		<Cursor position="1063" topLine="25" />
+	</File>
+	<File name="Source\Core\SharedCoreFactory.cpp" open="1" top="0" tabpos="39">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\SharedTaskManager.cpp" open="1" top="0" tabpos="23">
 		<Cursor position="5735" topLine="220" />
 	</File>
-	<File name="Source/Core/SharedTaskManager.h" open="1" top="0" tabpos="25">
+	<File name="Source\Core\SharedTaskManager.h" open="1" top="0" tabpos="25">
 		<Cursor position="672" topLine="26" />
 	</File>
-	<File name="Source/Core/TLS.cpp" open="1" top="0" tabpos="31">
+	<File name="Source\Core\TLS.cpp" open="1" top="0" tabpos="31">
 		<Cursor position="1062" topLine="6" />
 	</File>
-	<File name="Source/Core/TaskManager.cpp" open="1" top="0" tabpos="22">
+	<File name="Source\Core\TaskManager.cpp" open="1" top="0" tabpos="22">
 		<Cursor position="4105" topLine="184" />
 	</File>
-	<File name="Source/Core/WinMain.cpp" open="1" top="0" tabpos="20">
-		<Cursor position="10642" topLine="352" />
+	<File name="Source\Core\WinMain.cpp" open="1" top="0" tabpos="20">
+		<Cursor position="2586" topLine="99" />
 	</File>
-	<File name="Source/Core/XMain.cpp" open="1" top="0" tabpos="21">
+	<File name="Source\Core\XKeyConv.cpp" open="1" top="0" tabpos="38">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="Source\Core\XMain.cpp" open="1" top="0" tabpos="21">
 		<Cursor position="3403" topLine="110" />
 	</File>
-	<File name="Source/Core/prec.cpp" open="1" top="0" tabpos="37">
+	<File name="Source\Core\prec.cpp" open="1" top="0" tabpos="34">
 		<Cursor position="163" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

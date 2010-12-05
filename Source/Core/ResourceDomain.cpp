@@ -50,7 +50,7 @@ namespace HAGE {
 				for(auto it= loaders.first;it!=loaders.second;++it)
 				{
 					IResourceLoader* pLoader = it->second(new CFileStream(pName),nullptr);
-					if(pLoader == nullptr)
+					if(!pLoader)
 						continue;
 					const std::pair<std::string,guid>* pDependancies;
 					u32 nDependancies = pLoader->GetDependancies(&pDependancies);
@@ -59,29 +59,29 @@ namespace HAGE {
 					for(int i =0;i<nDependancies;++i)
 					{
 						SStagedResource* resource = _LoadResource(pDependancies[i].first.c_str(),pDependancies[i].second);
-						assert(resource!= nullptr);
+						assert(resource);
 						loadedDependancies[i] = (IResource*)resource->pCurrentStage;
 					}
-			
+
 					found->second[0]->pCurrentStage=(IResource*)pLoader->Finalize(loadedDependancies,nDependancies);
-				
+
 					delete [] loadedDependancies;
 					delete pLoader;
 					break;
 				}
 
-				assert(found->second[0]->pCurrentStage!=nullptr);
+				assert(found->second[0]->pCurrentStage);
 
 			}
 			return found->second.back();
 		}
-		
+
 		void ResourceDomain::DomainStep(u64 step)
 		{
 			for(int i =0;i<_clients.size();++i)
 			{
 				const Message* curr;
-				while(curr=_clients[i].outQueue.GetTopMessage())
+				while(curr=_clients[i].outQueue->GetTopMessage())
 				{
 					switch(curr->GetMessageCode())
 					{
@@ -90,17 +90,17 @@ namespace HAGE {
 							const MessageResourceRequestLoad* pDetail = (const MessageResourceRequestLoad*)curr;
 							SStagedResource* pMaster = _LoadResource(pDetail->GetName(),pDetail->GetType());
 							pMaster->nRefCount++;
-							_clients[i].inQueue.PostMessage(MessageResourceNotifyLoaded(pMaster,pDetail->GetName(),pDetail->GetType()));
+							_clients[i].inQueue->PostMessage(MessageResourceNotifyLoaded(pMaster,pDetail->GetName(),pDetail->GetType()));
 						}
 						break;
 					}
-					_clients[i].outQueue.PopMessage();
+					_clients[i].outQueue->PopMessage();
 				}
 			}
 		}
 
 		ResourceDomain::ResourceDomain() : _registrationLocked(false)
-		{	
+		{
 			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IMeshData>::Get(),&CMeshDataLoader::Initialize);
 			printf("Init Resource\n");
 		}
@@ -125,7 +125,7 @@ namespace HAGE {
 			TLS::domain_guid.reset(const_cast<guid*>(&guid_of<ResourceDomain>::Get()));
 			TLS::domain_ptr.reset(this);
 
-			RegisteredResourceManager m = {in_queue,out_queue};
+			RegisteredResourceManager m = {&in_queue,&out_queue};
 			_clients.push_back(m);
 
 			//switch back
@@ -162,9 +162,9 @@ namespace HAGE {
 					assert(stage0it!= _stage0Database.end());
 					loadedDependancies[i]=stage0it->second;
 				}
-			
+
 				_stage0Database.insert(std::pair<guid,IResource*>(resourceId,(IResource*)pLoader->Finalize(loadedDependancies,nDependancies)));
-				
+
 				delete [] loadedDependancies;
 				delete pLoader;
 			}

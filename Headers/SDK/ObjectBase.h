@@ -24,9 +24,9 @@ protected:
 
 	typedef	_Domain Domain;
 
-	static inline PinBase& GetOutputPin()
+	static inline Domain* GetDomain()
 	{
-		return OutputPin<Domain>::pin;
+		return domain_access<_Domain>::Get();
 	}
 
 	static inline void GenerateShutdownMessage()
@@ -44,14 +44,14 @@ protected:
 		return &(domain_access<_Domain>::Get()->Factory);
 	}
 
+	static inline CResourceManager* GetResource()
+	{
+		return (domain_access<_Domain>::Get()->Resource);
+	}
+
 	static inline TaskManager* GetTasks()
 	{
 		return &(domain_access<_Domain>::Get()->Tasks);
-	}
-
-	template<class _SourceDomain> static inline PinBase& GetInputPin()
-	{
-		return InputPin<_SourceDomain,Domain>::pin;
 	}
 };
 
@@ -88,10 +88,10 @@ protected:
 	typedef typename get_traits<SourceClass>::OutputTraits::Domain		SourceDomain;
 	typedef typename get_traits<SourceClass>::OutputTraits::Type			Type;
 
-	_ObjectBaseInput() : pin(typename typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
+	_ObjectBaseInput() : pin(get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
 	{
 	}
-	_ObjectBaseInput(const MemHandle& h,const guid& source) : pin(typename typename get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
+	_ObjectBaseInput(const MemHandle& h,const guid& source) : pin(get_traits<SourceDomain>::DomainBaseType::Output::GetBasePin())
 	{
 		if(source == guid_of<SourceDomain>::Get())
 		{
@@ -165,7 +165,7 @@ protected:
 	typedef typename _ObjectOutputTraits::Type		Type;
 	typedef typename _ObjectOutputTraits::Domain		Domain;
 
-	_ObjectBaseOutput(const guid& objectId) : pin(typename get_traits<Domain>::DomainBaseType::Output::GetBasePin())
+	_ObjectBaseOutput(const guid& objectId) : pin(get_traits<Domain>::DomainBaseType::Output::GetBasePin())
 	{
 		__out_handle=pin.AllocateMemBlock(sizeof(Type));
 		assert(__out_handle.isValid());
@@ -246,7 +246,7 @@ public:
 	static const std::array<guid,2>& getCapabilities(){static const std::array<guid,2> val= {guidNull,guid_of<Final>::Get()}; return val;}
 protected:
 	ObjectBase(const guid& rguid) : _ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),_ObjectBaseOutput<typename Traits::OutputTraits>(rguid) {}
-	ObjectBase(const guid& rguid,const MemHandle& h,const guid& source) 
+	ObjectBase(const guid& rguid,const MemHandle& h,const guid& source)
 		:	_ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),
 			_ObjectBaseOutput<typename Traits::OutputTraits>(rguid),
 			_ObjectBaseInput<typename Traits::Input1Traits>(h,source),
