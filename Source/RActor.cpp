@@ -11,6 +11,9 @@ namespace HAGE {
 	RenderingActor::RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source) :
 		ObjectBase<RenderingActor>(ObjectId,h,source)
 	{
+		char temp[256];
+		sprintf(temp,"mesh%i.ply",rand()%3);
+		_mesh = GetResource()->OpenResource<IDrawableMesh>(temp);
 		if(Input1::IsReady() && Input2::IsReady())
 		{
 			position = Input1::Get();
@@ -24,7 +27,7 @@ namespace HAGE {
 		{
 			position = Input1::Get();
 			color = Input2::Get();
-			pRendering->DrawIco(position);
+			_mesh->Draw(position,pRendering->GetViewMatrix(),pRendering->GetProjectionMatrix());
 		}
 		return 1;
 	}

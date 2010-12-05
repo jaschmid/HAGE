@@ -18,6 +18,7 @@ namespace HAGE {
 					fCameraX+=pMessage->GetRotateX();
 					fCameraY+=pMessage->GetRotateY();
 					fCameraZ+=pMessage->GetZoom();
+					_viewMatrix = Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY);
 				}
 				return true;
 			}
@@ -31,11 +32,14 @@ namespace HAGE {
 		}
 	}
 
-	void RenderingDomain::DrawIco(Vector3<> position)
+	const Matrix4<>& RenderingDomain::GetProjectionMatrix()
 	{
-		Ico->Draw(position,
-			Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY),
-			Matrix4<>::Perspective(0.1f,200000.0f,1.3f,3.0f/4.0f*1.3f));
+		return _projectionMatrix;
+	}
+
+	const Matrix4<>& RenderingDomain::GetViewMatrix()
+	{
+		return _viewMatrix;
 	}
 
 	void RenderingDomain::DomainStep(u64 step)
@@ -61,9 +65,10 @@ namespace HAGE {
 
 		pInterface = new UserInterfaceRendering(pWrapper);
 
-		Ico = Resource->OpenResource<IDrawableMesh>("bunny.ply");
-
 		pWrapper->EndAllocation();
+
+		_projectionMatrix = Matrix4<>::Perspective(0.1f,200000.0f,1.3f,3.0f/4.0f*1.3f);
+		_viewMatrix = Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY);
 
 		printf("Init Rendering\n");
 	}

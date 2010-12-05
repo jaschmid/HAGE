@@ -49,7 +49,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
 
-    UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+    UINT createDeviceFlags = 0;//D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif

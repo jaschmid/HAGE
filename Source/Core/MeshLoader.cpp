@@ -24,12 +24,14 @@ namespace HAGE
 	"  float4 color    : COLOR;\n"
 	"};\n"
 	"\n"
-	"C2E1v_Output vertex(float3 position : POSITION,float3 color : COLOR)\n"
+	"C2E1v_Output vertex(float3 position : POSITION,float3 normal : NORMAL,float3 color : COLOR)\n"
 	"{	\n"
 	"  C2E1v_Output OUT;\n"
 	"\n"
 	"  OUT.position = mul( ModelviewProjection, float4( position, 1.0f ) );\n "
-	"  OUT.color = float4(color,1.0f);\n"
+	"  float3 light_intensity = -dot(float3(0.0f,-0.70f,0.70f),normal);\n"
+	"  float3 this_color = light_intensity*color;\n"
+	"  OUT.color = float4(this_color,1.0f);\n"
 	"\n"
 	"  return OUT;	\n"
 	"}";
@@ -62,6 +64,7 @@ namespace HAGE
 	{
 	public:
 		Vector3<>	position;
+		Vector3<>	normal;
 		Vector3<>	color;
 
 		static const char* name;
@@ -70,6 +73,7 @@ namespace HAGE
 
 	VertexDescriptionEntry DefFormatDescriptor[] = {
 		{"Position",	1,	R32G32B32_FLOAT},
+		{"Normal",		1,	R32G32B32_FLOAT},
 		{"Color",		1,	R32G32B32_FLOAT},
 	};
 	
@@ -78,18 +82,18 @@ namespace HAGE
 
 	static const DefaultVertexFormat vertices[] =
 	{
-		{Vector3<>(_1,  0.0f, p),		Vector3<>(1.0f, 0.5f, 0.5f)},
-		{Vector3<>(-_1,  0.0f, p),		Vector3<>(0.5f, 1.0f, 0.5f)},
-		{Vector3<>(_1,   0.0f, -p),		Vector3<>(0.5f, 0.5f, 1.0f)},
-		{Vector3<>(-_1,  0.0f, -p),		Vector3<>(0.0f, 0.5f, 0.5f)},
-		{Vector3<>(0.0f, p,	   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
-		{Vector3<>(0.0f, -p,   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
-		{Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.5f, 0.0f, 1.0f)},
-		{Vector3<>(0.0f, -p,   -_1),	Vector3<>(1.0f, 0.0f, 0.5f)},
-		{Vector3<>(p,	 _1,	0.0f),	Vector3<>(0.0f, 1.0f, 0.5f)},
-		{Vector3<>(-p,   _1,	0.0f),	Vector3<>(0.0f, 0.5f, 1.0f)},
-		{Vector3<>(p,	 -_1,	0.0f),	Vector3<>(1.0f, 0.5f, 0.0f)},
-		{Vector3<>(-p,   -_1,	0.0f),	Vector3<>(0.5f, 1.0f, 0.0f)},
+		{Vector3<>(_1,  0.0f, p),		Vector3<>(_1,  0.0f, p),		Vector3<>(1.0f, 0.5f, 0.5f)},
+		{Vector3<>(-_1,  0.0f, p),		Vector3<>(-_1,  0.0f, p),		Vector3<>(0.5f, 1.0f, 0.5f)},
+		{Vector3<>(_1,   0.0f, -p),		Vector3<>(_1,   0.0f, -p),		Vector3<>(0.5f, 0.5f, 1.0f)},
+		{Vector3<>(-_1,  0.0f, -p),		Vector3<>(-_1,  0.0f, -p),		Vector3<>(0.0f, 0.5f, 0.5f)},
+		{Vector3<>(0.0f, p,	   _1),		Vector3<>(0.0f, p,	   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
+		{Vector3<>(0.0f, -p,   _1),		Vector3<>(0.0f, -p,   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
+		{Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.5f, 0.0f, 1.0f)},
+		{Vector3<>(0.0f, -p,   -_1),	Vector3<>(0.0f, -p,   -_1),		Vector3<>(1.0f, 0.0f, 0.5f)},
+		{Vector3<>(p,	 _1,	0.0f),	Vector3<>(p,	 _1,	0.0f),	Vector3<>(0.0f, 1.0f, 0.5f)},
+		{Vector3<>(-p,   _1,	0.0f),	Vector3<>(-p,   _1,	0.0f),		Vector3<>(0.0f, 0.5f, 1.0f)},
+		{Vector3<>(p,	 -_1,	0.0f),	Vector3<>(p,	 -_1,	0.0f),	Vector3<>(1.0f, 0.5f, 0.0f)},
+		{Vector3<>(-p,   -_1,	0.0f),	Vector3<>(-p,   -_1,	0.0f),	Vector3<>(0.5f, 1.0f, 0.0f)},
 	};
 
 
@@ -278,24 +282,44 @@ CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData): _pVertexData((u
 		Vector3<> min(0.0f,0.0f,0.0f),max(0.0f,0.0f,0.0f);
 		for(int i =0;i<_nVertices;++i)
 		{
-			pVertexData[i].position = Vector3<>(vX[i]*20,vY[i]*20,vZ[i]*20);
-			pVertexData[i].color = pVertexData[i].position/2.0f+Vector3<>(0.5f,0.5f,0.5f);
-			if(pVertexData[i].color.x >= 1.0f)
-				pVertexData[i].color.x=1.0f;
-			if(pVertexData[i].color.y >= 1.0f)
-				pVertexData[i].color.y=1.0f;
-			if(pVertexData[i].color.z >= 1.0f)
-				pVertexData[i].color.z=1.0f;
-			if(pVertexData[i].color.x <= 0.0f)
-				pVertexData[i].color.x=0.0f;
-			if(pVertexData[i].color.y <= 0.0f)
-				pVertexData[i].color.y=0.0f;
-			if(pVertexData[i].color.z <= 0.0f)
-				pVertexData[i].color.z=0.0f;
+			pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
+			pVertexData[i].normal   = Vector3<>(0,0,0);
+			if(pVertexData[i].position.x <= min.x)
+				min.x = pVertexData[i].position.x;
+			if(pVertexData[i].position.y <= min.y)
+				min.y = pVertexData[i].position.y;
+			if(pVertexData[i].position.z <= min.z)
+				min.z = pVertexData[i].position.z;
+			if(pVertexData[i].position.x >= max.x)
+				max.x = pVertexData[i].position.x;
+			if(pVertexData[i].position.y >= max.y)
+				max.y = pVertexData[i].position.y;
+			if(pVertexData[i].position.z >= max.z)
+				max.z = pVertexData[i].position.z;
 		}
+
 		_pVertexData=(u8*)pVertexData;
 		u32* pIndexData = new u32[_nIndices];
 		memcpy(pIndexData,&tI[0],sizeof(u32)*_nIndices);
+
+		for(int i=0;i<_nIndices/3;++i)
+		{
+			Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
+			Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
+			Vector3<> face_normal = d1 % d2;
+			face_normal = face_normal / sqrtf(!face_normal);
+			pVertexData[pIndexData[i*3+0]].normal+=face_normal;
+			pVertexData[pIndexData[i*3+1]].normal+=face_normal;
+			pVertexData[pIndexData[i*3+2]].normal+=face_normal;
+		}
+
+		Vector3<> avg = (max+min)/2.0f;
+		for(int i =0;i<_nVertices;++i)
+		{
+			pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
+			pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
+			pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
+		}
 		_pIndexData=(u8*)pIndexData;
 	}
 }

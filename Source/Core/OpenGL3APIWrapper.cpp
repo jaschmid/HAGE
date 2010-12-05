@@ -381,6 +381,7 @@ void OpenGL3APIWrapper::BeginFrame()
 	{
 		printf("Could not begin frame");
 	}
+	SwapBuffers(m_hDC);
 #elif defined(TARGET_LINUX)
     glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrc );
     // might aswell do that here...
@@ -410,7 +411,6 @@ void OpenGL3APIWrapper::PresentFrame()
 	glFlush();
 
 #ifdef TARGET_WINDOWS
-	SwapBuffers(m_hDC);
 
 	if(!wglMakeCurrent(NULL, NULL))
 	{

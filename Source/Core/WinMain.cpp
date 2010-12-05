@@ -259,7 +259,7 @@ int CALLBACK WinMain(
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Message queue
-
+	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_HIGHEST);
     MSG         Msg;
     while( GetMessage(&Msg, NULL, 0, 0) )
     {
@@ -271,6 +271,7 @@ int CALLBACK WinMain(
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
     }
+	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_NORMAL);
 
 	delete pSharedTaskManager;
 	
@@ -291,7 +292,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_ACTIVATE:
 		if(wParam & WA_ACTIVE || wParam & WA_CLICKACTIVE)
 		{
-			printf("hide\n");
 			ShowCursor(FALSE);
 			RECT client;
 			GetClientRect(hWnd,&client);
@@ -301,7 +301,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		else
 		{
-			printf("show\n");
 			ShowCursor(TRUE);
 			ClipCursor(nullptr);
 			pInput->PostInputMessage(HAGE::MessageInputReset());
@@ -325,9 +324,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 					if(raw->data.keyboard.Flags & RI_KEY_E1)
 						e |= 0x00000200;
 					if(raw->data.keyboard.Flags & RI_KEY_BREAK)
+					{
 						pInput->PostInputMessage(HAGE::MessageInputKeyup(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
+					}
 					else
+					{
 						pInput->PostInputMessage(HAGE::MessageInputKeydown(HAGE::guidDefKeyboard,e|(HAGE::u32)(raw->data.keyboard.MakeCode&0xff),0));
+					}
 				}
 				break;
 			case RIM_TYPEMOUSE:

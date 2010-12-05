@@ -1,5 +1,6 @@
 #include "HAGE.h"
 #include "RenderDebugUI.h"
+#include "Windows.h"
 /*
 	MESSAGE_UI_UNKNOWN			= 0x00110000,
 	MESSAGE_UI_CURSOR_UPDATE	= 0x00110001,
@@ -132,9 +133,11 @@ namespace HAGE {
 			switch(m->GetMessageCode())
 			{
 			case MESSAGE_UI_SHOW:
+				printf("recieved %i\n",GetTickCount());
 				m_bVisible = true;
 				break;
 			case MESSAGE_UI_HIDE:
+				printf("recieved %i\n",GetTickCount());
 				m_bVisible = false;
 				break;
 			case MESSAGE_UI_CURSOR_UPDATE:

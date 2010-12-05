@@ -88,8 +88,9 @@ namespace HAGE {
 					case MESSAGE_RESOURCE_REQUEST_LOAD:
 						{
 							const MessageResourceRequestLoad* pDetail = (const MessageResourceRequestLoad*)curr;
-
-							_clients[i].inQueue.PostMessage(MessageResourceNotifyLoaded(_LoadResource(pDetail->GetName(),pDetail->GetType()),pDetail->GetName(),pDetail->GetType()));
+							SStagedResource* pMaster = _LoadResource(pDetail->GetName(),pDetail->GetType());
+							pMaster->nRefCount++;
+							_clients[i].inQueue.PostMessage(MessageResourceNotifyLoaded(pMaster,pDetail->GetName(),pDetail->GetType()));
 						}
 						break;
 					}

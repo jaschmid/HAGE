@@ -3,6 +3,10 @@
 #include "InputDomain.h"
 #include "ResourceDomain.h"
 #include <assert.h>
+#ifdef TARGET_WINDOWS
+#include <Windows.h>
+#undef PostMessage
+#endif
 
 extern void OSMessageQueue();
 extern void OSLeaveMessageQueue();
@@ -88,6 +92,9 @@ namespace HAGE {
 	void SharedTaskManager::workerThreadProc::operator () ()
 	{
 		//boost::this_thread::bin
+#ifdef TARGET_WINDOWS
+		SetThreadIdealProcessor(GetCurrentThread(),nThreadId);
+#endif
 
 		TLS::thread_id.reset(&nThreadId);
 
