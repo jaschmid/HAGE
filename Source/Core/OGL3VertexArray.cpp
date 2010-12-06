@@ -99,7 +99,6 @@ OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 	}
 	else
 		m_vboIndexID = 0;
-	printf("Created %08x in context %08x\n",this->m_vaoID,wglGetCurrentContext());
 }
 
 void OGL3VertexArray::Init()
