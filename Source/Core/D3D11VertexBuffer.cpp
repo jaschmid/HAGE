@@ -28,7 +28,11 @@ D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVer
 
 void D3D11VertexBuffer::UpdateContent(const void* pData)
 {
-	m_pWrapper->GetContext()->UpdateSubresource(m_pVertexBuffer,0,NULL,pData,0,0);
+	 D3D11_MAPPED_SUBRESOURCE pMapped;
+	m_pWrapper->GetContext()->Map(m_pVertexBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&pMapped);
+	memcpy(pMapped.pData,pData,m_pWrapper->GetVertexSize(m_nCode)*m_nElements);
+	m_pWrapper->GetContext()->Unmap(m_pVertexBuffer,0);
+	
 }
 
 D3D11VertexBuffer::~D3D11VertexBuffer()
