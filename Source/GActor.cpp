@@ -11,8 +11,7 @@ namespace HAGE {
 	int GraphicsActor::Step()
 	{
 		position = Input1::Get();
-		color = Vector3<u8>(255,255,255);
-		Output::Set(color);
+		Output::Set(position);
 		return 1;
 	}
 
@@ -20,8 +19,7 @@ namespace HAGE {
 		ObjectBase<GraphicsActor>(ObjectId,h,source)
 	{
 		position = Input1::Get();
-		color = Vector3<u8>(255,255,255);
-		Output::Set(color);
+		Output::Set(position);
 	}
 
 	GraphicsActor::~GraphicsActor()

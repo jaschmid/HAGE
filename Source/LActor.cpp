@@ -10,6 +10,11 @@ namespace HAGE {
 
 	bool LogicActor::Step(guid& out)
 	{
+#ifdef CIRCULAR_MOTION
+		float fd2 = !position;
+		position = (Matrix4<>::AngleRotation(axis,0.01f)*Vector4<>(position,1.0f)).xyz();
+		Output::Set(position);
+#else
 		speed = speed + acceleration * 0.05f;
 		position = position + speed *0.05f;
 		
@@ -32,6 +37,7 @@ namespace HAGE {
 				}
 			}
 		}
+#endif
 	
 		out = m_guidObjectId;
 
@@ -57,6 +63,7 @@ namespace HAGE {
 		position=Vector3<>(getFRand()*20.0f,getFRand()*20.0f,getFRand()*20.0f);
 		speed=Vector3<>(getFRand()*4.0f,getFRand()*4.0f,getFRand()*4.0f);
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
+		axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
 		Output::Set(position);
 	}
 

@@ -6,9 +6,10 @@ namespace HAGE {
 
 	LockedMessageQueue::LockedMessageQueue() :
 		nClosedAccesses(0),bInit(false),nShutdown(0),
-		nWriteIndex(0),nReadIndex(-1),
+		nWriteIndex(0),nReadIndex(0),
 		pMem((mm_vector*)DomainMemory::GlobalAllocate(sizeof(mm_vector)*FRAME_BUFFER_COUNT)),
-		m_pvpDestructors((pd_vector*)DomainMemory::GlobalAllocate(sizeof(pd_vector)*FRAME_BUFFER_COUNT))
+		m_pvpDestructors((pd_vector*)DomainMemory::GlobalAllocate(sizeof(pd_vector)*FRAME_BUFFER_COUNT)),
+		bReadWaiting(true),bWriteWaiting(false),nAvailableSlots(0)
 
 	{
 		for(int i=0;i<FRAME_BUFFER_COUNT;++i)
@@ -40,31 +41,116 @@ namespace HAGE {
 		DomainMemory::GlobalFree(pMem);
 	}
 
-	result LockedMessageQueue::ClosePin()
+	result LockedMessageQueue::CloseReadPin()
 	{
 		//printf("Pin %08x closed\n",this);
 		i32 count = _InterlockedIncrement(&nClosedAccesses);
-		if(count == (bInit?fReadReadyCallback.size():0) + 1)
+		if(count == fReadReadyCallback.size())
 		{
 			//printf("Pin %08x ready\n",this);
-			bInit=true;
 			nClosedAccesses=nShutdown;
-			if(nReadIndex>=0)
-			{
-				for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
-					((Package*)&pMem[nReadIndex][*i])->~Package();
-				m_pvpDestructors[nReadIndex].clear();
-				pMem[nReadIndex].clear();
-			}
-			nWriteIndex = (nWriteIndex+1) % FRAME_BUFFER_COUNT;
+
+			for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
+				((Package*)&pMem[nReadIndex][*i])->~Package();
+			m_pvpDestructors[nReadIndex].clear();
+			pMem[nReadIndex].clear();
+
 			nReadIndex = (nReadIndex+1) % FRAME_BUFFER_COUNT;
-			fWriteReadyCallback();
-			for(u32 i=0;i<fReadReadyCallback.size();++i)
-				fReadReadyCallback[i]();
+
+			if(_InterlockedDecrement(&nAvailableSlots)==0)
+				bReadWaiting = true;
+			else
+			{
+				if(bWriteWaiting)
+				{
+#ifdef FRAMESKIP_ENABLED
+					if(FRAME_BUFFER_COUNT >= 3 && nAvailableSlots==FRAME_BUFFER_COUNT-1)
+					{
+						//skip frames
+						i32 nNewReadIndex = (nWriteIndex+FRAME_BUFFER_COUNT-1) % FRAME_BUFFER_COUNT;
+						i32 oldReadIndex = nReadIndex;
+						//assert(nNewReadIndex != nWriteIndex);
+						//get total size of older messages
+						u32 newSize = 0;
+						u32 newDestructors = 0;
+						while(nReadIndex != nNewReadIndex)
+						{
+							newSize+=pMem[nReadIndex].size();
+							newDestructors += m_pvpDestructors[nReadIndex].size();
+							nReadIndex = (nReadIndex+1) % FRAME_BUFFER_COUNT;
+						}
+						
+						nReadIndex=oldReadIndex;
+
+						//backup newest messages
+						u32 oldSize = pMem[nNewReadIndex].size();
+						u32 oldDestructors = m_pvpDestructors[nNewReadIndex].size();
+						pMem[nNewReadIndex].resize( oldSize + newSize);
+						m_pvpDestructors[nNewReadIndex].resize( oldDestructors + newDestructors);
+						if(oldSize)
+						{
+							memmove( &pMem[nNewReadIndex][newSize],&pMem[nNewReadIndex][0],oldSize);
+							for(int i =oldDestructors-1;i>=0;--i)
+								m_pvpDestructors[nNewReadIndex][newDestructors +i]=m_pvpDestructors[nNewReadIndex][i]+newSize;
+						}
+
+
+						//copy older messages
+						u32 nCopied=0;
+						u32 nCopiedDestructors = 0;
+						while(nReadIndex != nNewReadIndex)
+						{
+							if(pMem[nReadIndex].size())
+							{
+								memcpy(&pMem[nNewReadIndex][nCopied],&pMem[nReadIndex][0],pMem[nReadIndex].size());
+								for(int i =0;i<m_pvpDestructors[nReadIndex].size();++i)
+								{
+									m_pvpDestructors[nNewReadIndex][nCopiedDestructors +i]=m_pvpDestructors[nReadIndex][i]+nCopied;
+								}
+								
+								nCopiedDestructors+=m_pvpDestructors[nReadIndex].size();
+								nCopied+=pMem[nReadIndex].size();
+
+								m_pvpDestructors[nReadIndex].clear();
+								pMem[nReadIndex].clear();
+							}
+							nReadIndex = (nReadIndex+1) % FRAME_BUFFER_COUNT;
+						}
+						assert(nCopiedDestructors == newDestructors);
+						assert(nCopied == newSize);
+						nAvailableSlots=1;
+					}
+#endif
+					bWriteWaiting = false;
+					fWriteReadyCallback();
+				}
+				for(u32 i=0;i<fReadReadyCallback.size();++i)
+					fReadReadyCallback[i]();
+			}
 		}
 		return S_OK;
 	}
+	result LockedMessageQueue::CloseWritePin()
+	{
+		//printf("Pin %08x closed\n",this);
+			//printf("Pin %08x ready\n",this);
+		bInit=true;
+		nWriteIndex = (nWriteIndex+1) % FRAME_BUFFER_COUNT;
 
+		if(_InterlockedIncrement(&nAvailableSlots)==FRAME_BUFFER_COUNT && fReadReadyCallback.size() >= 1)
+			bWriteWaiting = true;
+		else
+		{			
+			if(bReadWaiting)
+			{
+				bReadWaiting = false;
+				for(u32 i=0;i<fReadReadyCallback.size();++i)
+						fReadReadyCallback[i]();
+			}
+			fWriteReadyCallback();
+		}
+		return S_OK;
+	}
 	result LockedMessageQueue::InitializeOutputPin(boost::function<void()> f,const guid& guid)
 	{
 		fWriteReadyCallback = f;
@@ -148,7 +234,6 @@ namespace HAGE {
 	void LockedMessageQueue::Shutdown()
 	{
 		_InterlockedIncrement((i32*)&nShutdown);
-		ClosePin();
 	}
 
 

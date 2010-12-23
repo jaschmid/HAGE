@@ -22,8 +22,10 @@
     <ClCompile Include="Source\AIDomain.cpp" />
     <ClCompile Include="Source\GActor.cpp" />
     <ClCompile Include="Source\GraphicsDomain.cpp" />
+    <ClCompile Include="Source\GSheet.cpp" />
     <ClCompile Include="Source\LActor.cpp" />
     <ClCompile Include="Source\LogicDomain.cpp" />
+    <ClCompile Include="Source\LSheet.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -33,6 +35,7 @@
     </ClCompile>
     <ClCompile Include="Source\RActor.cpp" />
     <ClCompile Include="Source\RenderingDomain.cpp" />
+    <ClCompile Include="Source\RSheet.cpp" />
     <ClCompile Include="Source\SoundDomain.cpp" />
     <ClCompile Include="Source\UserInterface.cpp" />
     <ClCompile Include="Source\UserInterfaceRendering.cpp" />
@@ -41,13 +44,17 @@
     <ClInclude Include="Headers\AIDomain.h" />
     <ClInclude Include="Headers\GActor.h" />
     <ClInclude Include="Headers\GenericActor.h" />
+    <ClInclude Include="Headers\GenericSheet.h" />
     <ClInclude Include="Headers\GraphicsDomain.h" />
+    <ClInclude Include="Headers\GSheet.h" />
     <ClInclude Include="Headers\guids.h" />
     <ClInclude Include="Headers\header.h" />
     <ClInclude Include="Headers\LActor.h" />
     <ClInclude Include="Headers\LogicDomain.h" />
+    <ClInclude Include="Headers\LSheet.h" />
     <ClInclude Include="Headers\RActor.h" />
     <ClInclude Include="Headers\RenderingDomain.h" />
+    <ClInclude Include="Headers\RSheet.h" />
     <ClInclude Include="Headers\SoundDomain.h" />
     <ClInclude Include="Headers\UserInterface.h" />
     <ClInclude Include="Headers\UserInterfaceRendering.h" />

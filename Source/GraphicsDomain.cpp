@@ -1,6 +1,7 @@
 #include "header.h"
 #include "GraphicsDomain.h"
 #include "GActor.h"
+#include "GSheet.h"
 
 const int nTasks = 1000;
 
@@ -19,6 +20,7 @@ namespace HAGE {
 		GraphicsDomain::GraphicsDomain()
 		{
 			Factory.RegisterObjectType<GraphicsActor>();
+			Factory.RegisterObjectType<GraphicsSheet>();
 			printf("Init Graphic\n");
 		}
 
@@ -28,14 +30,14 @@ namespace HAGE {
 			{
 				case MESSAGE_UI_UNKNOWN:
 				default:
-					SharedDomainBase::MessageProc(m);
-					return true;
+					return SharedDomainBase::MessageProc(m);
 			}
 		}
 
 		void GraphicsDomain::DomainStep(u64 step)
 		{
-			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} , guidNull );
+			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} );
+			auto result2 = Factory.ForEach<int,GraphicsSheet>( [](GraphicsSheet* o) -> int {return o->Step();} );
 		}
 
 		GraphicsDomain::~GraphicsDomain()

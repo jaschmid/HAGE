@@ -16,6 +16,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 
 		const Matrix4<>& GetViewMatrix();
 		const Matrix4<>& GetProjectionMatrix();
+		RenderingAPIWrapper* GetWrapper(){return pWrapper;}
 
 	private:
 		virtual bool MessageProc(const Message* pMessage);

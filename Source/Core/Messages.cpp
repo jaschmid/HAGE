@@ -13,7 +13,7 @@ namespace HAGE {
 			PinBase::ReferenceMemBlock(handle);
 	}
 	MessageFactoryObjectCreated::MessageFactoryObjectCreated(const MessageFactoryObjectCreated& m) :
-		MessageHelper<MessageFactoryObjectCreated,Package>(id),
+		MessageHelper<MessageFactoryObjectCreated,Package>(m),
 		objectId(m.objectId),
 		objectTypeId(m.objectTypeId),
 		handle(m.handle) 

@@ -286,13 +286,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 	 //prepare the loading context
 	glEnableClientState(GL_VERTEX_ARRAY);
-
-#ifdef TARGET_WINDOWS
-	//disable VSync
-	wglSwapIntervalEXT(0);
-#endif
-
-	glClearColor(0.5f, 0.1f, 0.2f, 0.0f);  /* Red background */
+	
+	glClearColor(0.5f, 0.1f, 0.2f, 0.0f); 
 
 	cgGLSetDebugMode(CG_FALSE);
 	cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
@@ -302,7 +297,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 	cgGLSetOptimalOptions(myCgFragmentProfile);
 	checkForCgError("selecting fragment profile");
-
+	
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
 	
@@ -351,12 +346,15 @@ OpenGL3APIWrapper::~OpenGL3APIWrapper()
 
 void OpenGL3APIWrapper::BeginAllocation()
 {
+	m_mutexAllocation.lock();
 #ifdef TARGET_WINDOWS
+	m_backupC=wglGetCurrentContext();
 	if(!wglMakeCurrent(m_hDC, m_hrcL))
 	{
 		printf("Could not begin allocation");
 	}
 #elif defined(TARGET_LINUX)
+	m_backupC=glXGetCurrentContext();
     glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrcL );
 #endif
 }
@@ -365,13 +363,14 @@ void OpenGL3APIWrapper::EndAllocation()
 {
 	glFlush();
 #ifdef TARGET_WINDOWS
-	if(!wglMakeCurrent(NULL, NULL))
+	if(!wglMakeCurrent(m_hDC, m_backupC))
 	{
 		printf("Could not begin allocation");
 	}
 #elif defined(TARGET_LINUX)
-    glXMakeCurrent( m_pDisplay, 0, 0 );
+    glXMakeCurrent( m_pDisplay, *m_pWindow, m_backupC );
 #endif
+	m_mutexAllocation.unlock();
 }
 
 void OpenGL3APIWrapper::BeginFrame()
@@ -465,9 +464,9 @@ void OpenGL3APIWrapper::PresentFrame()
 #endif
 }
 
-HAGE::APIWVertexBuffer* OpenGL3APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData)
+HAGE::APIWVertexBuffer* OpenGL3APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic,bool bInstanceData)
 {
-	return new OGL3VertexBuffer(this,szVertexFormat,pData,nElements,bInstanceData);
+	return new OGL3VertexBuffer(this,szVertexFormat,pData,nElements,bDynamic,bInstanceData);
 }
 
 HAGE::APIWConstantBuffer* OpenGL3APIWrapper::CreateConstantBuffer(HAGE::u32 nSize)

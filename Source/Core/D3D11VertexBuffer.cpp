@@ -4,7 +4,7 @@
 #ifndef NO_D3D
 
 
-D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData) :
+D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic,bool bInstanceData) :
 	m_pWrapper(pWrapper),
 	m_pVertexBuffer(nullptr),
 	m_nElements(nElements),
@@ -14,16 +14,21 @@ D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVer
 	// Create the vertex buffer
 
     D3D11_BUFFER_DESC bd;
-    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.Usage = bDynamic?D3D11_USAGE_DYNAMIC:D3D11_USAGE_DEFAULT;
     bd.ByteWidth = m_pWrapper->GetVertexSize(m_nCode)*nElements;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
+    bd.CPUAccessFlags = bDynamic?D3D11_CPU_ACCESS_WRITE:0;
     bd.MiscFlags = 0;
     bd.StructureByteStride = 0;
     D3D11_SUBRESOURCE_DATA initData;
     initData.pSysMem = pData;
     HRESULT hr = m_pWrapper->GetDevice()->CreateBuffer( &bd, &initData, &m_pVertexBuffer );
 	assert(SUCCEEDED(hr));
+}
+
+void D3D11VertexBuffer::UpdateContent(const void* pData)
+{
+	m_pWrapper->GetContext()->UpdateSubresource(m_pVertexBuffer,0,NULL,pData,0,0);
 }
 
 D3D11VertexBuffer::~D3D11VertexBuffer()

@@ -1,10 +1,7 @@
 #include "HAGE.h"
 #include "DebugUI.h"
-
-#ifdef TARGET_WINDOWS
 #include "Windows.h"
 #undef PostMessage
-#endif
 /*
 	MESSAGE_UI_UNKNOWN			= 0x00110000,
 	MESSAGE_UI_CURSOR_UPDATE	= 0x00110001,
@@ -15,7 +12,7 @@ namespace HAGE {
 
 	DebugUI::DebugUI() : m_vCursor(0.0,0.0),m_bVisible(false)
 	{
-		ResetKeyBuffer();
+		ResetKeyBuffer();	
 	}
 	DebugUI::~DebugUI()
 	{
@@ -38,6 +35,7 @@ namespace HAGE {
 			if(pMessage->GetMessageCode() == MESSAGE_INPUT_KEYDOWN && ((MessageInputKeydown*)pMessage)->GetKey() == KEY_CODE_ACCENT_GRAVE)
 			{
 				m_bVisible = true;
+				printf("generated %i",GetTickCount());
 				PostMessageUI(MessageUIShow());
 				ResetKeyBuffer();
 
@@ -68,6 +66,7 @@ namespace HAGE {
 						{
 							//hide!
 							m_bVisible = false;
+							printf("generated %i",GetTickCount());
 							PostMessageUI(MessageUIHide());
 							return true;
 						}

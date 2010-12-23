@@ -20,6 +20,7 @@ class Message
 {
 public:
 	Message(u32 MessageCode,u32 Size) : code(MessageCode),size(Size),source(guidNull){}
+	Message(const Message& other) : code(other.code),size(other.size),source(other.source){}
 	// due to performance reasons we won't call deconstructors anyway, bear this in mind when inheriting
 	// from the message class
 
@@ -65,6 +66,7 @@ template<class _C,class _C2 = Message> class MessageHelper : public _C2
 {
 public:
 	MessageHelper(const u32 code) : _C2(code,sizeof(_C)) { }
+	MessageHelper(const MessageHelper<_C,_C2>& c) : _C2(c) {}
 
 	virtual Message* CopyTo(void* pTarget) const
 	{
@@ -76,6 +78,7 @@ template<class _C> class SimpleMessage : public Message
 {
 public:
 	SimpleMessage(const u32 code,const _C& c) : Message(code,sizeof(SimpleMessage<_C>)),data(c) {}
+	SimpleMessage(const SimpleMessage<_C>& c) : Message(c),data(c.data) {}
 
 	virtual SimpleMessage<_C>* CopyTo(void* pTarget) const
 	{

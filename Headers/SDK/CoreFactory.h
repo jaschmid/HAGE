@@ -60,7 +60,7 @@ public:
 	/* for each template functions */
 	/*******************************/
 
-	template<class _Result,class _ObjectType> u32 ForEachGetSome(const boost::function<bool (_ObjectType*,_Result&)>& f,_Result* pOut,u32 nOut,const guid& capability = guidNull,bool bSync = false)
+	template<class _Result,class _ObjectType> u32 ForEachGetSome(const boost::function<bool (_ObjectType*,_Result&)>& f,_Result* pOut,u32 nOut,const guid& capability = guid_of<_ObjectType>::Get(),bool bSync = false)
 	{
 		static_assert( std::is_base_of<IObject,_ObjectType>::value ,"_T2 needs to have inherited from IObject!");
 		if(std::tr1::has_trivial_constructor<_Result>::value)
@@ -80,7 +80,7 @@ public:
 			return res.second;
 		}
 	}
-	template<class _Result,class _ObjectType> u32 ForEachEx(const boost::function<_Result (_ObjectType*)>& f,_Result* pOut,u32 nOut,const guid& capability = guidNull,bool bSync = false)
+	template<class _Result,class _ObjectType> u32 ForEachEx(const boost::function<_Result (_ObjectType*)>& f,_Result* pOut,u32 nOut,const guid& capability = guid_of<_ObjectType>::Get(),bool bSync = false)
 	{
 		static_assert( std::is_base_of<IObject,_ObjectType>::value ,"_T2 needs to have inherited from IObject!");
 		const boost::function<bool (void*,IObject*)> c(
@@ -89,7 +89,7 @@ public:
 		std::pair<const void*,u32> res= _ForEach(c,sizeof(_Result),capability,bSync,pOut,nOut,false);
 		return res.second;
 	}
-	template<class _Result,class _ObjectType> std::pair<const _Result*,u32> ForEach(const boost::function<_Result (_ObjectType*)>& f,const guid& capability = guidNull,bool bSync = false)
+	template<class _Result,class _ObjectType> std::pair<const _Result*,u32> ForEach(const boost::function<_Result (_ObjectType*)>& f,const guid& capability = guid_of<_ObjectType>::Get(),bool bSync = false)
 	{
 		static_assert( std::has_trivial_destructor<_Result>::value ,"_T needs to have trivial destructor, use ForEachEx to perform custom destruction of results!");
 		static_assert( std::is_base_of<IObject,_ObjectType>::value ,"_T2 needs to have inherited from IObject!");

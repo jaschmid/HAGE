@@ -281,11 +281,11 @@ public:
 
 	// const access functions
 
-	const Vector3<_T>& xy() const
+	const Vector3<_T>& xyz() const
 	{
 		return *(const Vector3<_T>*)&c[0];
 	}
-	const Vector3<_T>& yz() const
+	const Vector3<_T>& yzw() const
 	{
 		return *(const Vector3<_T>*)&c[1];
 	}
@@ -297,6 +297,10 @@ public:
 	// constructors
 
 	Vector4(const _T& _1,const _T& _2,const _T& _3,const _T& _4) : x(_1),y(_2),z(_3),w(_4)
+	{
+	}
+
+	Vector4(const Vector3<>& _v,const _T& _4) : x(_v.x),y(_v.y),z(_v.z),w(_4)
 	{
 	}
 

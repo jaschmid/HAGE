@@ -9,11 +9,11 @@ DECLARE_DOMAIN(SoundDomain,		0x003574fe,0x4222,0x4799,0x8b06,0xdbe4a549e1c8);
 DECLARE_DOMAIN(RenderingDomain,	0x4ca81f18,0x3084,0x47aa,0x8103,0x212c58a40e8e);
 
 
-template<> class get_traits<LogicDomain> : public		DomainTraits<LogicDomain,true,InputDomain,InputDelay<AIDomain,-2>> {};
+template<> class get_traits<LogicDomain> : public		DomainTraits<LogicDomain,true,InputDomain> {};
 template<> class get_traits<AIDomain> : public			DomainTraits<AIDomain,true,LogicDomain> {};
 template<> class get_traits<GraphicsDomain> : public	DomainTraits<GraphicsDomain,true,LogicDomain> {};
-template<> class get_traits<SoundDomain> : public		DomainTraits<SoundDomain,false,LogicDomain,InputDelay<GraphicsDomain,1>> {};
-template<> class get_traits<RenderingDomain> : public	DomainTraits<RenderingDomain,false,LogicDomain,InputDelay<GraphicsDomain,1>> {};
+template<> class get_traits<SoundDomain> : public		DomainTraits<SoundDomain,false,GraphicsDomain> {};
+template<> class get_traits<RenderingDomain> : public	DomainTraits<RenderingDomain,false,GraphicsDomain> {};
 
 /*
 DECLARE_GUID(name,				0x12d47f0e,0x8813,0x4ad5,0xb13d,0x916b7ab4a618);

@@ -19,7 +19,8 @@
 
 namespace HAGE {
 
-const u32 FRAME_BUFFER_COUNT = 2;
+const u32 FRAME_BUFFER_COUNT = 3;
+//#define FRAMESKIP_ENABLED
 
 class WrapMessage : public MessageHelper<WrapMessage>
 {
@@ -125,7 +126,8 @@ public:
 			return _ForwardPackage((const Package&)m);
 	}
 
-	result ClosePin();
+	result CloseReadPin();
+	result CloseWritePin();
 	result InitializeInputPin(boost::function<void()> f);
 	result InitializeOutputPin(boost::function<void()> f,const guid& sourceId);
 
@@ -135,6 +137,7 @@ protected:
 
 	i32		nReadIndex;
 	i32		nWriteIndex;
+	volatile i32 nAvailableSlots;
 
 private:
 
@@ -154,6 +157,9 @@ private:
 	volatile i32	nClosedAccesses;
 	volatile bool	bInit;
 	volatile i32	nShutdown;
+	volatile i32	nFreeSlots;
+	volatile bool	bWriteWaiting;
+	volatile bool	bReadWaiting;
 	callback_list fReadReadyCallback;
 	boost::function<void()> fWriteReadyCallback;
 	guid			sourceStamp;

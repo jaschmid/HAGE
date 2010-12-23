@@ -257,9 +257,9 @@ void D3D11APIWrapper::PresentFrame()
         printf("Average %.02f - current %.02f\n",sum/(float)nSum,1.0f/(float)diff*(float)freq);
 }
 
-HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData)
+HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic,bool bInstanceData)
 {
-	return new D3D11VertexBuffer(this,szVertexFormat,pData,nElements,bInstanceData);
+	return new D3D11VertexBuffer(this,szVertexFormat,pData,nElements,bDynamic,bInstanceData);
 }
 
 HAGE::APIWConstantBuffer* D3D11APIWrapper::CreateConstantBuffer(HAGE::u32 nSize)

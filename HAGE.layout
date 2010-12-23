@@ -2,7 +2,7 @@
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
 	<File name="Headers\GActor.h" open="1" top="0" tabpos="15">
-		<Cursor position="528" topLine="0" />
+		<Cursor position="507" topLine="0" />
 	</File>
 	<File name="Headers\GenericActor.h" open="1" top="0" tabpos="10">
 		<Cursor position="0" topLine="0" />
@@ -26,13 +26,13 @@
 		<Cursor position="286" topLine="0" />
 	</File>
 	<File name="Source\GraphicsDomain.cpp" open="1" top="0" tabpos="5">
-		<Cursor position="393" topLine="8" />
+		<Cursor position="393" topLine="0" />
 	</File>
 	<File name="Source\LActor.cpp" open="1" top="0" tabpos="16">
 		<Cursor position="570" topLine="0" />
 	</File>
 	<File name="Source\LogicDomain.cpp" open="1" top="0" tabpos="4">
-		<Cursor position="1660" topLine="18" />
+		<Cursor position="1660" topLine="33" />
 	</File>
 	<File name="Source\Main.cpp" open="1" top="0" tabpos="14">
 		<Cursor position="853" topLine="0" />
@@ -40,8 +40,8 @@
 	<File name="Source\RActor.cpp" open="1" top="0" tabpos="9">
 		<Cursor position="324" topLine="0" />
 	</File>
-	<File name="Source\RenderingDomain.cpp" open="1" top="1" tabpos="2">
-		<Cursor position="1524" topLine="40" />
+	<File name="Source\RenderingDomain.cpp" open="1" top="0" tabpos="2">
+		<Cursor position="1524" topLine="21" />
 	</File>
 	<File name="Source\SoundDomain.cpp" open="1" top="0" tabpos="3">
 		<Cursor position="654" topLine="0" />

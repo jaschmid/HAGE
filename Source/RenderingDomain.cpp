@@ -3,6 +3,7 @@
 #include "RenderingDomain.h"
 #include "UserInterfaceRendering.h"
 #include "RActor.h"
+#include "RSheet.h"
 
 namespace HAGE {
 
@@ -46,7 +47,8 @@ namespace HAGE {
 	{
 		pWrapper->BeginFrame();
 
-		auto result = Factory.ForEach<int,RenderingActor>( [this](RenderingActor* o) -> int {return o->Step(this);} , guidNull ,true);
+		auto result = Factory.ForEach<int,RenderingActor>( [this](RenderingActor* o) -> int {return o->Step(this);} , guid_of<RenderingActor>::Get() ,true);
+		auto result2 = Factory.ForEach<int,RenderingSheet>( [this](RenderingSheet* o) -> int {return o->Step(this);} , guid_of<RenderingSheet>::Get() ,true);
 
 		pWrapper->PresentFrame();
 	}
@@ -55,9 +57,10 @@ namespace HAGE {
 		fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
 	{
 		Factory.RegisterObjectType<RenderingActor>();
+		Factory.RegisterObjectType<RenderingSheet>();
 
-		//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-		pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+		pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
+		//pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 
 		pWrapper->BeginAllocation();
 

@@ -7,6 +7,8 @@
 
 namespace HAGE {
 
+#define CIRCULAR_MOTION
+
 class LogicActor : public GenericActor, public ObjectBase<LogicActor>
 {
 public:
@@ -24,6 +26,7 @@ private:
 	LogicActor(guid ObjectId,const Vector3<>& vpos);
 	virtual ~LogicActor();
 
+	Vector3<>		axis;
 	Vector3<>		position;
 	Vector3<>		speed;
 	Vector3<>		acceleration;

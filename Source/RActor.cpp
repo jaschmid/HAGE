@@ -14,19 +14,17 @@ namespace HAGE {
 		char temp[256];
 		sprintf(temp,"mesh%i.ply",rand()%3);
 		_mesh = GetResource()->OpenResource<IDrawableMesh>(temp);
-		if(Input1::IsReady() && Input2::IsReady())
+		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
-			color = Input2::Get();
 		}
 	}
 
 	int RenderingActor::Step(RenderingDomain* pRendering)
 	{
-		if(Input1::IsReady() && Input2::IsReady())
+		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
-			color = Input2::Get();
 			_mesh->Draw(position,pRendering->GetViewMatrix(),pRendering->GetProjectionMatrix());
 		}
 		return 1;

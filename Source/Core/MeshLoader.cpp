@@ -76,7 +76,7 @@ namespace HAGE
 		{"Normal",		1,	R32G32B32_FLOAT},
 		{"Color",		1,	R32G32B32_FLOAT},
 	};
-
+	
 	static const float p = (1.0f + sqrtf(5.0f))/4.0f;
 	static const float _1 = 0.5f;
 
@@ -238,7 +238,7 @@ static int face_cb(p_ply_argument argument) {
     ply_get_argument_property(argument, NULL, &length, &value_index);
 	switch (value_index) {
         case 0:
-        case 1:
+        case 1: 
 			indices[value_index] = ply_get_argument_value(argument);
             break;
         case 2:
@@ -247,10 +247,10 @@ static int face_cb(p_ply_argument argument) {
 			pV->push_back((u32)indices[1]);
 			pV->push_back((u32)indices[2]);
             break;
-        default:
+        default: 
             break;
     }
-
+	
     return 1;
 }
 
@@ -260,7 +260,7 @@ CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData): _pVertexData((u
 	{
 		_vertexSize = sizeof(DefaultVertexFormat);
 		_nVertices = 12;
-		_nIndices = 60;
+		_nIndices = 60;	
 	}
 	else
 	{
@@ -275,7 +275,7 @@ CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData): _pVertexData((u
 		ply_set_read_cb(ply, "face", "vertex_indices", face_cb, &tI, 0);
 		assert(ply_read(ply));
 		ply_close(ply);
-
+		
 		_nIndices = tI.size();
 		_nVertices = vX.size();
 		DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
@@ -326,7 +326,7 @@ CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData): _pVertexData((u
 
 CMeshDataLoader::CMeshData::~CMeshData()
 {
-
+	
 }
 u32 CMeshDataLoader::CMeshData::GetNumVertices() const
 {

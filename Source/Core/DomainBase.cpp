@@ -50,14 +50,14 @@ namespace HAGE {
 			if(outputPin)
 			{
 				//printf("%08x closes pin %08x\n",(SharedDomainBase*)this,outputPin);
-				outputPin->ClosePin();
+				outputPin->CloseWritePin();
 			}
 			for(u32 i=0;i<inputPins.size();++i)
 			{
 				if(inputPins[i].first == 0)
 				{
 					//printf("%08x closes pin %08x\n",(SharedDomainBase*)this,inputPins[i].second);
-					inputPins[i].second->ClosePin();
+					inputPins[i].second->CloseReadPin();
 				}
 				else if( inputPins[i].first < 0)
 					inputPins[i].first ++;

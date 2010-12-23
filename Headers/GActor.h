@@ -19,7 +19,6 @@ private:
 	virtual ~GraphicsActor();
 
 	Vector3<>		position;
-	Vector3<u8>		color;
 };
 
 

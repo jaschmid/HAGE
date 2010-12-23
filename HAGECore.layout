@@ -32,7 +32,7 @@
 		<Cursor position="276" topLine="0" />
 	</File>
 	<File name="Headers\SDK\messages.h" open="1" top="0" tabpos="3">
-		<Cursor position="693" topLine="40" />
+		<Cursor position="693" topLine="0" />
 	</File>
 	<File name="Headers\SDK\preproc.h" open="1" top="0" tabpos="5">
 		<Cursor position="1958" topLine="50" />
@@ -43,8 +43,8 @@
 	<File name="Headers\SDK\types.h" open="1" top="0" tabpos="6">
 		<Cursor position="2319" topLine="75" />
 	</File>
-	<File name="Source\Core\CoreFactory.cpp" open="1" top="1" tabpos="1">
-		<Cursor position="6953" topLine="223" />
+	<File name="Source\Core\CoreFactory.cpp" open="1" top="0" tabpos="1">
+		<Cursor position="6953" topLine="199" />
 	</File>
 	<File name="Source\Core\D3D11APIWrapper.h" open="1" top="0" tabpos="9">
 		<Cursor position="119" topLine="0" />
@@ -70,23 +70,23 @@
 	<File name="Source\Core\DomainBase.cpp" open="1" top="0" tabpos="16">
 		<Cursor position="637" topLine="0" />
 	</File>
-	<File name="Source\Core\DomainMemory.cpp" open="1" top="0" tabpos="45">
+	<File name="Source\Core\DomainMemory.cpp" open="1" top="0" tabpos="43">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="Source\Core\InputDomain.cpp" open="1" top="0" tabpos="26">
 		<Cursor position="226" topLine="0" />
 	</File>
-	<File name="Source\Core\Messages.cpp" open="1" top="0" tabpos="44">
+	<File name="Source\Core\Messages.cpp" open="1" top="0" tabpos="42">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="Source\Core\OGL3VertexArray.cpp" open="1" top="0" tabpos="18">
 		<Cursor position="280" topLine="0" />
 	</File>
-	<File name="Source\Core\OGL3VertexBuffer.cpp" open="1" top="0" tabpos="43">
+	<File name="Source\Core\OGL3VertexBuffer.cpp" open="1" top="0" tabpos="41">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source\Core\OpenGL3APIWrapper.cpp" open="1" top="0" tabpos="24">
-		<Cursor position="8969" topLine="307" />
+	<File name="Source\Core\OpenGL3APIWrapper.cpp" open="1" top="1" tabpos="24">
+		<Cursor position="11257" topLine="374" />
 	</File>
 	<File name="Source\Core\OpenGL3APIWrapper.h" open="1" top="0" tabpos="17">
 		<Cursor position="424" topLine="7" />
@@ -94,19 +94,19 @@
 	<File name="Source\Core\PinBase.cpp" open="1" top="0" tabpos="29">
 		<Cursor position="471" topLine="0" />
 	</File>
-	<File name="Source\Core\RenderDebugUI.cpp" open="1" top="0" tabpos="42">
+	<File name="Source\Core\RenderDebugUI.cpp" open="1" top="0" tabpos="40">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source\Core\RenderingAPIWrapper.cpp" open="1" top="0" tabpos="41">
+	<File name="Source\Core\RenderingAPIWrapper.cpp" open="1" top="0" tabpos="39">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="Source\Core\ResourceDomain.cpp" open="1" top="0" tabpos="40">
+	<File name="Source\Core\ResourceDomain.cpp" open="1" top="0" tabpos="38">
 		<Cursor position="610" topLine="48" />
 	</File>
-	<File name="Source\Core\ResourceDomain.h" open="1" top="0" tabpos="46">
+	<File name="Source\Core\ResourceDomain.h" open="1" top="0" tabpos="44">
 		<Cursor position="1063" topLine="25" />
 	</File>
-	<File name="Source\Core\SharedCoreFactory.cpp" open="1" top="0" tabpos="39">
+	<File name="Source\Core\SharedCoreFactory.cpp" open="1" top="0" tabpos="37">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="Source\Core\SharedTaskManager.cpp" open="1" top="0" tabpos="23">
@@ -124,7 +124,7 @@
 	<File name="Source\Core\WinMain.cpp" open="1" top="0" tabpos="20">
 		<Cursor position="2586" topLine="99" />
 	</File>
-	<File name="Source\Core\XKeyConv.cpp" open="1" top="0" tabpos="38">
+	<File name="Source\Core\XKeyConv.cpp" open="1" top="0" tabpos="36">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="Source\Core\XMain.cpp" open="1" top="0" tabpos="21">

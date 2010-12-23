@@ -45,7 +45,7 @@
 #if _DEBUG
 #define glError() { \
 	GLenum err = glGetError(); \
-	while (err != GL_NO_ERROR) { \
+	if (err != GL_NO_ERROR) { \
 		printf("glError: %08x caught at %s:%u\n", err, __FILE__, __LINE__); \
 		err = glGetError(); \
 	} \
@@ -137,7 +137,7 @@ public:
 		HAGE::APIWVertexBuffer** pBuffers,
 		HAGE::u32 nBuffers,
 		const HAGE::u32* pIndexBufferData);
-	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
+	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic, bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
 	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
@@ -179,6 +179,7 @@ private:
 	FixedSizeKeyStorage<HAGE::u16,MAX_BLEND_STATES,BlendStateEX>
 								m_BlendStates;
 	HAGE::u16					m_CurrentBS;
+	boost::mutex 				m_mutexAllocation;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -186,10 +187,11 @@ private:
 	HDC							m_hDC;
 	HGLRC						m_hrc;                 // OpenGL Rendering Context
 	HGLRC						m_hrcL;                // OpenGL Rendering Context for Loading
-	static boost::thread_specific_ptr<HGLRC> _currentRC;
+	HGLRC						m_backupC;
 #elif defined(TARGET_LINUX)
     GLXContext                  m_hrc;
 	GLXContext                  m_hrcL;
+	GLXContext                  m_backupC;
     Window*                     m_pWindow;
     Display*                    m_pDisplay;
 	static boost::thread_specific_ptr<GLXContext> _currentRC;
@@ -205,11 +207,13 @@ private:
 class OGL3VertexBuffer : public HAGE::APIWVertexBuffer
 {
 public:
-	OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bInstanceData);
+	OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic, bool bInstanceData);
+	void UpdateContent(const void* pData);
 	~OGL3VertexBuffer();
 
 private:
 	unsigned int				m_vboID;		// VBO
+	HAGE::u32					m_BufferSize;
 	HAGE::u8					m_code;
 	OpenGL3APIWrapper*			m_pWrapper;
 	friend class OGL3Effect;

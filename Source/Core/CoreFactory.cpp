@@ -321,8 +321,11 @@ namespace HAGE {
 				assert(!it->second.bMaster);
 				it->second.uRefCounter--;
 				if(it->second.uRefCounter == 0)
+				{
 					DestroyObjectInternal(it);
+				}
 			}
+
 			return true;
 		}
 		return false;
