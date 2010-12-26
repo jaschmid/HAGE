@@ -59,8 +59,8 @@ namespace HAGE {
 		Factory.RegisterObjectType<RenderingActor>();
 		Factory.RegisterObjectType<RenderingSheet>();
 
-		pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-		//pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+		//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
+		pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
 
 		pWrapper->BeginAllocation();
 

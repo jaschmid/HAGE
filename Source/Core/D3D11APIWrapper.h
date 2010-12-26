@@ -4,6 +4,8 @@
 #include <HAGE.h>
 #include "RenderDebugUI.h"
 
+//#define NO_D3D
+
 #ifndef TARGET_WINDOWS
 #define NO_D3D
 #elif defined( COMPILER_GCC )

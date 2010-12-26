@@ -154,11 +154,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
 
 	myCgContext = cgCreateContext();
     checkForCgError( "creating context" );
-
-	hr = cgD3D11SetDevice( myCgContext, m_pDevice );
-    checkForCgError( "setting Direct3D device" );
-    assert( hr == S_OK );
-
+	
 	myCgVertexProfile = CG_PROFILE_VS_4_0;
 	myCgFragmentProfile = CG_PROFILE_PS_4_0;
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
@@ -191,11 +187,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
 D3D11APIWrapper::~D3D11APIWrapper()
 {
 	delete m_DebugUIRenderer;
-
-	// CG sucks and forgets to release the device
-	m_pContext->Release();
-    cgD3D11SetDevice( myCgContext, NULL );
-
+	
     cgDestroyContext( myCgContext );
 
 	if(m_pSwapChain)m_pSwapChain->Release();

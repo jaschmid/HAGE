@@ -3,8 +3,6 @@
 
 #ifndef NO_OGL
 
-CGprogram OGL3Effect::testProgram = 0;
-
 void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
 {
  //Check if something is wrong with the shader
@@ -38,40 +36,56 @@ void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
  };
 }
 
-static const char* extStr = "#extension GL_ARB_uniform_buffer_object : enable\n";
+static const char* extStr = "#version 150\n#extension GL_ARB_uniform_buffer_object : enable\nlayout(std140) uniform;\n";
+
+char *replace_str(const char *str, const char *orig, const char *rep, char* buffer)
+{
+  const char *p;
+
+  if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+    return strcpy(buffer,str);
+
+  strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+  buffer[p-str] = '\0';
+
+  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+  return buffer;
+}
 
 OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend) 
-	:m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer),_cVertexShader(new char[strlen(pVertexProgram)+1]),_cPixelShader(new char[strlen(pFragmentProgram)+1]),
-	_bInit(false)
+	:m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer),_cVertexShader(new char[strlen(pVertexProgram)+1]),_cPixelShader(new char[strlen(pVertexProgram)+1])
 {
 /*	strcpy(_cVertexShader,extStr);
 	strcpy(_cPixelShader,extStr);*/
 	strcpy(_cVertexShader,pVertexProgram);
-	strcpy(_cPixelShader,pFragmentProgram);
+	strcpy(_cPixelShader,pVertexProgram);
 
-	const char* argsV[] = {NULL};
-	const char* argsF[] = {NULL};
+	const char* argsV[] = {"version=150",NULL};
+	const char* argsF[] = {"version=150",NULL};
+	
+	CGprogram					m_CgProgramParts[3];
 
-	m_CgVertexProgram =
+	m_CgProgramParts[0] =
 	cgCreateProgram(
 		m_pWrapper->GetCGC(),              /* Cg runtime context */
 		CG_SOURCE,                /* Program in human-readable form */
-		_cVertexShader,				/* Name of file containing program */
-		pWrapper->GetVertexProfile(),        /* Profile: OpenGL ARB vertex program */
+		_cVertexShader,				/* program */
+		pWrapper->GetVertexProfile(),        /* Profile */
 		"vertex",			/* Entry function name */
-		argsV);                    /* No extra compiler options */
+		argsV);                    /* extra compiler options */
 	m_pWrapper->checkForCgError("creating vertex program from source");
 	
-	m_CgFragmentProgram =
+	m_CgProgramParts[1] =
 	cgCreateProgram(
 		m_pWrapper->GetCGC(),                /* Cg runtime context */
 		CG_SOURCE,                  /* Program in human-readable form */
-		_cPixelShader,			/* Name of file containing program */
-		pWrapper->GetFragmentProfile(),        /* Profile: OpenGL ARB vertex program */
+		_cPixelShader,			/* program */
+		pWrapper->GetFragmentProfile(),        /* Profile */
 		"fragment",		/* Entry function name */
-		argsF);                      /* No extra compiler options */
+		argsF);                      /*  extra compiler options */
 	m_pWrapper->checkForCgError("creating fragment program from source");
-	
+	/*
 	cgGLLoadProgram(m_CgVertexProgram);
 	m_pWrapper->checkForCgError("loading vertex program");
 	cgGLLoadProgram(m_CgFragmentProgram);
@@ -80,25 +94,66 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 	if(testProgram == 0)
 	{
 		testProgram = m_CgVertexProgram;
+	}*/
+/*	cgCompileProgram(m_CgProgramParts[0]);
+    m_pWrapper->checkForCgError("compiling program");
+	cgCompileProgram(m_CgProgramParts[1]);
+    m_pWrapper->checkForCgError("compiling program");*/
+	CGprogram m_CgMergedProgram = cgCombinePrograms(2,m_CgProgramParts);
+
+	cgDestroyProgram(m_CgProgramParts[0]);
+	cgDestroyProgram(m_CgProgramParts[1]);
+
+	cgCompileProgram(m_CgMergedProgram);
+	m_pWrapper->checkForCgError("compiling program");
+
+	const char* v_string;
+	const char* f_string;
+
+	for(int i =0;i<cgGetNumProgramDomains(m_CgMergedProgram);++i)
+	{
+		CGprogram subprog = cgGetProgramDomainProgram(m_CgMergedProgram, i);
+		CGdomain domain = cgGetProgramDomain(subprog);
+
+		switch(domain)
+		{
+		case CG_VERTEX_DOMAIN:
+			v_string = cgGetProgramString( subprog, CG_COMPILED_PROGRAM);
+			break;
+		case CG_FRAGMENT_DOMAIN:
+			f_string = cgGetProgramString( subprog, CG_COMPILED_PROGRAM);
+			break;
+		case CG_GEOMETRY_DOMAIN:
+			break;
+		}
 	}
-
-	/*
-	cgCompileProgram(m_CgVertexProgram);
-    m_pWrapper->checkForCgError("compiling vertex program");
-	cgCompileProgram(m_CgFragmentProgram);
-    m_pWrapper->checkForCgError("compiling fragment program");
 	
-	const char* hlsl_source_v[] = {cgGetProgramString( m_CgVertexProgram, CG_COMPILED_PROGRAM)};
-	const char* hlsl_source_f[] = {cgGetProgramString( m_CgFragmentProgram, CG_COMPILED_PROGRAM)};
 
+	const char* version_string = "#version 150\n";
+
+	int v_skip = strstr(v_string,version_string)+strlen(version_string)-v_string;
+	int f_skip = strstr(f_string,version_string)+strlen(version_string)-f_string;
+
+	const char* v_skipped = &v_string[v_skip];
+	const char* f_skipped = &f_string[f_skip];
+
+	//replace struct qualifier on uniform structs with block, like they should be!
+	_glVertexShader = new char[strlen(v_skipped)*2];
+	_glFragmentShader = new char[strlen(f_skipped)*2];
+
+	replace_str(v_skipped,"uniform struct","layout(std140) uniform block",_glVertexShader);
+	replace_str(f_skipped,"uniform struct","layout(std140) uniform block",_glFragmentShader);
+	
+	const char* hlsl_source_v[] = {extStr,_glVertexShader};
+	const char* hlsl_source_f[] = {extStr,_glFragmentShader};
 
 	_glVShader =  glCreateShader(GL_VERTEX_SHADER);
 	glError();
 	_glFShader =  glCreateShader(GL_FRAGMENT_SHADER);
 	glError();
-	glShaderSource(	_glVShader,1,hlsl_source_v,NULL);
+	glShaderSource(	_glVShader,2,hlsl_source_v,NULL);
 	glError();
-	glShaderSource(	_glFShader,1,hlsl_source_f,NULL);
+	glShaderSource(	_glFShader,2,hlsl_source_f,NULL);
 	glError();
 
 	_glProgram = glCreateProgram();
@@ -114,6 +169,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 	glCompileShader(_glFShader);
 	CheckShader(_glFShader,GL_COMPILE_STATUS,&bCompile,"compile FS");
 	glError();
+	glBindFragDataLocationEXT(_glProgram,0,"COL0");
 	glLinkProgram(_glProgram);
 	CheckShader(_glProgram,GL_LINK_STATUS,&bCompile,"link prog");
 	glError();
@@ -123,8 +179,12 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 	glGetProgramiv(_glProgram,GL_LINK_STATUS,&bLink);
 	glGetProgramiv(_glProgram,GL_VALIDATE_STATUS,&bValid);
 	glGetProgramiv(_glProgram,GL_INFO_LOG_LENGTH,&nLength);
-	char* info=new char[nLength];
-	glGetProgramInfoLog(_glProgram,nLength,&nLength,info);
+	if(nLength)
+	{
+		char* info=new char[nLength];
+		glGetProgramInfoLog(_glProgram,nLength,&nLength,info);
+	}
+	/*
 	glUseProgram(_glProgram);
 	glError();
 	glUseProgram(0);
@@ -155,6 +215,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 		int buflen;
 		glGetActiveUniformBlockiv(_glProgram,i,GL_UNIFORM_BLOCK_BINDING,&len);
 		glGetActiveUniformBlockName(_glProgram,i,nAttribsLength,&buflen,cAttribName);
+		glUniformBlockBinding(_glProgram,glGetUniformBlockIndex(_glProgram,cAttribName),i);
 		printf("Uniform Block %i \@ %i= %s\n",i,len,	cAttribName);
 	}
 	glGetProgramiv(_glProgram,GL_ACTIVE_UNIFORMS,&nAttribs);
@@ -170,14 +231,13 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,co
 	}
 
 	printf("Created %08x in context %08x\n",this,wglGetCurrentContext());*/
+	
+	cgDestroyProgram(m_CgMergedProgram);
 }
 
 OGL3Effect::~OGL3Effect()
 {
-	cgDestroyProgram( m_CgVertexProgram );
-    m_pWrapper->checkForCgError( "destroying vertex program" );
-    cgDestroyProgram( m_CgFragmentProgram );
-    m_pWrapper->checkForCgError( "destroying fragment program" );
+    m_pWrapper->checkForCgError( "destroying program" );
 	delete _cVertexShader;
 	delete _cPixelShader;
 }
@@ -190,37 +250,17 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer*
 
 	assert(nConstants<=N_CBUFFERS);
 	
-	if(!_bInit)
-	{
-		_bInit=true;
-		cgGLLoadProgram(m_CgVertexProgram);
-		m_pWrapper->checkForCgError("loading vertex program");
-		cgGLLoadProgram(m_CgFragmentProgram);
-		m_pWrapper->checkForCgError("loading fragment program");
-	}
-
-	cgGLBindProgram(m_CgVertexProgram);
-    m_pWrapper->checkForCgError( "binding vertex program" );
-	
-	cgGLBindProgram(m_CgFragmentProgram);
-    m_pWrapper->checkForCgError( "binding fragment program" );
-	/*
-	bool program = glIsProgram(_glProgram);
-	bool vertex = glIsShader(_glVShader);
-	bool fragment = glIsShader(_glFShader);
 	glUseProgram(_glProgram);
 	glError();
 
 	// set cBuffers
-	*/
+	
 	for(HAGE::u32 i =0; i<nConstants;++i)
 	{
-		/*glBindBufferBase(GL_UNIFORM_BUFFER,i,cgGLGetBufferObject(ppConstants[i]->m_Buffer));
-		glError();*/
-		cgSetProgramBuffer(m_CgVertexProgram,i,ppConstants[i]->m_Buffer);
-		m_pWrapper->checkForCgError( "setting program buffer" );
+		glBindBufferBase(GL_UNIFORM_BUFFER,i,ppConstants[i]->m_cbo);
+		glUniformBlockBinding(_glProgram, i, i);
+		glError();
 	}
-	//m_pWrapper->SetCBuffer(nBuffer,this);
 
 	// set states
 

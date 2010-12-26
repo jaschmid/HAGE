@@ -13,7 +13,7 @@ D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,co
 	// Create Shaders
 
 	m_pVertexShader=CompileVertexShader(pVertexProgram);
-	m_pPixelShader=CompilePixelShader(pFragmentProgram);
+	m_pPixelShader=CompilePixelShader(pVertexProgram);
 
 }
 

@@ -7,9 +7,10 @@
 	MESSAGE_UI_MOVE_PLAYER		= 0x00110003,
 	*/
 namespace HAGE {
-	const char* Effect2D_VP =
-	"struct Effect2DConstants\n"
+	const char* Effect2D =
+	"uniform struct\n"
 	"{\n"
+	"	 float4 color;\n"
 	"    float4x4 position_matrix;\n"
 	"    float4x4 texture_matrix;\n"
 	"} cbuffer0_Effect2DConstants: BUFFER[0];\n"
@@ -17,39 +18,38 @@ namespace HAGE {
 	"// cbuffer Effect2DConstants : register(b0)\n"
 	"#define PositionMatrix       cbuffer0_Effect2DConstants.position_matrix\n"
 	"#define TextureMatrix        cbuffer0_Effect2DConstants.texture_matrix\n"
+	"#define ConstantColor        cbuffer0_Effect2DConstants.color\n"
 	"\n"
+	"struct Effect2DV_Input {\n"
+	"  float2 cposition : POSITION;\n"
+	"  float2 ctexcoord : TEXCOORD0;\n"
+	"};\n"
 	"struct Effect2DV_Output {\n"
-	"  float4 color    : COLOR;\n"
-	"  float2 texture  : TEXCOORD0;\n"
-	"  float4 position : POSITION;\n"
+	"  float4 vcolor    : TEXCOORD0;\n"
+	"  float2 vtexture  : TEXCOORD1;\n"
+	"  float4 vposition : POSITION;\n"
 	"};\n"
-	"\n"
-	"Effect2DV_Output vertex(float2 position : POSITION,float3 color : COLOR, float2 texcoord : TEXCOORD0)\n"
-	"{	\n"
-	"  Effect2DV_Output OUT;\n"
-	"\n"
-	"  OUT.position = mul( PositionMatrix,	float4( position, 0.0f, 1.0f ) );\n "
-	"  OUT.texture = mul( TextureMatrix,	float4( texcoord, 0.0f, 1.0f ) ).xy;\n"
-	"  OUT.color = float4(color,1.0f);\n"
-	"\n"
-	"  return OUT;	\n"
-	"}";
-
-	const char* Effect2D_FP =
-	"\n"
 	"struct Effect2DF_Output {\n"
-	"  float4 color : COLOR;\n"
+	"  float4 fcolor : COLOR;\n"
 	"};\n"
 	"\n"
-	"Effect2DF_Output fragment(float4 color : COLOR, float4 position : POSITION, float2 texture : TEXCOORD0)\n"
+	"\n"
+	"void vertex(in Effect2DV_Input IN, out Effect2DV_Output OUT)\n"
+	"{	\n"
+	"\n"
+	"  OUT.vposition = mul( PositionMatrix,	float4( IN.cposition, 0.0f, 1.0f ) );\n "
+	"  OUT.vtexture = mul( TextureMatrix,	float4( IN.ctexcoord, 0.0f, 1.0f ) ).xy;\n"
+	"  OUT.vcolor = ConstantColor;\n"
+	"}"
+	"\n"
+	"void fragment(in Effect2DV_Output IN, out Effect2DF_Output OUT)\n"
 	"{\n"
-	"  Effect2DF_Output OUT;\n"
-	"  OUT.color = color;\n"
-	"  return OUT;\n"
+	"  OUT.fcolor = IN.vcolor;\n"
 	"}\n";
 
 	struct Effect2DConstants
 	{
+		Vector4<>	color;
 		Matrix4<>	position_matrix;
 		Matrix4<>	texture_matrix;
 	};
@@ -90,7 +90,7 @@ namespace HAGE {
 		pWrapper->RegisterVertexFormat(Vertex2DFormat::name,Vertex2DFormatDescriptor,3);
 		m_pVBSquare = pWrapper->CreateVertexBuffer(Vertex2DFormat::name,vertices,4);
 		m_pVASquare = pWrapper->CreateVertexArray(2,PRIMITIVE_TRIANGLELIST,&m_pVBSquare,1,indices);
-		m_pEffect2D = pWrapper->CreateEffect(Effect2D_VP,Effect2D_FP);
+		m_pEffect2D = pWrapper->CreateEffect(Effect2D,nullptr);
 		m_pConstants = pWrapper->CreateConstantBuffer(sizeof(Effect2DConstants));
 	}
 	UserInterfaceRendering::~UserInterfaceRendering()

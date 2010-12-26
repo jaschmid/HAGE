@@ -68,8 +68,6 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	m_CurrentRS(-1),
 	m_CurrentBS(-1)
 {
-	myCgContext = cgCreateContext();
-	checkForCgError("creating context");
 
 #ifdef TARGET_WINDOWS
 	PIXELFORMATDESCRIPTOR pfd;
@@ -265,12 +263,14 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 #endif
 
 	glClearColor(0.5f, 0.1f, 0.2f, 0.0f);  /* Red background */
-
-	myCgVertexProfile = cgGLGetLatestProfile(CG_GL_VERTEX);
-	cgGLSetOptimalOptions(myCgVertexProfile);
-	myCgFragmentProfile = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-	cgGLSetOptimalOptions(myCgFragmentProfile);
-	cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
+	
+	myCgContext = cgCreateContext();
+	checkForCgError("creating context");
+	
+	myCgVertexProfile = cgGetProfile("glslv");//cgGLGetLatestProfile(CG_GL_VERTEX);
+	myCgFragmentProfile = cgGetProfile("glslf");//cgGLGetLatestProfile(CG_GL_FRAGMENT);
+	//cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
+	cgSetAutoCompile(myCgContext,CG_COMPILE_MANUAL);
 
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
@@ -288,15 +288,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	glEnableClientState(GL_VERTEX_ARRAY);
 	
 	glClearColor(0.5f, 0.1f, 0.2f, 0.0f); 
-
-	cgGLSetDebugMode(CG_FALSE);
-	cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
-
-	cgGLSetOptimalOptions(myCgVertexProfile);
-	checkForCgError("selecting vertex profile");
-
-	cgGLSetOptimalOptions(myCgFragmentProfile);
-	checkForCgError("selecting fragment profile");
+	//cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
 	
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
@@ -389,24 +381,13 @@ void OpenGL3APIWrapper::BeginFrame()
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	cgGLEnableProfile(GetVertexProfile());
-	checkForCgError("enabling vertex profile");
-
-	cgGLEnableProfile(GetFragmentProfile());
-	checkForCgError("enabling fragment profile");
 }
 
 void OpenGL3APIWrapper::PresentFrame()
 {
 	// Debug UI
 	m_DebugUIRenderer->Draw();
-
-	cgGLDisableProfile(GetVertexProfile());
-	checkForCgError("disabling vertex profile");
-
-	cgGLDisableProfile(GetFragmentProfile());
-	checkForCgError("disabling fragment profile");
-	
+		
 	glFlush();
 
 #ifdef TARGET_WINDOWS

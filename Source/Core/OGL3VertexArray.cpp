@@ -44,7 +44,7 @@ BINORMAL, ATTR15 Generic Attribute 15
 const char* vertex_slot_names[] =
 {
 	"POSITION",
-	"BLENDWEIGHT",
+	//"BLENDWEIGHT",
 	"NORMAL",
 	"COLOR",
 	"COLOR1",

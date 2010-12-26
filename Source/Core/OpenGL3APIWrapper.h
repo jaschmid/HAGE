@@ -250,7 +250,6 @@ private:
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u32					m_nSize;
 	unsigned int				m_cbo;
-	CGbuffer					m_Buffer;
 	friend class OGL3Effect;
 };
 
@@ -262,17 +261,16 @@ public:
 
 	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1);
 private:
-	CGprogram					m_CgVertexProgram;
-	static CGprogram			testProgram;
-	CGprogram					m_CgFragmentProgram;
-
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u16					m_RastState;
 	HAGE::u16					m_BlendState;
 	char*						_cVertexShader;
 	char*						_cPixelShader;
+
+	char*						_glVertexShader;
+	char*						_glFragmentShader;
+
 	GLuint						_glVShader,_glFShader,_glProgram;
-	bool						_bInit;
 };
 
 #endif

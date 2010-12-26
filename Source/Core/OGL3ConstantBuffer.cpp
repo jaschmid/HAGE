@@ -5,17 +5,23 @@
 
 OGL3ConstantBuffer::OGL3ConstantBuffer(OpenGL3APIWrapper* pWrapper,HAGE::u32 nSize) : m_pWrapper(pWrapper),m_nSize(nSize)
 {
-	m_Buffer = cgCreateBuffer(pWrapper->GetCGC(),m_nSize,NULL,CG_BUFFER_USAGE_DYNAMIC_DRAW);
+	glGenBuffers(1,&m_cbo);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_cbo);
+    glBufferData(GL_UNIFORM_BUFFER, m_nSize,
+                     NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 OGL3ConstantBuffer::~OGL3ConstantBuffer()
 {
-	cgDestroyBuffer(m_Buffer);
+	glDeleteBuffers(1, &m_cbo);
 }
 
 void OGL3ConstantBuffer::UpdateContent(const void* pData)
 {
-	cgSetBufferData(m_Buffer,m_nSize,pData);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_cbo);
+	glBufferData(GL_UNIFORM_BUFFER, m_nSize, pData, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 #endif

@@ -3,13 +3,13 @@
 
 namespace HAGE {
 
-	static const char* sheet_vertex_program =
+	static const char* sheet_program =
 	"// This is C2E1v_green from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
 	"// 0321194969) by Randima Fernando and Mark J. Kilgard.  See page 38.\n"
-	"struct TransformGlobal\n"
+	"uniform struct\n"
 	"{\n"
-	"    float4x4 modelview;\n"
 	"    float4x4 inverse_modelview;\n"
+	"    float4x4 modelview;\n"
 	"    float4x4 modelview_projection;\n"
 	"} cbuffer0_TransformGlobal: BUFFER[0];\n"
 	"\n"
@@ -18,43 +18,42 @@ namespace HAGE {
 	"#define InverseModelview        cbuffer0_TransformGlobal.inverse_modelview\n"
 	"#define ModelviewProjection     cbuffer0_TransformGlobal.modelview_projection\n"
 	"\n"
-	"struct C2E1v_Output {\n"
-	"  float4 position : POSITION;\n"
-	"  float4 color    : COLOR;\n"
+	"struct VertexInput {\n"
+	"  float3 position : POSITION;\n"
+	"  float3 normal : NORMAL;\n"
+	"  float3 color : COLOR;\n"
 	"};\n"
-	"\n"
-	"C2E1v_Output vertex(float3 position : POSITION,float3 normal : NORMAL,float3 color : COLOR)\n"
-	"{	\n"
-	"  C2E1v_Output OUT;\n"
-	"\n"
-	"  OUT.position = mul( ModelviewProjection, float4( position, 1.0f ) );\n "
-	"  float3 light_intensity = -dot(float3(0.0f,-0.70f,0.70f),normal);\n"
-	"  float3 this_color = light_intensity*color;\n"
-	"  OUT.color = float4(this_color,1.0f);\n"
-	"\n"
-	"  return OUT;	\n"
-	"}";
-
-	static const char* sheet_fragment_program =
-	"// This is C2E2f_passthru from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
-	"// 0321194969) by Randima Fernando and Mark J. Kilgard.  See page 53.\n"
-	"\n"
-	"struct C2E2f_Output {\n"
+	"struct VertexOutput {\n"
+	"  float4 position : POSITION;\n"
+	"  float4 color    : TEXCOORD1;\n"
+	"};\n"
+	"struct FragmentOutput {\n"
 	"  float4 color : COLOR;\n"
 	"};\n"
 	"\n"
-	"C2E2f_Output fragment(float4 color : COLOR)\n"
+	"\n"
+	"void vertex(in VertexInput VS_IN,out VertexOutput VS_OUT)\n"
+	"{	\n"
+	"\n"
+	"  VS_OUT.position = mul( ModelviewProjection, float4( VS_IN.position, 1.0f ) );\n "
+	"  float3 light_intensity = -dot(float3(0.0f,-0.70f,0.70f),VS_IN.normal);\n"
+	"  float3 this_color = light_intensity*VS_IN.color;\n"
+	"  VS_OUT.color = float4(this_color,1.0f);\n"
+	"\n"
+	"}"
+	"// This is C2E2f_passthru from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
+	"// 0321194969) by Randima Fernando and Mark J. Kilgard.  See page 53.\n"
+	"\n"
+	"void fragment(in VertexOutput VS_OUT, out FragmentOutput PS_OUT)\n"
 	"{\n"
-	"  C2E2f_Output OUT;\n"
-	"  OUT.color = color;\n"
-	"  return OUT;\n"
+	"  PS_OUT.color = VS_OUT.color;\n"
 	"}\n";
 
 
 	struct sheet_Constants
 	{
-		Matrix4<>	modelview;
 		Matrix4<>	inverse_modelview;
+		Matrix4<>	modelview;
 		Matrix4<>	modelview_projection;
 	};
 
@@ -108,7 +107,7 @@ namespace HAGE {
 		}
 			
 		_pVertexBuffer = pAlloc->CreateVertexBuffer(SheetVertexFormat::name,_pVertexData->data(),nVertices,true);
-		_pEffect = pAlloc->CreateEffect(sheet_vertex_program,sheet_fragment_program);
+		_pEffect = pAlloc->CreateEffect(sheet_program,nullptr);
 		_pConstants = pAlloc->CreateConstantBuffer(sizeof(sheet_Constants));
 		_pVertexArray = pAlloc->CreateVertexArray(nTriangles,PRIMITIVE_TRIANGLELIST,&_pVertexBuffer,1,(const u32*)pIndexData->data());
 		pAlloc->EndAllocation();
