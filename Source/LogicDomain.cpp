@@ -3,6 +3,7 @@
 #include "LogicDomain.h"
 #include "LActor.h"
 #include "LSheet.h"
+#include "LLight.h"
 
 #include <boost/date_time.hpp>
 
@@ -26,11 +27,12 @@ namespace HAGE {
 			printf("Init Logic\n");
 			Factory.RegisterObjectType<LogicActor>();
 			Factory.RegisterObjectType<LogicSheet>();
+			Factory.RegisterObjectType<LogicLight>();
 			m_pUserInterface = new UserInterface();
 
 			Vector3<> Init;
 			
-			for(int i =0;i<15;++i)
+			for(int i =0;i<100;++i)
 				Factory.CreateObject<LogicActor>(Init);
 
 			SheetInit init;
@@ -39,6 +41,13 @@ namespace HAGE {
 			init.Normal = Vector3<>(0.0,0.0,1.0f);
 
 			Factory.CreateObject<LogicSheet>(init);
+
+			LightInit linit;
+			linit.Position = Vector3<>(0.0,0.0,-50.0f);
+			linit.Color = Vector3<>(1.0f,1.0f,1.0f);
+			linit.Range = 200.0f;
+
+			Factory.CreateObject<LogicLight>(linit);
 
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
@@ -69,6 +78,8 @@ namespace HAGE {
 				Factory.CreateObject<LogicActor>(Init);
 			}
 			auto result = Factory.ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
+			
+			auto result2 = Factory.ForEach<int,LogicLight>( [](LogicLight* o) -> int {return o->Step();} );
 		}
 
 		LogicDomain::~LogicDomain()

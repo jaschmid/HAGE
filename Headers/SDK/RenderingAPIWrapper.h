@@ -20,6 +20,7 @@ class APIWEffect;
 class APIWConstantBuffer;
 struct VertexDescriptionEntry;
 class APIWVertexArray;
+class APIWTexture;
 
 typedef enum _APIWPrimitiveType
 {
@@ -36,7 +37,14 @@ typedef enum _APIWFormat
 	R32_FLOAT			= 1,
 	R32G32_FLOAT		= 2,
 	R32G32B32_FLOAT		= 3,
-	R32G32B32A32_FLOAT	= 4
+	R32G32B32A32_FLOAT	= 4,
+	R8G8B8A8_UNORM		= 5,
+	R8G8B8A8_UNORM_SRGB	= 6,
+	R8G8B8A8_SNORM		= 7,
+	R8G8B8A8_UINT		= 8,
+	R8G8B8A8_SINT		= 9,
+	R8G8B8A8_TYPELESS	= 10,
+	R16_UNORM			= 11,
 } APIWFormat;
 
 typedef enum _APIWCullMode
@@ -93,6 +101,16 @@ typedef enum _APIWBlendOp
 	BLEND_OP_MAX			= 5
 } APIWBlendOp;
 
+typedef enum _APIWTextureFlags
+{
+	TEXTURE_CUBE				= 0x00000001,
+	TEXTURE_CPU_WRITE			= 0x00000002,
+	TEXTURE_CPU_READ			= 0x00000004,
+	TEXTURE_GPU_WRITE			= 0x00000008,
+	TEXTURE_GPU_NO_READ			= 0x00000010,
+	TEXTURE_GPU_DEPTH_STENCIL	= 0x00000020
+} APIWTextureFlags;
+
 typedef struct _APIWBlendState
 {
 	bool				bBlendEnable;
@@ -119,9 +137,10 @@ public:
 		const HAGE::u32* pIndexBufferData = nullptr) = 0;
 	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,u32 nElements,bool bDynamic = false, bool bInstanceData = false) = 0;
 	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
-	virtual APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+	virtual APIWEffect* CreateEffect(const char* pProgram,
 		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
 		const u32 nBlendStates = 1, bool AlphaToCoverage = false) = 0;
+	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData) = 0;
 
 	virtual void BeginAllocation() = 0;
 	virtual void EndAllocation() = 0;
@@ -148,7 +167,7 @@ public:
 	virtual void BeginFrame() = 0;
 	virtual void PresentFrame() = 0;
 
-
+	virtual void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil) = 0;
 };
 
 class APIWVertexBuffer
@@ -164,6 +183,14 @@ public:
 	virtual ~APIWVertexArray(){}
 };
 
+class APIWTexture
+{
+public:
+	virtual void Clear(Vector4<> Color) = 0;
+	virtual void Clear(bool bDepth,float depth,bool bStencil = false,u32 stencil = 0) = 0;
+	virtual ~APIWTexture(){}
+};
+
 class APIWConstantBuffer
 {
 public:
@@ -175,7 +202,7 @@ class APIWEffect
 {
 public:
 	virtual ~APIWEffect(){}
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1)=0;
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0)=0;
 };
 
 struct VertexDescriptionEntry

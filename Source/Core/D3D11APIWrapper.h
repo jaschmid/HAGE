@@ -35,6 +35,7 @@ public:
 	D3D11APIWrapper();
 	~D3D11APIWrapper();
 
+	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
 	void BeginFrame();
 	void PresentFrame();
 	void BeginAllocation();
@@ -49,21 +50,23 @@ public:
 		const HAGE::u32* pIndexBufferData);
 	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic, bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
-	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+	virtual HAGE::APIWEffect* CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
+	virtual HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
 	ID3D11DeviceContext*		GetContext(){return m_pContext;}
 	CGcontext& GetCGC(){return myCgContext;}
 	CGprofile& GetVertexProfile(){return myCgVertexProfile;}
 	CGprofile& GetFragmentProfile(){return myCgFragmentProfile;}
+	CGprofile& GetGeometryProfile(){return myCgGeometryProfile;}
 
 	const ArrayFormatEntry*		GetArrayFormat(const std::vector<HAGE::u8>& code);
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
 
-	void checkForCgError(const char *situation);
+	bool checkForCgError(const char *situation);
 
 
 	struct VertexFormatEntry
@@ -109,14 +112,39 @@ private:
 	ID3D11DeviceContext*        m_pContext;
 	ID3D11RenderTargetView*     m_pRenderTargetView;
 	ID3D11DepthStencilView *    m_pDepthStencilView;
+    D3D11_VIEWPORT				_vp;
 
 	CGcontext					myCgContext;
-	CGprofile					myCgVertexProfile, myCgFragmentProfile;
+	CGprofile					myCgVertexProfile, myCgFragmentProfile, myCgGeometryProfile;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
 	friend class D3D11Effect;
 
+};
+
+class D3D11Texture : public HAGE::APIWTexture
+{
+public:
+	D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	void Clear(HAGE::Vector4<> Color);
+	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
+	virtual ~D3D11Texture();
+private:
+	HAGE::u32			_xSize;
+	HAGE::u32			_ySize;
+	HAGE::u32			_mipLevels;
+	HAGE::APIWFormat	_format;
+	HAGE::u32			_miscFlags;
+	ID3D11Texture2D*                    _texture;
+	ID3D11ShaderResourceView*           _shaderResourceView;
+	ID3D11RenderTargetView*				_renderTargetView;
+	ID3D11DepthStencilView*				_depthStencilView;
+	D3D11APIWrapper*					_pWrapper;
+    D3D11_VIEWPORT				_vp;
+
+	friend class D3D11APIWrapper;
+	friend class D3D11Effect;
 };
 
 class D3D11VertexBuffer : public HAGE::APIWVertexBuffer
@@ -173,20 +201,23 @@ private:
 class D3D11Effect : public HAGE::APIWEffect, public boost::intrusive::list_base_hook<>
 {
 public:
-	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
+	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
 	~D3D11Effect();
-
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1);
+	
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0);
 private:
 
 	ID3D11VertexShader* CompileVertexShader(const char* shader);
 	ID3D11PixelShader* CompilePixelShader(const char* shader);
+	ID3D11GeometryShader* CompileGeometryShader(const char* shader);
 	void CreateInputLayout(std::vector<HAGE::u8> v);
 
 	CGprogram					m_CgVertexProgram;
 	CGprogram					m_CgFragmentProgram;
+	CGprogram					m_CgGeometryProgram;
 	ID3D11VertexShader*         m_pVertexShader;
 	ID3D11PixelShader*          m_pPixelShader;
+	ID3D11GeometryShader*       m_pGeometryShader;
     ID3D10Blob*					m_pCompiledShader;
 	ID3D11RasterizerState*		m_pRasterizerState;
 	ID3D11BlendState*			m_pBlendState;
@@ -196,6 +227,49 @@ private:
 
 	D3D11APIWrapper*			m_pWrapper;
 };
+
+static DXGI_FORMAT APIWFormatToD3DFormat(const HAGE::APIWFormat& format)
+{
+	switch(format)
+	{
+	case HAGE::R16_UNORM			:
+		return DXGI_FORMAT_R16_UNORM;
+		break;
+	case HAGE::R32_FLOAT			:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case HAGE::R32G32_FLOAT			:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case HAGE::R32G32B32_FLOAT		:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case HAGE::R32G32B32A32_FLOAT	:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case HAGE::R8G8B8A8_UNORM		:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case HAGE::R8G8B8A8_UNORM_SRGB	:
+		return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		break;
+	case HAGE::R8G8B8A8_SNORM		:
+		return DXGI_FORMAT_R8G8B8A8_SNORM;
+		break;
+	case HAGE::R8G8B8A8_UINT		:
+		return DXGI_FORMAT_R8G8B8A8_UINT;
+		break;
+	case HAGE::R8G8B8A8_SINT		:
+		return DXGI_FORMAT_R8G8B8A8_SINT;
+		break;
+	case HAGE::R8G8B8A8_TYPELESS	:
+		return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+		break;
+	default:
+		assert(!"Unknown Format!");
+		return DXGI_FORMAT_UNKNOWN;
+	}
+}
 
 #endif
 #endif

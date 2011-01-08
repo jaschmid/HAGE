@@ -7,19 +7,23 @@
 HWND GetHwnd();
 HINSTANCE GetHInstance();
 
-void D3D11APIWrapper::checkForCgError(const char *situation)
+bool D3D11APIWrapper::checkForCgError(const char *situation)
 {
   CGerror error;
-  const char *string = cgGetLastErrorString(&error);
-
-  if (error != CG_NO_ERROR) {
-    printf("%s: %s: %s\n",
-      "HAGE", situation, string);
-    if (error == CG_COMPILER_ERROR) {
-      printf("%s\n", cgGetLastListing(myCgContext));
-    }
-    exit(1);
-  }
+  bool bError = false;
+  const char *string;
+  while((string = cgGetLastErrorString(&error)) && error != CG_NO_ERROR)
+	{
+		error = cgGetError();
+		if(situation)
+			printf("%s: %s: %s\n","HAGE", situation, string);
+		if (error == CG_COMPILER_ERROR) {
+			if(situation)
+				printf("%s\n", cgGetLastListing(myCgContext));
+		}
+		bError= true;
+	}
+  return bError;
 }
 
 HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateD3D11Wrapper()
@@ -141,14 +145,13 @@ D3D11APIWrapper::D3D11APIWrapper() :
 
 	// set viewport
     GetClientRect( m_hWnd, &rc );
-    D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)(rc.right - rc.left);
-    vp.Height = (FLOAT)(rc.bottom - rc.top);
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    m_pContext->RSSetViewports( 1, &vp );
+    _vp.Width = (FLOAT)(rc.right - rc.left);
+    _vp.Height = (FLOAT)(rc.bottom - rc.top);
+    _vp.MinDepth = 0.0f;
+    _vp.MaxDepth = 1.0f;
+    _vp.TopLeftX = 0;
+    _vp.TopLeftY = 0;
+    m_pContext->RSSetViewports( 1, &_vp );
 
 	// INIT CG
 
@@ -157,6 +160,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
 	
 	myCgVertexProfile = CG_PROFILE_VS_4_0;
 	myCgFragmentProfile = CG_PROFILE_PS_4_0;
+	myCgGeometryProfile = CG_PROFILE_GS_4_0;
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	// depth
 	/*
@@ -259,6 +263,11 @@ HAGE::APIWConstantBuffer* D3D11APIWrapper::CreateConstantBuffer(HAGE::u32 nSize)
 	return new D3D11ConstantBuffer(this,nSize);
 }
 
+HAGE::APIWTexture* D3D11APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)
+{
+	return new D3D11Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData);
+}
+
 inline D3D11_RASTERIZER_DESC HAGERasterizerToD3DRasterizerState(const HAGE::APIWRasterizerState* pRasterizerState)
 {
 	D3D11_RASTERIZER_DESC res;
@@ -353,7 +362,7 @@ inline D3D11_BLEND_DESC HAGEBlendToD3DBlendState(const HAGE::APIWBlendState* pBl
 	return res;
 }
 
-HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
 {
@@ -363,7 +372,7 @@ HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pVertexProgram,const
 	D3D11_BLEND_DESC		blendDesc = HAGEBlendToD3DBlendState(pBlendState,nBlendStates,AlphaToCoverage);
 	m_pDevice->CreateRasterizerState(&rastDesc,&rast);
 	m_pDevice->CreateBlendState(&blendDesc,&blend);
-	return new D3D11Effect(this,pVertexProgram,pFragmentProgram,rast,blend);
+	return new D3D11Effect(this,pProgram,rast,blend);
 }
 
 HAGE::APIWVertexArray* D3D11APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,
@@ -480,6 +489,36 @@ void D3D11APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::Vertex
 	m_VertexStringTable.insert(std::pair<std::string,HAGE::u8>(s_name,(HAGE::u8)m_NextVertexFormatEntry));
 
 	++m_NextVertexFormatEntry;
+}
+
+void D3D11APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget,HAGE::APIWTexture* _pTextureDepthStencil)
+{
+	D3D11Texture* pTextureRenderTarget=(D3D11Texture*)_pTextureRenderTarget;
+	D3D11Texture* pTextureDepthStencil=(D3D11Texture*)_pTextureDepthStencil;
+
+	if(pTextureRenderTarget == nullptr && pTextureDepthStencil == nullptr)
+	{
+		m_pContext->RSSetViewports( 1, &_vp );
+		m_pContext->OMSetRenderTargets(1,&m_pRenderTargetView,m_pDepthStencilView);
+	}
+	else
+	{
+		ID3D11RenderTargetView* pTarget[1] = {nullptr};
+		ID3D11DepthStencilView* pDS = nullptr;
+		if(pTextureRenderTarget)
+		{
+			assert(pTextureRenderTarget->_renderTargetView);
+			pTarget[0] = pTextureRenderTarget->_renderTargetView;
+			m_pContext->RSSetViewports( 1, &pTextureRenderTarget->_vp );
+		}
+		if(pTextureDepthStencil)
+		{
+			assert(pTextureDepthStencil->_depthStencilView);
+			pDS= pTextureDepthStencil->_depthStencilView;
+			m_pContext->RSSetViewports( 1, &pTextureDepthStencil->_vp );
+		}
+		m_pContext->OMSetRenderTargets(1,pTarget,pDS);
+	}
 }
 
 #endif

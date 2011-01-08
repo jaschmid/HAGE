@@ -29,6 +29,7 @@
 #include "ObjectBase.h"
 #include "PinHelpers.h"
 #include "RenderingAPIWrapper.h"
+#include "EffectContainer.h"
 
 namespace HAGE
 {
@@ -70,7 +71,8 @@ namespace HAGE
 	{
 	public:
 		virtual ~IDrawableMesh(){}
-		virtual void Draw(const Vector3<>& position, const Matrix4<>& view, const Matrix4<>& proj) const = 0;
+		virtual const APIWVertexArray* GetVertexArray() const = 0;
+		virtual void Draw(const Vector3<>& position, const Matrix4<>& view,const Matrix4<>& inv_view, const Matrix4<>& proj,const Vector3<>& lPosition, const Vector3<>& lColor) const = 0;
 	};
 
 	class CDrawableMeshLoader : public IResourceLoader
@@ -87,7 +89,8 @@ namespace HAGE
 		class CDrawableMesh : public IDrawableMesh
 		{
 		public:
-			void Draw(const Vector3<>& position, const Matrix4<>& view, const Matrix4<>& proj)  const;
+			void Draw(const Vector3<>& position, const Matrix4<>& view,const Matrix4<>& inv_view, const Matrix4<>& proj,const Vector3<>& lPosition, const Vector3<>& lColor)  const;
+			const APIWVertexArray* GetVertexArray() const{return _pVertexArray;}
 			virtual ~CDrawableMesh();
 			CDrawableMesh(const IMeshData* pData);
 		private:

@@ -53,13 +53,13 @@ char *replace_str(const char *str, const char *orig, const char *rep, char* buff
   return buffer;
 }
 
-OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend) 
-	:m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer),_cVertexShader(new char[strlen(pVertexProgram)+1]),_cPixelShader(new char[strlen(pVertexProgram)+1])
+OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend) 
+	:m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer),_cVertexShader(new char[strlen(pProgram)+1]),_cPixelShader(new char[strlen(pProgram)+1])
 {
 /*	strcpy(_cVertexShader,extStr);
 	strcpy(_cPixelShader,extStr);*/
-	strcpy(_cVertexShader,pVertexProgram);
-	strcpy(_cPixelShader,pVertexProgram);
+	strcpy(_cVertexShader,pProgram);
+	strcpy(_cPixelShader,pProgram);
 
 	const char* argsV[] = {"version=150",NULL};
 	const char* argsF[] = {"version=150",NULL};
@@ -242,7 +242,7 @@ OGL3Effect::~OGL3Effect()
 	delete _cPixelShader;
 }
 
-void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer* const * _pConstants,HAGE::u32 nConstants)
+void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre,HAGE::APIWConstantBuffer* const * _pConstants,HAGE::u32 nConstants,HAGE::APIWTexture* const * pTextures,HAGE::u32 nTextures)
 {
 	//printf("Rendering %08x in context %08x\n",this,wglGetCurrentContext());
 	OGL3VertexArray* pArray = (OGL3VertexArray*)pArrayPre;

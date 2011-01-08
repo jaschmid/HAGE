@@ -22,7 +22,7 @@ class RenderingSheet  : public GenericSheet, public ObjectBase<RenderingSheet>
 public:
 	static RenderingSheet* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
 	
-	int Step(RenderingDomain* pRendering);
+	int Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer);
 
 private:
 	RenderingSheet(const guid& ObjectId,const MemHandle& h,const guid& source);
@@ -35,8 +35,6 @@ private:
 	
 	APIWVertexBuffer*							_pVertexBuffer;
 	APIWVertexArray*							_pVertexArray;
-	APIWConstantBuffer*							_pConstants;
-	APIWEffect*									_pEffect;
 };
 
 }

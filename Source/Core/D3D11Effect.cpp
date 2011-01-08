@@ -3,7 +3,7 @@
 
 #ifndef NO_D3D
 
-D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState) :
+D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState) :
 	m_pWrapper(pWrapper),
 	m_pCompiledShader(nullptr),
 	m_pRasterizerState(pRasterizerState),
@@ -12,9 +12,9 @@ D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pVertexProgram,co
 
 	// Create Shaders
 
-	m_pVertexShader=CompileVertexShader(pVertexProgram);
-	m_pPixelShader=CompilePixelShader(pVertexProgram);
-
+	m_pVertexShader=CompileVertexShader(pProgram);
+	m_pPixelShader=CompilePixelShader(pProgram);
+	m_pGeometryShader=CompileGeometryShader(pProgram);
 }
 
 D3D11Effect::~D3D11Effect()
@@ -81,6 +81,66 @@ ID3D11VertexShader* D3D11Effect::CompileVertexShader(const char* shader)
 	return pReturn;
 }
 
+ID3D11GeometryShader* D3D11Effect::CompileGeometryShader(const char* shader)
+{
+	ID3D11GeometryShader* pReturn;
+	if(!strstr(shader,"geometry("))
+		return nullptr;
+	m_CgGeometryProgram =	cgCreateProgram(
+		m_pWrapper->GetCGC(),              /* Cg runtime context */
+		CG_SOURCE,                /* Program in human-readable form */
+		shader,				/* Name of file containing program */
+		m_pWrapper->GetGeometryProfile(),        /* Profile: OpenGL ARB vertex program */
+		"geometry",			/* Entry function name */
+		NULL);
+    if(m_pWrapper->checkForCgError("compiling Geometry Shader"))
+		return nullptr;
+
+	cgCompileProgram(m_CgGeometryProgram);
+    m_pWrapper->checkForCgError("compiling geometry program");
+	
+    ID3D10Blob* pBlobGS = NULL;
+	const char* hlsl_source = cgGetProgramString( m_CgGeometryProgram, CG_COMPILED_PROGRAM);
+
+	char* hlsl_source_mod = new char[strlen(hlsl_source)+1];
+	strcpy(hlsl_source_mod,hlsl_source);
+	char* found = strstr(hlsl_source_mod,"int _LAYER");
+	if(found)
+	{
+		found--;
+		*found='u';
+	}
+
+// Compile and create the vertex shader
+    DWORD dwShaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
+
+#ifdef _DEBUG
+    dwShaderFlags |= D3D10_SHADER_DEBUG;
+#endif
+
+    ID3D10Blob* pBlobError = NULL;
+    HRESULT hr = D3DCompile( hlsl_source_mod, lstrlenA( hlsl_source_mod ) + 1, "GS", NULL, NULL, "main",
+                     "gs_4_0", dwShaderFlags, 0, &pBlobGS, &pBlobError );
+	if(FAILED(hr))
+	{
+		printf((const char*)pBlobError->GetBufferPointer());
+	}
+	assert( SUCCEEDED( hr ) );
+
+	hr = m_pWrapper->GetDevice()->CreateGeometryShader( pBlobGS->GetBufferPointer(), pBlobGS->GetBufferSize(),
+                                        NULL, &pReturn );
+
+	assert( SUCCEEDED( hr ) );
+
+
+	if(pBlobError)
+		pBlobError->Release();
+	if(pBlobGS)
+		pBlobGS->Release();
+
+	return pReturn;
+}
+
 ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 {
 	ID3D11PixelShader* pReturn;
@@ -128,12 +188,20 @@ ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 }
 
 
-void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants)
+void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants,HAGE::APIWTexture* const * pTextures,HAGE::u32 nTextures)
 {
 	for(HAGE::u32 i = 0; i<nConstants; ++i)
 	{
 		m_pWrapper->GetContext()->VSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
+		m_pWrapper->GetContext()->GSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
+		m_pWrapper->GetContext()->PSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
 	}
+
+	for(HAGE::u32 i = 0; i<nTextures; ++i)
+	{
+		m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(((D3D11Texture*)pTextures[i])->_shaderResourceView));
+	}
+
 
 	D3D11VertexArray* pArray = (D3D11VertexArray*)pVertexArray;
 
@@ -196,12 +264,20 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuf
 
     m_pWrapper->GetContext()->PSSetShader( m_pPixelShader, NULL, 0 );
 
+	m_pWrapper->GetContext()->GSSetShader( m_pGeometryShader, NULL, 0 );
 
     // Render a triangle
 	if(pArray->m_pIndexBuffer)
 		m_pWrapper->GetContext()->DrawIndexed( nItems, 0, 0 );
 	else
 		m_pWrapper->GetContext()->Draw( nItems, 0 );
+
+	
+	for(HAGE::u32 i = 0; i<nTextures; ++i)
+	{
+		ID3D11ShaderResourceView* pView = nullptr;
+		m_pWrapper->GetContext()->PSSetShaderResources(i,1,&pView);
+	}
 }
 
 

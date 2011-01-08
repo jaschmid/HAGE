@@ -250,6 +250,11 @@ public:
 	{
 		return Vector3<_T>(-c[0],-c[1],-c[2]);
 	}
+
+	Vector3<_T> normalize() const
+	{
+		return (*this)/(!(*this));
+	}
 };
 
 template<typename _T = f32> struct Vector4
@@ -416,6 +421,19 @@ template<class _T = f32> struct Matrix4
 			Vector4<_T>(1.0f,0.0f,0.0f,v.x),
 			Vector4<_T>(0.0f,1.0f,0.0f,v.y),
 			Vector4<_T>(0.0f,0.0f,1.0f,v.z),
+			Vector4<_T>(0.0f,0.0f,0.0f,1.0f)
+		);
+	}
+
+	static const Matrix4<_T> LookAt(const Vector3<>& eye,const Vector3<>& at,const Vector3<>& up)
+	{
+		Vector3<> zaxis = (at - eye).normalize();
+		Vector3<> xaxis = (up % zaxis).normalize();
+		Vector3<> yaxis = (zaxis % xaxis);
+		return Matrix4(
+			Vector4<_T>(xaxis,-(xaxis*eye)),
+			Vector4<_T>(yaxis,-(yaxis*eye)),
+			Vector4<_T>(zaxis,-(zaxis*eye)),
 			Vector4<_T>(0.0f,0.0f,0.0f,1.0f)
 		);
 	}

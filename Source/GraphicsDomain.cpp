@@ -2,6 +2,7 @@
 #include "GraphicsDomain.h"
 #include "GActor.h"
 #include "GSheet.h"
+#include "GLight.h"
 
 const int nTasks = 1000;
 
@@ -21,6 +22,7 @@ namespace HAGE {
 		{
 			Factory.RegisterObjectType<GraphicsActor>();
 			Factory.RegisterObjectType<GraphicsSheet>();
+			Factory.RegisterObjectType<GraphicsLight>();
 			printf("Init Graphic\n");
 		}
 
@@ -38,6 +40,7 @@ namespace HAGE {
 		{
 			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} );
 			auto result2 = Factory.ForEach<int,GraphicsSheet>( [](GraphicsSheet* o) -> int {return o->Step();} );
+			auto result3 = Factory.ForEach<int,GraphicsLight>( [](GraphicsLight* o) -> int {return o->Step();} );
 		}
 
 		GraphicsDomain::~GraphicsDomain()

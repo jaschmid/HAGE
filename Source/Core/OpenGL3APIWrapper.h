@@ -125,6 +125,7 @@ public:
 	OpenGL3APIWrapper();
 	~OpenGL3APIWrapper();
 
+	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
 	void BeginFrame();
 	void PresentFrame();
 	void BeginAllocation();
@@ -139,9 +140,10 @@ public:
 		const HAGE::u32* pIndexBufferData);
 	HAGE::APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic, bool bInstanceData);
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
-	virtual HAGE::APIWEffect* CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+	virtual HAGE::APIWEffect* CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
+	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
 
 	CGcontext& GetCGC(){return myCgContext;}
 	CGprofile& GetVertexProfile(){return myCgVertexProfile;}
@@ -220,6 +222,22 @@ private:
 	friend class OGL3VertexArray;
 };
 
+
+class OGL3Texture : public HAGE::APIWTexture
+{
+public:
+	OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	void Clear(HAGE::Vector4<> Color);
+	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
+	virtual ~OGL3Texture(){}
+private:
+	HAGE::u32			_xSize;
+	HAGE::u32			_ySize;
+	HAGE::u32			_mipLevels;
+	HAGE::APIWFormat	_format;
+	HAGE::u32			_miscFlags;
+};
+
 class OGL3VertexArray : public HAGE::APIWVertexArray
 {
 public:
@@ -256,10 +274,10 @@ private:
 class OGL3Effect : public HAGE::APIWEffect
 {
 public:
-	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pVertexProgram,const char* pFragmentProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
+	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
 	~OGL3Effect();
-
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1);
+	
+	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0);
 private:
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u16					m_RastState;

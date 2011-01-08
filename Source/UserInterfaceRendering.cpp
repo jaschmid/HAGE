@@ -90,7 +90,7 @@ namespace HAGE {
 		pWrapper->RegisterVertexFormat(Vertex2DFormat::name,Vertex2DFormatDescriptor,3);
 		m_pVBSquare = pWrapper->CreateVertexBuffer(Vertex2DFormat::name,vertices,4);
 		m_pVASquare = pWrapper->CreateVertexArray(2,PRIMITIVE_TRIANGLELIST,&m_pVBSquare,1,indices);
-		m_pEffect2D = pWrapper->CreateEffect(Effect2D,nullptr);
+		m_pEffect2D = pWrapper->CreateEffect(Effect2D);
 		m_pConstants = pWrapper->CreateConstantBuffer(sizeof(Effect2DConstants));
 	}
 	UserInterfaceRendering::~UserInterfaceRendering()

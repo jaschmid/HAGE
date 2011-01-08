@@ -5,19 +5,24 @@ namespace HAGE
 {
 
 	static const char* program =
-	"// This is C2E1v_green from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
+		"// This is C2E1v_green from \"The Cg Tutorial\" (Addison-Wesley, ISBN\n"
 	"// 0321194969) by Randima Fernando and Mark J. Kilgard.  See page 38.\n"
 	"uniform struct\n"
 	"{\n"
 	"    float4x4 inverse_modelview;\n"
 	"    float4x4 modelview;\n"
 	"    float4x4 modelview_projection;\n"
+	"	 float4 light_position_view;\n"
+	"	 float4 light_color;\n"
 	"} cbuffer0_TransformGlobal: BUFFER[0];\n"
 	"\n"
 	"// cbuffer Transform : register(b0)\n"
 	"#define Modelview               cbuffer0_TransformGlobal.modelview\n"
 	"#define InverseModelview        cbuffer0_TransformGlobal.inverse_modelview\n"
 	"#define ModelviewProjection     cbuffer0_TransformGlobal.modelview_projection\n"
+	"#define LightPosition			 cbuffer0_TransformGlobal.light_position_view\n"
+	"#define LightColor		         cbuffer0_TransformGlobal.light_color\n"
+	"\n"
 	"\n"
 	"struct VertexInput {\n"
 	"  float3 position : POSITION;\n"
@@ -37,8 +42,11 @@ namespace HAGE
 	"{	\n"
 	"\n"
 	"  VS_OUT.position = mul( ModelviewProjection, float4( VS_IN.position, 1.0f ) );\n "
-	"  float3 light_intensity = -dot(float3(0.0f,-0.70f,0.70f),VS_IN.normal);\n"
-	"  float3 this_color = light_intensity*VS_IN.color;\n"
+	"  float3 lPosition = LightPosition.xyz;\n "
+	"  float3 lDir = lPosition-VS_IN.position.xyz;\n "
+	"  lDir = lDir/sqrt(lDir.x*lDir.x+lDir.y*lDir.y+lDir.z*lDir.z);\n"
+	"  float3 light_intensity = dot(lDir,VS_IN.normal);\n"
+	"  float3 this_color = light_intensity*VS_IN.color*LightColor.xyz;\n"
 	"  VS_OUT.color = float4(this_color,1.0f);\n"
 	"\n"
 	"}"
@@ -56,6 +64,8 @@ namespace HAGE
 		Matrix4<>	inverse_modelview;
 		Matrix4<>	modelview;
 		Matrix4<>	modelview_projection;
+		Vector4<>	LightPosition;
+		Vector4<>	LightColor;
 	};
 
 	static const char szDefFormat[] = "DefaultVertexFormat";
@@ -171,7 +181,7 @@ CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVe
 
 	_pVertexBuffer = pAlloc->CreateVertexBuffer(DefaultVertexFormat::name,pVertexData,pData->GetNumVertices());
 	_pVertexArray = pAlloc->CreateVertexArray(pData->GetNumIndices()/3,PRIMITIVE_TRIANGLELIST,&_pVertexBuffer,1,(const u32*)pIndexData);
-	_pEffect = pAlloc->CreateEffect(program,nullptr);
+	_pEffect = pAlloc->CreateEffect(program);
 	_pConstants = pAlloc->CreateConstantBuffer(sizeof(testConstants));
 
 	pAlloc->EndAllocation();
@@ -185,13 +195,15 @@ CDrawableMeshLoader::CDrawableMesh::~CDrawableMesh()
 	if(_pConstants)delete _pConstants;
 }
 
-void CDrawableMeshLoader::CDrawableMesh::Draw(const Vector3<>& position, const Matrix4<>& view, const Matrix4<>& proj) const
+void CDrawableMeshLoader::CDrawableMesh::Draw(const Vector3<>& position, const Matrix4<>& view,const Matrix4<>& inv_view, const Matrix4<>& proj,const Vector3<>& lPosition, const Vector3<>& lColor) const
 {
 	Matrix4<> Model = Matrix4<>::Translate(position);
 	testConstants c;
 	c.modelview =				view*Matrix4<>::Translate(position);
-	c.inverse_modelview =		c.modelview;
+	c.inverse_modelview =		Matrix4<>::Translate(-position)*inv_view;
 	c.modelview_projection =	proj*c.modelview;
+	c.LightPosition = c.inverse_modelview*Vector4<>(lPosition,1.0f);
+	c.LightColor = Vector4<>(lColor,1.0f);
 	_pConstants->UpdateContent(&c);
 	_pEffect->Draw(_pVertexArray,&_pConstants);
 }

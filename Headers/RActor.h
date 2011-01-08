@@ -12,7 +12,7 @@ class RenderingActor  : public GenericActor, public ObjectBase<RenderingActor>
 public:
 	static RenderingActor* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
 	
-	int Step(RenderingDomain* pRendering);
+	int Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer);
 
 private:
 	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source);

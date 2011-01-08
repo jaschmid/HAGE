@@ -99,7 +99,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 		WGL_CONTEXT_MINOR_VERSION_ARB, 2,
 		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 		0
 	};
 
@@ -170,7 +170,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
             GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
             GLX_CONTEXT_MINOR_VERSION_ARB, 2,
             GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
             None
           };
 
@@ -455,11 +455,16 @@ HAGE::APIWConstantBuffer* OpenGL3APIWrapper::CreateConstantBuffer(HAGE::u32 nSiz
 	return new OGL3ConstantBuffer(this,nSize);
 }
 
-HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pVertexProgram,const char* pFragmentProgram,
+HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
 {
-	return new OGL3Effect(this,pVertexProgram,pFragmentProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage));
+	return new OGL3Effect(this,pProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage));
+}
+
+HAGE::APIWTexture*  OpenGL3APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)
+{
+	return new OGL3Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData);
 }
 
 HAGE::APIWVertexArray* OpenGL3APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,

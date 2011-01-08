@@ -98,7 +98,7 @@ namespace HAGE {
 		blend.SrcBlend = BLEND_SRC_ALPHA;
 		blend.DestBlend = BLEND_INV_SRC_ALPHA;
 
-		m_pEffect2D = pWrapper->CreateEffect(__Effect2D,nullptr,&rast,&blend);
+		m_pEffect2D = pWrapper->CreateEffect(__Effect2D,&rast,&blend);
 		m_pConstantsBackdrop = pWrapper->CreateConstantBuffer(sizeof(__Effect2DConstants));
 		m_pConstantsPointer = pWrapper->CreateConstantBuffer(sizeof(__Effect2DConstants));
 

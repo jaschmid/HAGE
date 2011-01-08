@@ -19,13 +19,19 @@ namespace HAGE {
 			position = Input1::Get();
 		}
 	}
-
-	int RenderingActor::Step(RenderingDomain* pRendering)
+		
+	int RenderingActor::Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer)
 	{
 		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
-			_mesh->Draw(position,pRendering->GetViewMatrix(),pRendering->GetProjectionMatrix());
+			position_constants pc = c;
+			pc.model =					Matrix4<>::Translate(position);
+			pc.modelview =				c.modelview*pc.model;
+			pc.inverse_modelview =		Matrix4<>::Translate(-position)*c.inverse_modelview;
+			pc.modelview_projection =	c.modelview_projection*Matrix4<>::Translate(position);
+			pBuffer->UpdateContent(&pc);
+			pEffect->Draw(0,_mesh->GetVertexArray());
 		}
 		return 1;
 	}
