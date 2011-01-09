@@ -6,7 +6,7 @@
 
 namespace HAGE {
 
-const int SheetSize = 128;
+const int SheetSize = 30;
 
 class GenericSheet 
 {
@@ -29,6 +29,7 @@ struct SheetInit
 struct LSheetOut
 {
 	std::array<Vector3<>,SheetSize*SheetSize>	positions;
+	std::array<Vector3<>,SheetSize*SheetSize>	normals;
 };
 
 struct GSheetOut

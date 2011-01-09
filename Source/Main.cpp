@@ -5,6 +5,8 @@
 #include "RenderingDomain.h"
 #include "SoundDomain.h"
 
+#include "SettingsLoader.h"
+
 namespace HAGE {
 
 class HAGEMain : public IMain
@@ -12,6 +14,7 @@ class HAGEMain : public IMain
 public:
 	HAGEMain()
 	{
+		initSettings();
 		m_pLogic	= DomainCreator<LogicDomain>();
 		m_pAI		= DomainCreator<AIDomain>();
 		m_pGraphics = DomainCreator<GraphicsDomain>();

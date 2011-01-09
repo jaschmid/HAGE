@@ -5,6 +5,8 @@
 #include "LSheet.h"
 #include "LLight.h"
 
+#include "SettingsLoader.h"
+
 #include <boost/date_time.hpp>
 
 const int nTasks = 1000;
@@ -32,23 +34,37 @@ namespace HAGE {
 
 			Vector3<> Init;
 			
-			for(int i =0;i<100;++i)
+			for(int i =0;i<settings->getu32Setting("num_ply_objs");++i)
 				Factory.CreateObject<LogicActor>(Init);
 
 			SheetInit init;
-			init.Center = Vector3<>(0.0,0.0,50.0f);
-			init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
-			init.Normal = Vector3<>(0.0,0.0,1.0f);
+			//init.Center = Vector3<>(0.0,0.0,50.0f);
+			//init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
+			//init.Normal = Vector3<>(0.0,0.0,1.0f);
+			
+			init.Center = Vector3<>(	settings->getf32Setting("cloth_center_x"),
+										settings->getf32Setting("cloth_center_y"),
+										settings->getf32Setting("cloth_center_z"));
+			init.HalfExtent = Vector3<>(settings->getf32Setting("cloth_half_extent_x"),
+										settings->getf32Setting("cloth_half_extent_y"),
+										settings->getf32Setting("cloth_half_extent_z"));
+			init.Normal = Vector3<>(    settings->getf32Setting("cloth_init_normal_x"),
+										settings->getf32Setting("cloth_init_normal_y"),
+										settings->getf32Setting("cloth_init_normal_z"));
 
 			Factory.CreateObject<LogicSheet>(init);
 
 			LightInit linit;
-			linit.Position = Vector3<>(0.0,0.0,-50.0f);
-			linit.Color = Vector3<>(1.0f,1.0f,1.0f);
-			linit.Range = 200.0f;
+			linit.Position = Vector3<>( settings->getf32Setting("light1_x"),
+										settings->getf32Setting("light1_y"),
+										settings->getf32Setting("light1_z"));
+			linit.Color = Vector3<>(settings->getf32Setting("light1_r"),
+									settings->getf32Setting("light1_g"),
+									settings->getf32Setting("light1_b"));
+			linit.Range = settings->getf32Setting("light1_range");
 
 			Factory.CreateObject<LogicLight>(linit);
-
+		
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
 			for(u32 i = 0; i<nObjects2; ++i)

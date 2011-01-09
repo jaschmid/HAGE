@@ -39,6 +39,7 @@
     <ClCompile Include="Source\RenderingDomain.cpp" />
     <ClCompile Include="Source\RLight.cpp" />
     <ClCompile Include="Source\RSheet.cpp" />
+    <ClCompile Include="Source\SettingsLoader.cpp" />
     <ClCompile Include="Source\SoundDomain.cpp" />
     <ClCompile Include="Source\UserInterface.cpp" />
     <ClCompile Include="Source\UserInterfaceRendering.cpp" />
@@ -62,6 +63,7 @@
     <ClInclude Include="Headers\RenderingDomain.h" />
     <ClInclude Include="Headers\RLight.h" />
     <ClInclude Include="Headers\RSheet.h" />
+    <ClInclude Include="Headers\SettingsLoader.h" />
     <ClInclude Include="Headers\SoundDomain.h" />
     <ClInclude Include="Headers\UserInterface.h" />
     <ClInclude Include="Headers\UserInterfaceRendering.h" />
@@ -140,7 +142,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -156,7 +158,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -173,7 +175,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -193,7 +195,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
