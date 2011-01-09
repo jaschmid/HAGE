@@ -53,7 +53,7 @@ class SharedDomainBase :public IDomain
 public:
 
 	SharedDomainBase(boost::function<void()> f,boost::function<void(bool)> f2,const guid& id);
-	~SharedDomainBase();
+	virtual ~SharedDomainBase();
 
 	void AddRef(){};
 	void Release(){};

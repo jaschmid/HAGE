@@ -384,7 +384,7 @@ HAGE::APIWVertexArray* D3D11APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,
 	return new D3D11VertexArray(this,nPrimitives,PrimitiveType,pBuffers,nBuffers,pIndexBufferData);
 }
 
-const D3D11APIWrapper::ArrayFormatEntry*	D3D11APIWrapper::GetArrayFormat(const std::vector<HAGE::u8>& code)
+const D3D11APIWrapper::ArrayFormatEntry*	D3D11APIWrapper::GetArrayFormat(const VertexFormatKey& code)
 {
 	auto item=m_ArrayFormatList.find(code);
 	if(item == m_ArrayFormatList.end())
@@ -408,7 +408,7 @@ const D3D11APIWrapper::ArrayFormatEntry*	D3D11APIWrapper::GetArrayFormat(const s
 				new_entry.pD3DDescription[out].InstanceDataStepRate = 0;
 			}
 
-		m_ArrayFormatList.insert(std::pair<std::vector<HAGE::u8>,ArrayFormatEntry>(code,new_entry));
+		m_ArrayFormatList.insert(std::pair<VertexFormatKey,ArrayFormatEntry>(code,new_entry));
 		//done
 		item=m_ArrayFormatList.find(code);
 		assert(item != m_ArrayFormatList.end());
@@ -418,7 +418,7 @@ const D3D11APIWrapper::ArrayFormatEntry*	D3D11APIWrapper::GetArrayFormat(const s
 
 HAGE::u8	D3D11APIWrapper::GetVertexFormatCode(const char* name)
 {
-	std::string s_name(name);
+	global_string s_name(name);
 	auto item=m_VertexStringTable.find(s_name);
 	assert(item != m_VertexStringTable.end());
 	return item->second;
@@ -431,7 +431,7 @@ HAGE::u32	D3D11APIWrapper::GetVertexSize(HAGE::u8 code)
 
 void D3D11APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
 {
-	std::string s_name(szName);
+	global_string s_name(szName);
 	assert( m_VertexStringTable.find(s_name) == m_VertexStringTable.end());
 	assert( m_NextVertexFormatEntry <= 255 );
 
@@ -486,7 +486,7 @@ void D3D11APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::Vertex
 
 	new_entry.uVertexSize = vertex_size;
 
-	m_VertexStringTable.insert(std::pair<std::string,HAGE::u8>(s_name,(HAGE::u8)m_NextVertexFormatEntry));
+	m_VertexStringTable.insert(std::pair<global_string,HAGE::u8>(s_name,(HAGE::u8)m_NextVertexFormatEntry));
 
 	++m_NextVertexFormatEntry;
 }

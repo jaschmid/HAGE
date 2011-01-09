@@ -281,7 +281,7 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuf
 }
 
 
-void D3D11Effect::CreateInputLayout(std::vector<HAGE::u8> v)
+void D3D11Effect::CreateInputLayout(const D3D11APIWrapper::VertexFormatKey& v)
 {
 	const D3D11APIWrapper::ArrayFormatEntry* pEntry = m_pWrapper->GetArrayFormat(v);
 
@@ -292,7 +292,7 @@ void D3D11Effect::CreateInputLayout(std::vector<HAGE::u8> v)
 
 	assert(SUCCEEDED(hr) && pLayout);
 
-	m_ArrayLayoutList.insert(std::pair<std::vector<HAGE::u8>,ID3D11InputLayout*>(v,pLayout));
+	m_ArrayLayoutList.insert(std::pair<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*>(v,pLayout));
 }
 
 #endif

@@ -30,6 +30,7 @@
 class D3D11APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
+	typedef std::vector<HAGE::u8,HAGE::global_allocator<HAGE::u8> > VertexFormatKey;
 	struct ArrayFormatEntry;
 
 	D3D11APIWrapper();
@@ -62,7 +63,7 @@ public:
 	CGprofile& GetFragmentProfile(){return myCgFragmentProfile;}
 	CGprofile& GetGeometryProfile(){return myCgGeometryProfile;}
 
-	const ArrayFormatEntry*		GetArrayFormat(const std::vector<HAGE::u8>& code);
+	const ArrayFormatEntry*		GetArrayFormat(const VertexFormatKey& code);
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
 
@@ -84,24 +85,37 @@ public:
 	};
 
 private:
-	typedef std::unordered_map<std::string,HAGE::u8> VertexStringTableType;
+
+	typedef std::basic_string<char,std::char_traits<char>,HAGE::global_allocator<char>> global_string;
+	struct GlobalStringHash
+	{
+		size_t operator() (const global_string& key) const
+		{
+			size_t seed = 0xbadf00d;
+			for(int i= 0;i<key.length();++i)
+				boost::hash_combine<HAGE::u8>(seed,key[i]);
+			return seed;
+		}
+	};
+	typedef std::unordered_map<global_string,HAGE::u8,GlobalStringHash,std::equal_to<global_string>,HAGE::global_allocator<std::pair<global_string,HAGE::u8>>> VertexStringTableType;
 	VertexStringTableType		m_VertexStringTable;
 	typedef std::array<VertexFormatEntry,256> VertexFormatListType;
 	VertexFormatListType		m_VertexFormatList;
-
+	
 	struct VertexFormatHash
 	{
-		size_t operator() (const std::vector<HAGE::u8>& key) const
+		size_t operator() (const VertexFormatKey& key) const
 		{
 			size_t seed = 0xbadf00d;
-			for(auto i= key.begin();i!=key.end();++i)
-				boost::hash_combine<HAGE::u8>(seed,*i);
+			for(int i= 0;i<key.size();++i)
+				boost::hash_combine<HAGE::u8>(seed,key[i]);
 			return seed;
 		}
 	};
 
-	typedef std::unordered_map<std::vector<HAGE::u8>,ArrayFormatEntry,VertexFormatHash> ArrayFormatListType;
+	typedef std::unordered_map<VertexFormatKey,ArrayFormatEntry,VertexFormatHash,std::equal_to<VertexFormatKey>,HAGE::global_allocator<std::pair<VertexFormatKey,ArrayFormatEntry>>> ArrayFormatListType;
 	ArrayFormatListType			m_ArrayFormatList;
+	
 
 	HINSTANCE                   m_hInst;
 	HWND                        m_hWnd;
@@ -174,7 +188,7 @@ public:
 
 private:
 	std::vector<D3D11VertexBuffer*>	m_VertexBuffers;
-	std::vector<HAGE::u8>		m_ArrayCode;
+	D3D11APIWrapper::VertexFormatKey				m_ArrayCode;
 	HAGE::u32					m_nBuffers;
 	HAGE::APIWPrimitiveType		m_PrimitiveType;
 	HAGE::u32					m_nPrimitives;
@@ -210,7 +224,7 @@ private:
 	ID3D11VertexShader* CompileVertexShader(const char* shader);
 	ID3D11PixelShader* CompilePixelShader(const char* shader);
 	ID3D11GeometryShader* CompileGeometryShader(const char* shader);
-	void CreateInputLayout(std::vector<HAGE::u8> v);
+	void CreateInputLayout(const D3D11APIWrapper::VertexFormatKey& v);
 
 	CGprogram					m_CgVertexProgram;
 	CGprogram					m_CgFragmentProgram;
@@ -222,7 +236,7 @@ private:
 	ID3D11RasterizerState*		m_pRasterizerState;
 	ID3D11BlendState*			m_pBlendState;
 
-	typedef std::unordered_map<std::vector<HAGE::u8>,ID3D11InputLayout*,D3D11APIWrapper::VertexFormatHash> ArrayLayoutListType;
+	typedef std::unordered_map<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*,D3D11APIWrapper::VertexFormatHash,std::equal_to<D3D11APIWrapper::VertexFormatKey>,HAGE::global_allocator<std::pair<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*>>> ArrayLayoutListType;
 	ArrayLayoutListType			m_ArrayLayoutList;
 
 	D3D11APIWrapper*			m_pWrapper;

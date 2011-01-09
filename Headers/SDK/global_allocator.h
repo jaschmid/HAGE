@@ -61,6 +61,8 @@ public:
 
   template <class U>
   global_allocator& operator=(const global_allocator<U>&) { return *this; }
+
+  template <class U> bool operator !=(const global_allocator<U>& a) { return !std::tr1::is_same<T,U>::value;}
 };
 
 }

@@ -5,6 +5,8 @@
 #include "LSheet.h"
 #include "LLight.h"
 
+#include "SettingsLoader.h"
+
 #include <boost/date_time.hpp>
 
 const int nTasks = 1000;
@@ -25,6 +27,7 @@ namespace HAGE {
 		LogicDomain::LogicDomain()  : positions(0)
 		{
 			printf("Init Logic\n");
+			initSettings();
 			Factory.RegisterObjectType<LogicActor>();
 			Factory.RegisterObjectType<LogicSheet>();
 			Factory.RegisterObjectType<LogicLight>();
@@ -36,11 +39,14 @@ namespace HAGE {
 				Factory.CreateObject<LogicActor>(Init);
 
 			SheetInit init;
-			init.Center = Vector3<>(0.0,0.0,50.0f);
-			init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
-			init.Normal = Vector3<>(0.0,0.0,1.0f);
+			//init.Center = Vector3<>(0.0,0.0,50.0f);
+			//init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
+			//init.Normal = Vector3<>(0.0,0.0,1.0f);
+			/*init.Center = Vector3<>(0.0f,-10.0f,0.0f);
+			init.HalfExtent = Vector3<>(-settings->getf32Setting("cloth_width")/2.0,0.0f,-settings->getf32Setting("cloth_width")/2.0);
+			init.Normal = Vector3<>(0.0f,-1.0f,0.0f);*/
 
-			Factory.CreateObject<LogicSheet>(init);
+			//Factory.CreateObject<LogicSheet>(init);
 
 			LightInit linit;
 			linit.Position = Vector3<>(0.0,0.0,-50.0f);
@@ -86,6 +92,7 @@ namespace HAGE {
 		{
 
 			delete m_pUserInterface;
+			deleteSettings();
 			printf("Destroy Logic\n");
 		}
 }

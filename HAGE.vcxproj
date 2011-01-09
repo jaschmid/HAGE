@@ -39,6 +39,7 @@
     <ClCompile Include="Source\RenderingDomain.cpp" />
     <ClCompile Include="Source\RLight.cpp" />
     <ClCompile Include="Source\RSheet.cpp" />
+    <ClCompile Include="Source\SettingsLoader.cpp" />
     <ClCompile Include="Source\SoundDomain.cpp" />
     <ClCompile Include="Source\UserInterface.cpp" />
     <ClCompile Include="Source\UserInterfaceRendering.cpp" />
@@ -62,6 +63,7 @@
     <ClInclude Include="Headers\RenderingDomain.h" />
     <ClInclude Include="Headers\RLight.h" />
     <ClInclude Include="Headers\RSheet.h" />
+    <ClInclude Include="Headers\SettingsLoader.h" />
     <ClInclude Include="Headers\SoundDomain.h" />
     <ClInclude Include="Headers\UserInterface.h" />
     <ClInclude Include="Headers\UserInterfaceRendering.h" />
