@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 #include "header.h"
+=======
+>>>>>>> d52dade1b12c6003f8733b179f8851dc01a2d9e7
 #include "SettingsLoader.h"
 
 #include <fstream>
@@ -8,9 +11,12 @@ namespace HAGE{
 	SettingsLoader* settings;
 	void initSettings(){
 		settings = new SettingsLoader();
+<<<<<<< HEAD
 	}	
 	void deleteSettings(){
 		delete settings;
+=======
+>>>>>>> d52dade1b12c6003f8733b179f8851dc01a2d9e7
 	}
 	
 	SettingsLoader::SettingsLoader(){
@@ -72,8 +78,11 @@ namespace HAGE{
 			file >> a;	
 		}
 
+<<<<<<< HEAD
 		file.close();
 
+=======
+>>>>>>> d52dade1b12c6003f8733b179f8851dc01a2d9e7
 		std::cout << "...settings loaded" << std::endl;
 	}
 

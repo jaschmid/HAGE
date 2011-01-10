@@ -6,14 +6,12 @@
 #include "LogicDomain.h"
 
 namespace HAGE {
-
-#define CIRCULAR_MOTION
-
+	
 class LogicActor : public GenericActor, public ObjectBase<LogicActor>
 {
 public:
-	static LogicActor* CreateInstance(const guid& ObjectId,const Vector3<>& vpos);
-
+	static LogicActor* CreateInstance(const guid& ObjectId,const ActorInit& init);
+	
 	inline static float getFRand()
 	{
 		static boost::mt19937 rgen;
@@ -23,8 +21,10 @@ public:
 	bool Step(guid& out);
 
 private:
-	LogicActor(guid ObjectId,const Vector3<>& vpos);
+	LogicActor(guid ObjectId,const ActorInit& vpos);
 	virtual ~LogicActor();
+
+	ActorInit		_init;
 
 	Vector3<>		axis;
 	Vector3<>		position;

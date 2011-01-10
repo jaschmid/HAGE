@@ -6,6 +6,8 @@
 #include "RSheet.h"
 #include "RLight.h"
 
+#include "SettingsLoader.h"
+
 namespace HAGE {
 
 	static const char* default_program =
@@ -297,7 +299,9 @@ namespace HAGE {
 	}
 
 	RenderingDomain::RenderingDomain() :
-		fCameraX(0.0),fCameraY(0.0),fCameraZ(50.0)
+		fCameraX(settings->getf32Setting("cam_x")),
+		fCameraY(settings->getf32Setting("cam_y")),
+		fCameraZ(settings->getf32Setting("cam_z"))
 	{
 		Factory.RegisterObjectType<RenderingActor>();
 		Factory.RegisterObjectType<RenderingSheet>();

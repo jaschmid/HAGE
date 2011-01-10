@@ -12,6 +12,49 @@
 #define MAX_DT 0.004
 
 namespace HAGE {
+	void LogicSheet::generateNormals()
+	{	
+		for(int ix= 0;ix<SheetSize;ix++)
+			for(int iy= 0;iy<SheetSize;iy++)
+			{
+				// 0 = left, 1= right, 2= top, 3= bottom
+				Vector3<> d[4];
+
+				if(ix!=0)
+					d[0]=_data.positions[iy*SheetSize+ix-1]-_data.positions[iy*SheetSize+ix];
+				else
+					d[0]=Vector3<>(0.0f,0.0f,0.0f);
+
+				if(ix!=SheetSize-1)
+					d[1]=_data.positions[iy*SheetSize+ix+1]-_data.positions[iy*SheetSize+ix];
+				else
+					d[1]=Vector3<>(0.0f,0.0f,0.0f);
+
+				if(iy!=0)
+					d[2]=_data.positions[(iy-1)*SheetSize+ix]-_data.positions[iy*SheetSize+ix];
+				else
+					d[2]=Vector3<>(0.0f,0.0f,0.0f);
+
+				if(iy!=SheetSize-1)
+					d[3]=_data.positions[(iy+1)*SheetSize+ix]-_data.positions[iy*SheetSize+ix];
+				else
+					d[3]=Vector3<>(0.0f,0.0f,0.0f);
+
+				Vector3<> top_left = d[2]%d[0];
+				Vector3<> top_right = d[1]%d[2];
+				Vector3<> bottom_right = d[3]%d[1];
+				Vector3<> bottom_left = d[0]%d[3];
+				// normalize
+				int nvalues = 0;
+				if(!top_left){nvalues++;top_left=top_left/sqrtf(!top_left);}
+				if(!top_right){nvalues++;top_right=top_right/sqrtf(!top_right);}
+				if(!bottom_left){nvalues++;bottom_left=bottom_left/sqrtf(!bottom_left);}
+				if(!bottom_right){nvalues++;bottom_right=bottom_right/sqrtf(!bottom_right);}
+
+				_data.normals[iy*SheetSize+ix] = -(top_left+top_right+bottom_left+bottom_right)/(float)nvalues;
+			}
+	}
+
 
 	LogicSheet* LogicSheet::CreateInstance(const guid& objectId,const SheetInit& vpos)
 	{
@@ -36,6 +79,7 @@ namespace HAGE {
 		calculateVelocities(dt);
 		applyVelocities(dt);
 		
+		generateNormals();
 		Output::Set(_data);
 		return false;
 	}
@@ -56,6 +100,11 @@ namespace HAGE {
 		springDampers = new SpringDamper*[nSpringDampers];
 		pinned = new bool[SheetSize*SheetSize];
 		mass = new f32[SheetSize*SheetSize];
+		wind = Vector3<>(
+			settings->getf32Setting("wind_velo_x"),
+			settings->getf32Setting("wind_velo_x"),
+			settings->getf32Setting("wind_velo_y")
+			);
 		for(u32 i=0;i<SheetSize*SheetSize;i++)
 		{
 			velocities[i] = Vector3<>(0,0,0);
@@ -95,19 +144,21 @@ namespace HAGE {
 
 	LogicSheet::~LogicSheet()
 	{
-		if(forces)delete forces;
-		if(velocities)delete velocities;
-		if(springDampers)delete springDampers;
-		if(mass)delete mass;
-		if(pinned)delete pinned;
+		delete forces;
+		delete velocities;
+		delete springDampers;
+		delete mass;
+		delete pinned;
 	}
 
 	DEFINE_CLASS_GUID(LogicSheet);
 
 
 	void LogicSheet::calculateForces(){
-		for(u32 i=0;i<SheetSize*SheetSize;i++)
+		for(u32 i=0;i<SheetSize*SheetSize;i++){
 			forces[i] = Vector3<>(0.0f,mass[i]/-9.89,0.0f); //gravity
+			forces[i] += wind * (wind*_data.normals[i]);
+		}
 		
 		for(u32 i=0;i<nSpringDampers;i++)
 			springDampers[i]->calculateForce();
