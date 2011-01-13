@@ -75,7 +75,7 @@ private:
 		return S_OK;
 	}
 
-	template<class _D> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _D> friend class _ObjectBaseOutput;
 	template<class _D> friend class _ObjectBaseInput;
 };
 
@@ -158,7 +158,26 @@ private:
 	template<class _FinalX> friend class ObjectBase;
 };
 
-template<class _ObjectOutputTraits> class _ObjectBaseOutput
+template<class _ObjectOutputInitType> class _ObjectBaseOutputInitData
+{
+protected:
+	_ObjectOutputInitType	InitOut;
+private:
+	const void*	_GetInitOut(){return &InitOut;}
+	u32	_GetInitOutSize(){return sizeof(InitOut);}
+
+	template<class _ObjectInitTraits,class _ObjectOutputTraits> friend class _ObjectBaseOutput;
+};
+template<> class _ObjectBaseOutputInitData<void>
+{
+private:
+	const void*	_GetInitOut(){return nullptr;}
+	u32	_GetInitOutSize(){return 0;}
+
+	template<class _ObjectInitTraits,class _ObjectOutputTraits> friend class _ObjectBaseOutput;
+};
+
+template<class _ObjectInitTraits,class _ObjectOutputTraits> class _ObjectBaseOutput : protected _ObjectBaseOutputInitData<typename _ObjectInitTraits::InitOutType>
 {
 protected:
 	typedef _ObjectOutputTraits				Traits;
@@ -169,7 +188,7 @@ protected:
 	{
 		__out_handle=pin.AllocateMemBlock(sizeof(Type));
 		assert(__out_handle.isValid());
-		domain_access<Domain>::Get()->Factory.RegisterObjectOut(objectId,__out_handle,sizeof(Type));
+		domain_access<Domain>::Get()->Factory.RegisterObjectOut(objectId,__out_handle,sizeof(Type),_GetInitOut(),_GetInitOutSize());
 	}
 	~_ObjectBaseOutput()
 	{
@@ -198,6 +217,18 @@ protected:
 		assert(__out_handle.isValid());
 		*(Type*)pin.GetWriteMem(__out_handle,sizeof(Type)) = value;
 	}
+private:
+
+	template<class _Type> class _GetInitType
+	{
+		typedef _Type Type;
+	};
+	template<class _Type> class _GetInitType<NoDirectInstantiation<_Type>>
+	{
+		typedef _Type Type;
+	};
+
+protected:
 	inline Type* Access()
 	{
 		assert(__out_handle.isValid());
@@ -212,7 +243,7 @@ private:
 	friend class CoreFactory;
 };
 
-template<> class _ObjectBaseOutput<VoidTraits>
+template<class _ObjectInitTraits> class _ObjectBaseOutput<_ObjectInitTraits,VoidTraits>
 {
 protected:
 	typedef VoidTraits	Traits;
@@ -229,7 +260,7 @@ protected:
 
 
 template<class _Final> class ObjectBase :
-	public	_ObjectBaseOutput<typename get_traits<_Final>::OutputTraits>,
+	public	_ObjectBaseOutput<typename get_traits<_Final>::ObjectInitTraits,typename get_traits<_Final>::OutputTraits>,
 	public	_ObjectBaseInput<typename get_traits<_Final>::Input1Traits>,
 	public	_ObjectBaseInput<typename get_traits<_Final>::Input2Traits>,
 	public	_ObjectBaseDomain<typename get_traits<_Final>::Domain>
@@ -238,17 +269,17 @@ protected:
 	typedef typename get_traits<_Final>::Domain					Domain;
 	typedef	_Final												Final;
 	typedef get_traits<_Final>									Traits;
-	typedef _ObjectBaseOutput<typename Traits::OutputTraits>	Output;
+	typedef _ObjectBaseOutput<typename Traits::ObjectInitTraits,typename Traits::OutputTraits>	Output;
 	typedef _ObjectBaseInput<typename Traits::Input1Traits>		Input1;
 	typedef _ObjectBaseInput<typename Traits::Input2Traits>		Input2;
 	typedef ObjectBase<_Final>									ObjectBaseType;
 public:
 	static const std::array<guid,2>& getCapabilities(){static const std::array<guid,2> val= {guidNull,guid_of<Final>::Get()}; return val;}
 protected:
-	ObjectBase(const guid& rguid) : _ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),_ObjectBaseOutput<typename Traits::OutputTraits>(rguid) {}
+	ObjectBase(const guid& rguid) : _ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),_ObjectBaseOutput<typename Traits::ObjectInitTraits,typename Traits::OutputTraits>(rguid) {}
 	ObjectBase(const guid& rguid,const MemHandle& h,const guid& source)
 		:	_ObjectBaseDomain<typename get_traits<_Final>::Domain>(rguid),
-			_ObjectBaseOutput<typename Traits::OutputTraits>(rguid),
+			_ObjectBaseOutput<typename Traits::ObjectInitTraits,typename Traits::OutputTraits>(rguid),
 			_ObjectBaseInput<typename Traits::Input1Traits>(h,source),
 			_ObjectBaseInput<typename Traits::Input2Traits>(h,source) {}
 	virtual ~ObjectBase(){}

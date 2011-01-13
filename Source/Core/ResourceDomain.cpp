@@ -5,12 +5,12 @@ namespace HAGE {
 
 		ResourceDomain::CFileStream::CFileStream(std::string filename) : _filename(filename),_file(fopen(filename.c_str(),"rb"))
 		{
-			assert(_file);
 		}
 
 		ResourceDomain::CFileStream::~CFileStream()
 		{
-			fclose(_file);
+			if(_file)
+				fclose(_file);
 		}
 
 		std::string ResourceDomain::CFileStream::GetIdentifierString() const

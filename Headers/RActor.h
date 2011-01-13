@@ -10,17 +10,18 @@ namespace HAGE {
 class RenderingActor  : public GenericActor, public ObjectBase<RenderingActor>
 {
 public:
-	static RenderingActor* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
+	static RenderingActor* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit);
 	
 	int Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer);
 
 private:
-	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source);
+	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit);
 	virtual ~RenderingActor();
 
 	
 	TResourceAccess<IDrawableMesh>						_mesh;
 
+	Vector3<>		scale;
 	Vector3<>		position;
 	Vector3<u8>		color;
 };

@@ -18,6 +18,8 @@ public:
 		return ((float)rgen()/(float)rgen.max())*2.0f-1.0f;
 	}
 
+	float GetMass() const { return _init.mass;}
+
 	bool Step(guid& out);
 
 private:

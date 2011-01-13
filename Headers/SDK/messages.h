@@ -351,20 +351,23 @@ private:
 class MessageFactoryObjectCreated  : public MessageHelper<MessageFactoryObjectCreated,Package>
 {
 public:
-	MessageFactoryObjectCreated(const guid& ObjectId,const guid& ObjectTypeId,const MemHandle& h);
+	MessageFactoryObjectCreated(const guid& ObjectId,const guid& ObjectTypeId,const MemHandle& h,const void* pInitData,u32 nInitSize);
 	MessageFactoryObjectCreated(const MessageFactoryObjectCreated& m) ;
 	virtual ~MessageFactoryObjectCreated();
 	const guid& GetObjectTypeId() const{return objectTypeId;}
 	const guid& GetObjectId() const{return objectId;}
 	const MemHandle& GetInitHandle() {return handle;}
+	const void*	GetInitData() const{return pInitData;}
+	u32 GetInitDataSize() const{return nInitDataSize;}
 
 private:
 	const guid	objectId;
 	const guid& objectTypeId;
 	MemHandle	handle;
+	void*	pInitData;
+	const u32		nInitDataSize;
 	static const u32 id = MESSAGE_FACTORY_OBJECT_CREATED;
 };
-
 
 class MessageFactoryObjectDestroyed : public SimpleMessage<guid>
 {

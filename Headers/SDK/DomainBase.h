@@ -120,7 +120,7 @@ private:
 	template<class _Final> friend class _DomainBaseInput;
 	template<class _Final> friend class _DomainBaseOutput;
 	template<class _Final> friend class DomainBase;
-	template<class _ObjectOutputTraits> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _ObjectOutputTraits> friend class _ObjectBaseOutput;
 	template<class _Domain> friend class DomainMember;
 };
 
@@ -273,7 +273,7 @@ private:
 	template <class _1> friend class InputVar;
 	template<class _Domain>  friend class DomainMember;
 	template<class _Final> friend class _DomainBaseInput;
-	template<class _Domain> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _Domain> friend class _ObjectBaseOutput;
 	template<class _Domain> friend class _ObjectBaseInput;
 };
 
@@ -315,7 +315,7 @@ private:
 	template <class _1> friend class OutputVar;
 	template <class _1> friend class InputVar;
 	template<class _Domain>  friend class DomainMember;
-	template<class _Domain> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _Domain> friend class _ObjectBaseOutput;
 	template<class _Domain> friend class _ObjectBaseInput;
 };
 
@@ -397,7 +397,7 @@ private:
 
 	friend class TaskManager;
 	template<class _DomainX> friend const _DomainX* DomainCreator();
-	template<class _DomainX> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _DomainX> friend class _ObjectBaseOutput;
 	template<class _DomainX> friend class _ObjectBaseInput;
 	template<class _FinalX> friend class _DomainBaseInput;
 };

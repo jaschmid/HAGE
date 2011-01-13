@@ -3,17 +3,16 @@
 
 namespace HAGE {
 
-	RenderingActor* RenderingActor::CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source)
+	RenderingActor* RenderingActor::CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit)
 	{
-		return new RenderingActor(ObjectId,h,source);
+		return new RenderingActor(ObjectId,h,source,pInit);
 	}
 
-	RenderingActor::RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source) :
-		ObjectBase<RenderingActor>(ObjectId,h,source)
+	RenderingActor::RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit) :
+		ObjectBase<RenderingActor>(ObjectId,h,source),scale(pInit->scale)
 	{
-		char temp[256];
-		sprintf(temp,"mesh%i.ply",rand()%3);
-		_mesh = GetResource()->OpenResource<IDrawableMesh>(temp);
+		
+		_mesh = GetResource()->OpenResource<IDrawableMesh>(pInit->mesh);
 		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
@@ -26,10 +25,10 @@ namespace HAGE {
 		{
 			position = Input1::Get();
 			position_constants pc = c;
-			pc.model =					Matrix4<>::Translate(position);
+			pc.model =					Matrix4<>::Translate(position)*Matrix4<>::Scale(scale);
 			pc.modelview =				c.modelview*pc.model;
 			pc.inverse_modelview =		Matrix4<>::Translate(-position)*c.inverse_modelview;
-			pc.modelview_projection =	c.modelview_projection*Matrix4<>::Translate(position);
+			pc.modelview_projection =	c.modelview_projection*pc.model;
 			pBuffer->UpdateContent(&pc);
 			pEffect->Draw(0,_mesh->GetVertexArray());
 		}

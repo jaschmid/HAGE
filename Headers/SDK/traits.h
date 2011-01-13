@@ -142,6 +142,8 @@ template<class _Domain,class _Input> class ObjectInputTraits
 		typedef ObjectInputTraits<Domain,SourceClass> Traits;
 };
 
+template<class _T = void> class NoDirectInstantiation {};
+template<class _Input,class _Output> class InOutInit {};
 template<class _Domain> class ObjectInputTraits<_Domain,void>
 {
 	public:
@@ -152,6 +154,43 @@ template<class _Domain,u32 i> class ObjectInputTraits<_Domain,_VoidInput<i>>
 	public:
 		typedef _VoidInput<i> Traits;
 };
+template<class _InitType> class ObjectInitTraits
+{
+public:
+		typedef _InitType	InitType;
+		typedef void		InitOutType;
+		static const bool	bDirectInstantiation = true;
+		typedef ObjectInitTraits<_InitType> Traits;
+};
+template<class _InitType> const bool ObjectInitTraits<_InitType>::bDirectInstantiation;
+template<class _InitType> class ObjectInitTraits<NoDirectInstantiation<_InitType>>
+{
+public:
+		typedef _InitType	InitType;
+		typedef void		InitOutType;
+		static const bool	bDirectInstantiation = false;
+		typedef ObjectInitTraits<NoDirectInstantiation<_InitType>> Traits;
+};
+template<class _InitType> const bool ObjectInitTraits<NoDirectInstantiation<_InitType>>::bDirectInstantiation;
+template<class _InitType,class _InitOutType> class ObjectInitTraits<InOutInit<_InitType,_InitOutType>>
+{
+public:
+		typedef _InitType		InitType;
+		typedef _InitOutType	InitOutType;
+		static const bool		bDirectInstantiation = true;
+		typedef ObjectInitTraits<InOutInit<_InitType,_InitOutType>> Traits;
+};
+template<class _InitType,class _InitOutType> const bool ObjectInitTraits<InOutInit<_InitType,_InitOutType>>::bDirectInstantiation;
+template<class _InitType,class _InitOutType> class ObjectInitTraits<NoDirectInstantiation<InOutInit<_InitType,_InitOutType>>>
+{
+public:
+		typedef _InitType		InitType;
+		typedef _InitOutType	InitOutType;
+		static const bool		bDirectInstantiation = false;
+		typedef ObjectInitTraits<NoDirectInstantiation<InOutInit<_InitType,_InitOutType>>> Traits;
+};
+template<class _InitType,class _InitOutType> const bool ObjectInitTraits<NoDirectInstantiation<InOutInit<_InitType,_InitOutType>>>::bDirectInstantiation;
+
 template<class _Final> class ObjectBase;
 template<class _Final,class _Domain,class _InitType=void,class _OutputType = void,class _Input1 = _VoidInput<1>,class _Input2 = _VoidInput<2>> class ObjectTraits
 {
@@ -159,8 +198,8 @@ template<class _Final,class _Domain,class _InitType=void,class _OutputType = voi
 		typedef typename ObjectOutputTraits<_Domain,_OutputType>::Traits		OutputTraits;
 		typedef typename ObjectInputTraits<_Domain,_Input1>::Traits			Input1Traits;
 		typedef typename ObjectInputTraits<_Domain,_Input2>::Traits			Input2Traits;
+		typedef typename ObjectInitTraits<_InitType>::Traits				ObjectInitTraits;
 		typedef _Final												ObjectType;
-		typedef _InitType											ObjectInitType;
 		typedef _Domain												Domain;
 		typedef	ObjectBase<_Final>									ObjectBaseType;
 };

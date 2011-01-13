@@ -43,8 +43,8 @@ DECLARE_CLASS_GUID(LogicSheet,		0xcf361bc0,0xf572,0x4cc9,0xbc2f,0x547537da68a8);
 DECLARE_CLASS_GUID(GraphicsSheet,	0xbde45fb2,0x50c5,0x4efb,0x907b,0xd1568676a554);
 
 template<> class get_traits<LogicSheet> : public ObjectTraits<LogicSheet,LogicDomain,SheetInit,LSheetOut> {};
-template<> class get_traits<GraphicsSheet> : public ObjectTraits<GraphicsSheet,GraphicsDomain,NoDirectInstantiation,GSheetOut,LogicSheet> {};
-template<> class get_traits<RenderingSheet> : public ObjectTraits<RenderingSheet,RenderingDomain,NoDirectInstantiation,void,GraphicsSheet> {};
+template<> class get_traits<GraphicsSheet> : public ObjectTraits<GraphicsSheet,GraphicsDomain,NoDirectInstantiation<>,GSheetOut,LogicSheet> {};
+template<> class get_traits<RenderingSheet> : public ObjectTraits<RenderingSheet,RenderingDomain,NoDirectInstantiation<>,void,GraphicsSheet> {};
 
 }
 

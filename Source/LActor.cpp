@@ -10,13 +10,13 @@ namespace HAGE {
 
 	bool LogicActor::Step(guid& out)
 	{
-		if(!_init.gravity_behavior)
+		if(_init.behavior == 1)
 		{
 			float fd2 = !position;
 			position = (Matrix4<>::AngleRotation(axis,0.01f)*Vector4<>(position,1.0f)).xyz();
 			Output::Set(position);
 		}
-		else
+		else if(_init.behavior == 0)
 		{
 			speed = speed + acceleration * 0.005f;
 			position = position + speed *0.005f;
@@ -36,7 +36,7 @@ namespace HAGE {
 					{
 						float		fd = sqrtf(fd2);
 						vd = vd/fd;
-						acceleration = acceleration + vd/fd2;	
+						acceleration = acceleration + vd/fd2*_init.mass*((const LogicActor*)i.object())->GetMass();	
 					}
 				}
 			}
@@ -44,17 +44,17 @@ namespace HAGE {
 	
 		out = m_guidObjectId;
 
-		if(position.x<=-50.0)
+		if(position.x<=-5.0)
 			return true;
-		if(position.y<=-50.0)
+		if(position.y<=-5.0)
 			return true;
-		if(position.z<=-50.0)
+		if(position.z<=-5.0)
 			return true;
-		if(position.x>=50.0)
+		if(position.x>=5.0)
 			return true;
-		if(position.y>=50.0)
+		if(position.y>=5.0)
 			return true;
-		if(position.z>=50.0)
+		if(position.z>=5.0)
 			return true;
 
 
@@ -68,6 +68,10 @@ namespace HAGE {
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
 		Output::Set(position);
+
+		ActorGInit& ginit = Output::InitOut;
+		strcpy(ginit.mesh,_init.mesh);
+		ginit.scale = _init.scale;
 	}
 
 	LogicActor::~LogicActor()

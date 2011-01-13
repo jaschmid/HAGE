@@ -105,6 +105,49 @@ namespace HAGE
 		{Vector3<>(-p,   -_1,	0.0f),	Vector3<>(-p,   -_1,	0.0f),	Vector3<>(0.5f, 1.0f, 0.0f)},
 	};
 
+	static const DefaultVertexFormat boxVertices[] =
+	{
+		// -x wall
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		// x wall
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		// -y wall
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		// y wall
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		// -z wall
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		// z wall
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+	};
+
+	static const u32	boxIndices[] = 
+	{	
+		0x0,0x1,0x2,0x0,0x2,0x3,
+		0x6,0x5,0x4,0x7,0x6,0x4,
+		0xa,0x9,0x8,0xb,0xa,0x8,
+		0xc,0xd,0xe,0xc,0xe,0xf,
+		0x12,0x11,0x10,0x13,0x12,0x10,
+		0x14,0x15,0x16,0x14,0x16,0x17
+	};
 
 	static const u32	indices[] =
 	{
@@ -265,13 +308,23 @@ static int face_cb(p_ply_argument argument) {
     return 1;
 }
 
-CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData): _pVertexData((u8*)vertices),_pIndexData((u8*)indices)
+CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData)
 {
 	if(pData->GetIdentifierString() == std::string("Null"))
 	{
 		_vertexSize = sizeof(DefaultVertexFormat);
+		_pVertexData = (u8*)vertices; 
+		_pIndexData = (u8*)indices;
 		_nVertices = 12;
 		_nIndices = 60;	
+	}
+	else if(pData->GetIdentifierString() == std::string("Box"))
+	{
+		_vertexSize = sizeof(DefaultVertexFormat);
+		_pVertexData = (u8*)boxVertices; 
+		_pIndexData = (u8*)boxIndices;
+		_nVertices = 4*6;
+		_nIndices = 6*6;	
 	}
 	else
 	{

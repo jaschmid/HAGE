@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+#include <tuple>
 
 #ifdef COMPILER_GCC
 #include <tr1/type_traits>
@@ -31,8 +32,6 @@
 namespace HAGE {
 
 template<u32 _Index> class _VoidInput;
-typedef _VoidInput<0>	NoDirectInstantiation;
-
 class Message;
 class SharedCoreFactory;
 
@@ -48,7 +47,7 @@ public:
 		pDomain = (IDomain*)domain_access<_T>::Get();
 	}
 
-	template<class _C> guid CreateObject(typename get_traits<_C>::ObjectInitType init)
+	template<class _C> guid CreateObject(typename get_traits<_C>::ObjectInitTraits::InitType init)
 	{
 		return _CreateObject(guid_of<_C>::Get(),(void*)&init);
 	}
@@ -104,7 +103,7 @@ public:
 	bool DispatchMessage(const MessageObjectUnknown* pMessage);
 	void Shutdown();
 
-	template<class _ObjectType,class _InitType> class InitFunction
+	template<class _ObjectType,class _InitType,bool _DirectInstantiation> class InitFunction
 	{
 	public:
 		typedef _ObjectType* (*func)(const guid&,const _InitType&);
@@ -116,7 +115,7 @@ public:
 			);
 		}
 	};
-	template<class _ObjectType,u32 i>   class InitFunction<_ObjectType,HAGE::_VoidInput<i>>
+	template<class _ObjectType,class _InitType>   class InitFunction<_ObjectType,_InitType,false>
 	{
 	public:
 		std::function<IObject* (const guid&,void*)> operator()()
@@ -125,7 +124,7 @@ public:
 			);
 		}
 	};
-	template<class _ObjectType>  class InitFunction<_ObjectType,void>
+	template<class _ObjectType,bool _DirectInstantiation>  class InitFunction<_ObjectType,void,_DirectInstantiation>
 	{
 	public:
 		typedef _ObjectType* (*func)(const guid&);
@@ -137,7 +136,32 @@ public:
 			);
 		}
 	};
-	template<class _ObjectType,class _InitType> class SubFunction
+	template<class _ObjectType>   class InitFunction<_ObjectType,void,false>
+	{
+	public:
+		std::function<IObject* (const guid&,void*)> operator()()
+		{
+			return std::function<IObject* (const guid&,void*)>(
+			);
+		}
+	};
+	template<class _ObjectType,class _InitType,class _Input1> class SubFunction
+	{
+	public:
+		typedef _ObjectType* (*func)(const guid&,const MemHandle&,const guid&,const _InitType*);
+
+		std::function<IObject* (const guid&,void*)> operator()()
+		{
+			const func fd=&_ObjectType::CreateSub;
+			static std::function<IObject* (const guid&,void*)> f = [fd] (const guid& g,void* v) -> IObject* {
+					std::tuple<const MemHandle&,const guid&,const void*>* pTuple = (std::tuple<const MemHandle&,const guid&,const void*>*)v;
+					return (IObject*)(fd(g,std::get<0>(*pTuple),std::get<1>(*pTuple),(const _InitType*)std::get<2>(*pTuple)));
+				};
+			return f;
+		}
+	};
+
+	template<class _ObjectType,class _Input1> class SubFunction<_ObjectType,void,_Input1>
 	{
 	public:
 		typedef _ObjectType* (*func)(const guid&,const MemHandle&,const guid&);
@@ -152,7 +176,7 @@ public:
 			return f;
 		}
 	};
-	template<class _ObjectType>  class SubFunction<_ObjectType,void>
+	template<class _ObjectType,class _InputType,u32 i>  class SubFunction<_ObjectType,_InputType,_VoidInput<i>>
 	{
 	public:
 		std::function<IObject* (const guid&,void*)> operator()()
@@ -161,14 +185,11 @@ public:
 			);
 		}
 	};
-	template<class _ObjectType,u32 i>   class SubFunction<_ObjectType,_VoidInput<i>> : public SubFunction<_ObjectType,void>
-	{
-	};
 
 	template<class _T> void RegisterObjectType()
 	{
-		InitFunction<_T,typename get_traits<_T>::ObjectInitType> InitGenerator;
-		SubFunction<_T,typename get_traits<_T>::Input1Traits>	SubGenerator;
+		InitFunction<_T,typename get_traits<_T>::ObjectInitTraits::InitType,get_traits<_T>::ObjectInitTraits::bDirectInstantiation> InitGenerator;
+		SubFunction<_T,typename get_traits<_T>::ObjectInitTraits::InitType,typename get_traits<_T>::Input1Traits>	SubGenerator;
 		std::function<IObject* (const guid&,void*)> init	= InitGenerator();
 		std::function<IObject* (const guid&,void*)> sub		= SubGenerator();
 		const guid& guidType  = guid_of<_T>::Get();
@@ -177,7 +198,7 @@ public:
 		const guid* guidCapabilities = &(_T::getCapabilities()[0]);
 		u32			nCapabilities = (u32)_T::getCapabilities().size();
 
-		_RegisterObjectType(((std::is_same<NoDirectInstantiation, typename get_traits<_T>::ObjectInitType>::value)?(nullptr):(&init)),&sub,guidType,guidInput1,guidInput2,guidCapabilities,nCapabilities);
+		_RegisterObjectType((((bool)init)?(&init):(nullptr)),&sub,guidType,guidInput1,guidInput2,guidCapabilities,nCapabilities);
 	}
 
 private:
@@ -266,8 +287,11 @@ private:
 		bool			bMaster;
 		u64				nStepStamp;
 		std::vector<u32> vCapabilitiesIndices;
+		MemHandle		ResultHandle;
 		const void*		pResultMem[FRAME_BUFFER_COUNT];
 		u32				nResultSize;
+		const void*		pInitOutData;
+		u32				nInitOutSize;
 	};
 
 	typedef std::unordered_map<guid,ObjectRefContainer,guid_hasher>				object_map_type;
@@ -353,7 +377,7 @@ private:
 
 	// internal functions
 	void	Step(u64 step){ if(m_pout) m_nReadIndex = m_pout->GetRead();m_nCurrentStep=step;}
-	void	RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size);
+	void	RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size, const void* pInitOut,u32 nInitOutSize);
 	guid _CreateObject(const guid& ObjectTypeId, void* InitValue);
 	std::pair<const void*,u32> _ForEach(boost::function<bool (void*,IObject*)> f,size_t size,const guid& capability,bool bSync,void* pDataOut,u32 nOut,bool bGetSome);
 	void _RegisterObjectType(
@@ -383,7 +407,7 @@ private:
 	u64 m_nCurrentStep;
 	friend class SharedDomainBase;
 	template<class _Domain> friend class DomainBase;
-	template<class _ObjectOutputTraits> friend class _ObjectBaseOutput;
+	template<class _ObjectInitTraits,class _ObjectOutputTraits> friend class _ObjectBaseOutput;
 
 	//for foreach
 	std::vector<ForEachTask>					m_ForEachTasks;

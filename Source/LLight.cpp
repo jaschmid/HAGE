@@ -11,8 +11,8 @@ namespace HAGE {
 	bool LogicLight::Step()
 	{
 		static float t = 0.0f;
-		t+=0.01f;
-		_data.Position = _init.Position*(cosf(t)+1.0f);
+		//t+=0.01f;
+		//_data.Position = _init.Position*(cosf(t)+1.0f);
 		Output::Set(_data);
 		return false;
 	}

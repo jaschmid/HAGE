@@ -33,14 +33,15 @@ namespace HAGE {
 	}
 	
 
-	void	CoreFactory::RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size)
+	void	CoreFactory::RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size, const void* pInitOut,u32 nInitOutSize)
 	{
 		object_map_type::iterator new_object = flatObjectList.find(guid);
 		assert(new_object != flatObjectList.end());
-		new_object->second.nResultSize=m_pout->GetAll(handle,new_object->second.pResultMem);	
+		new_object->second.ResultHandle = handle;
+		new_object->second.nResultSize=m_pout->GetAll(handle,new_object->second.pResultMem);
+		new_object->second.pInitOutData=pInitOut;
+		new_object->second.nInitOutSize=nInitOutSize;
 		assert(new_object->second.nResultSize==size);
-		if(m_pout)
-			m_pout->PostMessage(MessageFactoryObjectCreated(guid,new_object->second.registration_entry.first,handle));
 	}
 
 	bool CoreFactory::TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId,void* init_data, bool bMaster)
@@ -69,6 +70,8 @@ namespace HAGE {
 		{
 			ObjectRefContainer container = {nullptr, *it2, 1, bMaster , m_nCurrentStep};	
 			container.nResultSize = 0xffffffff;
+			container.nInitOutSize = 0;
+			container.pInitOutData = nullptr;
 			flatObjectList.insert(std::pair<guid,ObjectRefContainer>(ObjectId,container));
 			object_map_type::iterator new_object = flatObjectList.find(ObjectId);
 			assert(new_object != flatObjectList.end());
@@ -87,8 +90,13 @@ namespace HAGE {
 				
 				// generate the output message with empty memhandle
 				if(m_pout)
-					m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,ObjectTypeId,MemHandle()));
+					m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,ObjectTypeId,MemHandle(),new_object->second.pInitOutData,new_object->second.nInitOutSize));
 			}		
+			else
+			{
+				if(m_pout)
+					m_pout->PostMessage(MessageFactoryObjectCreated(ObjectId,new_object->second.registration_entry.first,new_object->second.ResultHandle,new_object->second.pInitOutData,new_object->second.nInitOutSize));
+			}
 			
 			
 			for(auto caps = it2->second.capabilities.begin(); caps != it2->second.capabilities.end(); ++caps)
@@ -303,13 +311,21 @@ namespace HAGE {
 
 			auto found = objectDependancyMap.find(pDetailed->GetObjectTypeId());
 			
-			std::pair<const MemHandle&,const guid&> pair(pDetailed->GetInitHandle(),pDetailed->GetSource());
-
 			if(found != objectDependancyMap.end())
 			{
 				assert(found->second.second < 3);
-				TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second.first,(void*)&pair,false);
-				return true;
+				if(pDetailed->GetInitData() == nullptr)
+				{
+					std::pair<const MemHandle&,const guid&> pair(pDetailed->GetInitHandle(),pDetailed->GetSource());
+					TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second.first,(void*)&pair,false);
+					return true;
+				}
+				else
+				{
+					std::tuple<const MemHandle&,const guid&,const void*> tuple(pDetailed->GetInitHandle(),pDetailed->GetSource(),pDetailed->GetInitData());
+					TryCreateObjectWithGuid(pDetailed->GetObjectId(),found->second.first,(void*)&tuple,false);
+					return true;
+				}
 			}
 		}
 		else if(pMessage->GetMessageCode() == MESSAGE_FACTORY_OBJECT_DESTROYED)

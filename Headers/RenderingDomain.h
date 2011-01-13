@@ -40,9 +40,8 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		Matrix4<>		_invViewMatrix;
 		Matrix4<>		_viewMatrix;
 		Matrix4<>		_projectionMatrix;
-		GLightOut		_light1;
-		APIWTexture*	_light1Cube;
-		APIWTexture*	_light1CubeDepth;
+		GLightOut		_light[3];
+		APIWTexture*	_lightCubeDepth[3];
 
 		APIWConstantBuffer*							_pConstants;
 		APIWConstantBuffer*							_pShadowcubeConstants;

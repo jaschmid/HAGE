@@ -3,9 +3,9 @@
 
 namespace HAGE {
 
-	GraphicsActor* GraphicsActor::CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source)
+	GraphicsActor* GraphicsActor::CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorGInit* pInit)
 	{
-		return new GraphicsActor(ObjectId,h,source);
+		return new GraphicsActor(ObjectId,h,source,pInit);
 	}
 
 	int GraphicsActor::Step()
@@ -15,11 +15,15 @@ namespace HAGE {
 		return 1;
 	}
 
-	GraphicsActor::GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source) :
+	GraphicsActor::GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorGInit* pInit) :
 		ObjectBase<GraphicsActor>(ObjectId,h,source)
 	{
 		position = Input1::Get();
 		Output::Set(position);
+		
+		ActorRInit& rinit = Output::InitOut;
+		strcpy(rinit.mesh,pInit->mesh);
+		rinit.scale = pInit->scale;
 	}
 
 	GraphicsActor::~GraphicsActor()
