@@ -65,6 +65,8 @@ protected:
 
 	}
 
+	virtual ~_ObjectBaseDomain(){}
+
 	const guid								m_guidObjectId;
 
 private:

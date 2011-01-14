@@ -151,7 +151,7 @@ namespace HAGE {
 										settings->getf32Setting("ply_spawn_y"),
 										settings->getf32Setting("ply_spawn_z"));
 				float ply_range = settings->getf32Setting("ply_spawn_range");
-				ainit.behavior = rgen()%2;
+				ainit.behavior = 0;
 				ainit.location = ply_location + Vector3<>(getFRand(),getFRand(),getFRand())*ply_range;
 				Factory.CreateObject<LogicActor>(ainit);
 			}

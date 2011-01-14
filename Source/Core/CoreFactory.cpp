@@ -280,6 +280,9 @@ namespace HAGE {
 	{
 		result res=item->second.pObject->Destroy();
 		assert(succeeded(res));
+		
+		item->second.pObject= nullptr;
+
 		if(m_pout)
 			m_pout->PostMessage(MessageFactoryObjectDestroyed(item->first));
 
