@@ -8,8 +8,6 @@
 
 
 
-//#define STATIC_TIME_STEP 0.001
-#define MAX_DT 0.004
 
 namespace HAGE {
 	void LogicSheet::generateNormals()
@@ -63,23 +61,25 @@ namespace HAGE {
 
 	bool LogicSheet::Step()
 	{
-#ifndef STATIC_TIME_STEP
 		static clock_t tt = clock();
 		f32 dt = clock()-tt;
 		tt += dt;
 		if(dt == 0) dt = 0.01;
 		dt = dt*CLOCKS_PER_SEC / 1000.0;
 		dt /= 1000.0;
-#else
-		f32 dt = STATIC_TIME_STEP;
-#endif
 		
-		if(dt>MAX_DT)dt = MAX_DT;
-		calculateForces();
-		calculateVelocities(dt);
-		applyVelocities(dt);
-		
-		generateNormals();
+		int times = 1;
+		if(dt>settings->getf32Setting("cloth_max_dt")){
+			times = dt / settings->getf32Setting("cloth_max_dt");
+			dt = settings->getf32Setting("cloth_max_dt");
+		}
+		for(int i = 0; i < times && i < settings->getu32Setting("cloth_max_times");i++){
+			calculateForces();
+			calculateVelocities(dt);
+			applyVelocities(dt);
+
+			generateNormals();
+		}
 		Output::Set(_data);
 		return false;
 	}
@@ -102,8 +102,8 @@ namespace HAGE {
 		mass = new f32[SheetSize*SheetSize];
 		wind = Vector3<>(
 			settings->getf32Setting("wind_velo_x"),
-			settings->getf32Setting("wind_velo_x"),
-			settings->getf32Setting("wind_velo_y")
+			settings->getf32Setting("wind_velo_y"),
+			settings->getf32Setting("wind_velo_z")
 			);
 		for(u32 i=0;i<SheetSize*SheetSize;i++)
 		{
@@ -156,8 +156,8 @@ namespace HAGE {
 
 	void LogicSheet::calculateForces(){
 		for(u32 i=0;i<SheetSize*SheetSize;i++){
-			forces[i] = Vector3<>(0.0f,mass[i]/-9.89,0.0f); //gravity
-			forces[i] += wind * (wind*_data.normals[i]);
+			forces[i] = Vector3<>(0.0f,mass[i]/-9.8f,0.0f); //gravity
+			forces[i] += wind * abs(wind*_data.normals[i]);
 		}
 		
 		for(u32 i=0;i<nSpringDampers;i++)

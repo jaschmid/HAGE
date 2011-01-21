@@ -32,7 +32,7 @@ namespace HAGE {
 					Vector3<> v_out = *(const Vector3<>*)i.lastOut(sizeof(Vector3<>));
 					Vector3<> vd = v_out-position;
 					float		fd2 = !(vd);
-					if(fd2!=0.0f)
+					if(fd2 > 0.0001f)
 					{
 						float		fd = sqrtf(fd2);
 						vd = vd/fd;
@@ -56,7 +56,6 @@ namespace HAGE {
 			return true;
 		if(position.z>=5.0)
 			return true;
-
 
 		return false;
 	}

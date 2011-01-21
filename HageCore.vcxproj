@@ -66,21 +66,25 @@
     <IncludePath>$(SolutionDir)\Headers\SDK;$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Dependancies\Include\D3D;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>out_lib\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\NVIDIA Corporation\Cg\lib.x86;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;C:\Glew\Lib32;C:\boost\boost_1_44_0\stage\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(SolutionDir)\Dependancies\Lib32;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(SolutionDir)\Headers\SDK;$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Dependancies\Include\D3D;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>out_lib\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\NVIDIA Corporation\Cg\lib.x86;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;C:\Glew\Lib32;C:\boost\boost_1_44_0\stage\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(SolutionDir)\Dependancies\Lib32;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)\Headers\SDK;$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Dependancies\Include\D3D;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>out_lib\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\NVIDIA Corporation\Cg\lib.x64;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;C:\Glew\Lib64;C:\boost\boost_1_44_0\stage\lib64;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;$(SolutionDir)\Dependancies\Lib64;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)\Headers\SDK;$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Dependancies\Include\D3D;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>out_lib\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\NVIDIA Corporation\Cg\lib.x64;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;C:\Glew\Lib64;C:\boost\boost_1_44_0\stage\lib64;$(VCInstallDir)lib\amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib\x64;$(SolutionDir)\Dependancies\Lib64;</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -95,6 +99,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>FreeImaged.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -109,6 +116,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>FreeImaged.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -130,6 +140,9 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <Lib>
+      <AdditionalDependencies>FreeImage.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -151,6 +164,9 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <Lib>
+      <AdditionalDependencies>FreeImage.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Headers\SDK\CoreFactory.h" />
@@ -170,6 +186,7 @@
     <ClInclude Include="Headers\SDK\PinHelpers.h" />
     <ClInclude Include="Headers\SDK\preproc.h" />
     <ClInclude Include="Headers\SDK\RenderingAPIWrapper.h" />
+    <ClInclude Include="Headers\SDK\ResourceFormats.h" />
     <ClInclude Include="Headers\SDK\ResourceManager.h" />
     <ClInclude Include="Headers\SDK\results.h" />
     <ClInclude Include="Headers\SDK\TaskManager.h" />
@@ -202,6 +219,7 @@
     <ClCompile Include="Source\Core\DomainBase.cpp" />
     <ClCompile Include="Source\Core\DomainMemory.cpp" />
     <ClCompile Include="Source\Core\EffectContainer.cpp" />
+    <ClCompile Include="Source\Core\ImageLoader.cpp" />
     <ClCompile Include="Source\Core\InputDomain.cpp" />
     <ClCompile Include="Source\Core\MeshLoader.cpp" />
     <ClCompile Include="Source\Core\Messages.cpp" />

@@ -114,28 +114,28 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath);$(SolutionDir)\Dependancies\Lib32;</LibraryPath>
     <IncludePath>$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Headers;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\out\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\out\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath);$(SolutionDir)\Dependancies\Lib64;</LibraryPath>
     <IncludePath>$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Headers;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\out\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\out\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath);$(SolutionDir)\Dependancies\Lib32;</LibraryPath>
     <IncludePath>$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Headers;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\out\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\out\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)out_lib\MSVC\$(Platform)\$(Configuration)\;$(LibraryPath);$(SolutionDir)\Dependancies\Lib64;</LibraryPath>
     <IncludePath>$(SolutionDir)\Dependancies\Include;$(SolutionDir)\Headers;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\out\MSVC\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\out\MSVC\temp\$(Platform)\$(Configuration)\</IntDir>
@@ -189,7 +189,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d11.lib;d3dcompiler.lib;Opengl32.lib;HageCore.lib;glew32.lib;glew32s.lib;cg.lib;cgD3D11.lib;cgGL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d11.lib;d3dcompiler.lib;Opengl32.lib;HageCore.lib;FreeImage.lib;glew32.lib;glew32s.lib;cg.lib;cgD3D11.lib;cgGL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -209,7 +209,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d11.lib;d3dcompiler.lib;Opengl32.lib;HageCore.lib;glew64.lib;glew64s.lib;cg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d11.lib;d3dcompiler.lib;Opengl32.lib;HageCore.lib;FreeImage.lib;glew64.lib;glew64s.lib;cg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

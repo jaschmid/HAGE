@@ -12,6 +12,7 @@ namespace HAGE {
 	public:
 		Vector3<>	position;
 		Vector3<>	normal;
+		Vector2<>	texcoord;
 		Vector3<>	color;
 
 		static const char* name;
@@ -28,9 +29,10 @@ private:
 	RenderingSheet(const guid& ObjectId,const MemHandle& h,const guid& source);
 	virtual ~RenderingSheet();
 
-	const static u32 nTriangles = (SheetSize-1)*(SheetSize-1)*2;
-	const static u32 nVertices = SheetSize*SheetSize;
+	const static u32 nTriangles = (SheetSize-1)*(SheetSize-1)*2*2;
+	const static u32 nVertices = SheetSize*SheetSize*2;
 
+	TResourceAccess<ITextureImage>				_texture;
 	std::array<SheetVertexFormat,nVertices>*	_pVertexData;
 	
 	APIWVertexBuffer*							_pVertexBuffer;

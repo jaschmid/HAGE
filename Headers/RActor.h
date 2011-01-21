@@ -19,6 +19,7 @@ private:
 	virtual ~RenderingActor();
 
 	
+	TResourceAccess<ITextureImage>						_texture;
 	TResourceAccess<IDrawableMesh>						_mesh;
 
 	Vector3<>		scale;

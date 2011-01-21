@@ -73,6 +73,7 @@ namespace HAGE
 	{
 	public:
 		Vector3<>	position;
+		Vector2<>	texcoord0;
 		Vector3<>	normal;
 		Vector3<>	color;
 
@@ -82,6 +83,7 @@ namespace HAGE
 
 	VertexDescriptionEntry DefFormatDescriptor[] = {
 		{"Position",	1,	R32G32B32_FLOAT},
+		{"Texcoord",	1,	R32G32_FLOAT},
 		{"Normal",		1,	R32G32B32_FLOAT},
 		{"Color",		1,	R32G32B32_FLOAT},
 	};
@@ -91,52 +93,52 @@ namespace HAGE
 
 	static const DefaultVertexFormat vertices[] =
 	{
-		{Vector3<>(_1,  0.0f, p),		Vector3<>(_1,  0.0f, p),		Vector3<>(1.0f, 0.5f, 0.5f)},
-		{Vector3<>(-_1,  0.0f, p),		Vector3<>(-_1,  0.0f, p),		Vector3<>(0.5f, 1.0f, 0.5f)},
-		{Vector3<>(_1,   0.0f, -p),		Vector3<>(_1,   0.0f, -p),		Vector3<>(0.5f, 0.5f, 1.0f)},
-		{Vector3<>(-_1,  0.0f, -p),		Vector3<>(-_1,  0.0f, -p),		Vector3<>(0.0f, 0.5f, 0.5f)},
-		{Vector3<>(0.0f, p,	   _1),		Vector3<>(0.0f, p,	   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
-		{Vector3<>(0.0f, -p,   _1),		Vector3<>(0.0f, -p,   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
-		{Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.5f, 0.0f, 1.0f)},
-		{Vector3<>(0.0f, -p,   -_1),	Vector3<>(0.0f, -p,   -_1),		Vector3<>(1.0f, 0.0f, 0.5f)},
-		{Vector3<>(p,	 _1,	0.0f),	Vector3<>(p,	 _1,	0.0f),	Vector3<>(0.0f, 1.0f, 0.5f)},
-		{Vector3<>(-p,   _1,	0.0f),	Vector3<>(-p,   _1,	0.0f),		Vector3<>(0.0f, 0.5f, 1.0f)},
-		{Vector3<>(p,	 -_1,	0.0f),	Vector3<>(p,	 -_1,	0.0f),	Vector3<>(1.0f, 0.5f, 0.0f)},
-		{Vector3<>(-p,   -_1,	0.0f),	Vector3<>(-p,   -_1,	0.0f),	Vector3<>(0.5f, 1.0f, 0.0f)},
+		{Vector3<>(_1,  0.0f, p),		Vector2<>(0.0f,0.0f),	Vector3<>(_1,  0.0f, p),		Vector3<>(1.0f, 0.5f, 0.5f)},
+		{Vector3<>(-_1,  0.0f, p),		Vector2<>(0.0f,0.0f),	Vector3<>(-_1,  0.0f, p),		Vector3<>(0.5f, 1.0f, 0.5f)},
+		{Vector3<>(_1,   0.0f, -p),		Vector2<>(0.0f,0.0f),	Vector3<>(_1,   0.0f, -p),		Vector3<>(0.5f, 0.5f, 1.0f)},
+		{Vector3<>(-_1,  0.0f, -p),		Vector2<>(0.0f,0.0f),	Vector3<>(-_1,  0.0f, -p),		Vector3<>(0.0f, 0.5f, 0.5f)},
+		{Vector3<>(0.0f, p,	   _1),		Vector2<>(0.0f,0.0f),	Vector3<>(0.0f, p,	   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
+		{Vector3<>(0.0f, -p,   _1),		Vector2<>(0.0f,0.0f),	Vector3<>(0.0f, -p,   _1),		Vector3<>(0.5f, 0.0f, 0.5f)},
+		{Vector3<>(0.0f, p,	   -_1),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f, p,	   -_1),	Vector3<>(0.5f, 0.0f, 1.0f)},
+		{Vector3<>(0.0f, -p,   -_1),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f, -p,   -_1),		Vector3<>(1.0f, 0.0f, 0.5f)},
+		{Vector3<>(p,	 _1,	0.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(p,	 _1,	0.0f),	Vector3<>(0.0f, 1.0f, 0.5f)},
+		{Vector3<>(-p,   _1,	0.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(-p,   _1,	0.0f),		Vector3<>(0.0f, 0.5f, 1.0f)},
+		{Vector3<>(p,	 -_1,	0.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(p,	 -_1,	0.0f),	Vector3<>(1.0f, 0.5f, 0.0f)},
+		{Vector3<>(-p,   -_1,	0.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(-p,   -_1,	0.0f),	Vector3<>(0.5f, 1.0f, 0.0f)},
 	};
 
 	static const DefaultVertexFormat boxVertices[] =
 	{
 		// -x wall
-		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector2<>(1.0f,0.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector2<>(1.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 		// x wall
-		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector2<>(1.0f,0.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector2<>(1.0f,1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(-1.0f,0.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 		// -y wall
-		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector2<>(1.0f,0.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector2<>(1.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(0.0f,1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 		// y wall
-		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector2<>(1.0f,0.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector2<>(1.0f,1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(0.0f,-1.0f,0.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 		// -z wall
-		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,-1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,-1.0f),	Vector2<>(1.0f,0.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,-1.0f),	Vector2<>(1.0f,1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,-1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(0.0f,0.0f,1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 		// z wall
-		{Vector3<>(-1.0f,1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,1.0f,1.0f),		Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(1.0f,-1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
-		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,1.0f,1.0f),	Vector2<>(0.0f,0.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,1.0f,1.0f),		Vector2<>(1.0f,0.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(1.0f,-1.0f,1.0f),	Vector2<>(1.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
+		{Vector3<>(-1.0f,-1.0f,1.0f),	Vector2<>(0.0f,1.0f),	Vector3<>(0.0f,0.0f,-1.0f),		Vector3<>(1.0f,1.0f,1.0f)},
 	};
 
 	static const u32	boxIndices[] = 
@@ -348,6 +350,7 @@ CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData)
 		{
 			pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
 			pVertexData[i].normal   = Vector3<>(0,0,0);
+			pVertexData[i].texcoord0 = Vector2<>(0.0f,0.0f);
 			if(pVertexData[i].position.x <= min.x)
 				min.x = pVertexData[i].position.x;
 			if(pVertexData[i].position.y <= min.y)

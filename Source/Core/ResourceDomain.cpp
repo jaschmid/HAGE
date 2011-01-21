@@ -22,6 +22,23 @@ namespace HAGE {
 		{
 			return fread(pReadOut,1,nReadMax,_file);
 		}
+		u64 ResourceDomain::CFileStream::Seek(i64 iPosition,ORIGIN origin) const
+		{
+			int seek_origin;
+			switch(origin)
+			{
+			case ORIGIN_BEGINNING:
+				seek_origin = SEEK_SET;
+				break;
+			case ORIGIN_CURRENT:
+				seek_origin = SEEK_CUR;
+				break;
+			case ORIGIN_END:
+				seek_origin = SEEK_END;
+				break;
+			}
+			return fseek(_file,iPosition,origin);
+		}
 
 		class ResourceTask : public TaskManager::genericTask
 		{
@@ -102,6 +119,7 @@ namespace HAGE {
 		ResourceDomain::ResourceDomain() : _registrationLocked(false)
 		{
 			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IMeshData>::Get(),&CMeshDataLoader::Initialize);
+			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IImageData>::Get(),&CImageDataLoader::Initialize);
 			printf("Init Resource\n");
 		}
 

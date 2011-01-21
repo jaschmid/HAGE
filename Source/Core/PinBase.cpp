@@ -49,9 +49,9 @@ namespace HAGE {
 		{
 			//printf("Pin %08x ready\n",this);
 			nClosedAccesses=nShutdown;
-
 			for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
 				((Package*)&pMem[nReadIndex][*i])->~Package();
+
 			m_pvpDestructors[nReadIndex].clear();
 			pMem[nReadIndex].clear();
 
@@ -222,6 +222,7 @@ namespace HAGE {
 
 	result LockedMessageQueue::_ForwardPackage(const Package& m)
 	{
+		assert( !(bInit && nWriteIndex == nReadIndex));
 		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
 		assert( m.GetSource() != guidNull);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());

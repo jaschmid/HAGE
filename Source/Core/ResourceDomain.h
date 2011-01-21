@@ -22,6 +22,7 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			~CNullStream(){}
 			std::string GetIdentifierString() const{return std::string("Null");}
 			u64 Read(u64 nReadMax,u8* pReadOut) const{return 0;}
+			u64 Seek(i64,ORIGIN) const{return 0;}
 			void Close(){}
 		};
 
@@ -32,6 +33,7 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			~CFileStream();
 			std::string GetIdentifierString() const;
 			u64 Read(u64 nReadMax,u8* pReadOut) const;
+			u64 Seek(i64 iPosition,ORIGIN origin) const;
 			void Close(){delete this;}
 		private:
 			std::string _filename;

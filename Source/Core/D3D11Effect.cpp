@@ -199,7 +199,8 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray,HAGE::APIWConstantBuf
 
 	for(HAGE::u32 i = 0; i<nTextures; ++i)
 	{
-		m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(((D3D11Texture*)pTextures[i])->_shaderResourceView));
+		if(pTextures[i])
+			m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(((D3D11Texture*)pTextures[i])->_shaderResourceView));
 	}
 
 

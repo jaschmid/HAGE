@@ -34,8 +34,9 @@ struct LSheetOut
 
 struct GSheetOut
 {
-	std::array<Vector3<>,SheetSize*SheetSize>	positions;
-	std::array<Vector3<>,SheetSize*SheetSize>	normals;
+	// front and backside
+	std::array<Vector3<>,SheetSize*SheetSize*2>	positions;
+	std::array<Vector3<>,SheetSize*SheetSize*2>	normals;
 };
 
 DECLARE_CLASS_GUID(RenderingSheet,	0x12d47f0e,0x8813,0x4ad5,0xb13d,0x916b7ab4a618);

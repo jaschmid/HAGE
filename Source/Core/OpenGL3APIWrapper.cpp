@@ -51,6 +51,7 @@ HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateOpenGL3Wrapper()
 	RenderingAPIWrapper* pResult = new OpenGL3APIWrapper();
 	_pAllocator= pResult;
 	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
+	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<ITextureImage>::Get(),&CTextureImageLoader::Initialize);
 	return pResult;
 }
 

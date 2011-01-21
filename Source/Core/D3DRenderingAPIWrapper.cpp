@@ -31,6 +31,7 @@ HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateD3D11Wrapper()
 	RenderingAPIWrapper* pResult = new D3D11APIWrapper();
 	_pAllocator= pResult;
 	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
+	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<ITextureImage>::Get(),&CTextureImageLoader::Initialize);
 	return pResult;
 }
 

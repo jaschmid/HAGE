@@ -13,6 +13,10 @@ namespace HAGE {
 	{
 		
 		_mesh = GetResource()->OpenResource<IDrawableMesh>(pInit->mesh);
+		if(strcmp(pInit->mesh,"Box")==0)
+			_texture = GetResource()->OpenResource<ITextureImage>("WoodBox.png");
+		else
+			_texture = GetResource()->OpenResource<ITextureImage>("Null");
 		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
@@ -30,6 +34,7 @@ namespace HAGE {
 			pc.inverse_modelview =		Matrix4<>::Translate(-position)*c.inverse_modelview;
 			pc.modelview_projection =	c.modelview_projection*pc.model;
 			pBuffer->UpdateContent(&pc);
+			pEffect->SetTexture(3,_texture->GetTexture());
 			pEffect->Draw(0,_mesh->GetVertexArray());
 		}
 		return 1;

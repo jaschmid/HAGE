@@ -10,7 +10,14 @@ namespace HAGE {
 
 	void GraphicsSheet::GenerateNormals()
 	{
-		_data.normals = Input1::Get().normals;
+		memcpy(_data.normals.data(),Input1::Get().normals.data(),SheetSize*SheetSize*sizeof(Vector3<>));
+		memcpy(_data.positions.data(),Input1::Get().positions.data(),SheetSize*SheetSize*sizeof(Vector3<>));
+		for(int ix= 0;ix<SheetSize;ix++)
+			for(int iy= 0;iy<SheetSize;iy++)
+			{
+				_data.normals[iy*SheetSize+ix + SheetSize*SheetSize]	= -_data.normals[iy*SheetSize+ix ];
+				_data.positions[iy*SheetSize+ix + SheetSize*SheetSize]	= _data.positions[iy*SheetSize+ix ];
+			}
 		//for(int ix= 0;ix<SheetSize;ix++)
 		//	for(int iy= 0;iy<SheetSize;iy++)
 		//	{
@@ -54,7 +61,6 @@ namespace HAGE {
 
 	int GraphicsSheet::Step()
 	{
-		_data.positions = Input1::Get().positions;
 		GenerateNormals();
 		Output::Set(_data);
 		return 1;
@@ -63,7 +69,6 @@ namespace HAGE {
 	GraphicsSheet::GraphicsSheet(const guid& ObjectId,const MemHandle& h,const guid& source) :
 		ObjectBase<GraphicsSheet>(ObjectId,h,source)
 	{
-		_data.positions = Input1::Get().positions;
 		GenerateNormals();
 		Output::Set(_data);
 	}
