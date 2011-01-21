@@ -1,5 +1,5 @@
 #include "HAGE.h"
-#define FREEIMAGE_STATIC
+#define FREEIMAGE_LIB
 #include <FreeImage.h>
 
 #include <stdio.h>
