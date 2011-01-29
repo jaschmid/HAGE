@@ -460,20 +460,6 @@ template<class _T = f32> struct Matrix4
 		);
 	}
 
-	static const Matrix4<_T> Perspective(const _T& near,const _T& far,const _T& fovx,const _T& fovy)
-	{
-		_T h,w,Q;
-		w = (_T)1/tan(fovx*0.5f);
-		h = (_T)1/tan(fovy*0.5f);
-		Q = far/(far-near);
-		return Matrix4(
-			Vector4<_T>(w,			0.0f,	0.0f,			0.0f),
-			Vector4<_T>(0.0f,		h,		0.0f,			0.0f),
-			Vector4<_T>(0.0f,		0.0f,	Q,				-Q*near),
-			Vector4<_T>(0.0f,		0.0f,	1,				0.0f)
-		);
-	}
-
 	// basic operations
 
 	template<class _T2> const Matrix4<_T> operator *(const Matrix4<_T2>& other) const
@@ -505,6 +491,16 @@ template<class _T = f32> struct Matrix4
 	const Vector4<_T> Column(const u32& i) const
 	{
 		return Vector4<_T>(v[i],v[4+i],v[8+i],v[12+i]);
+	}
+
+	const Matrix4<_T> Transpose() const
+	{
+		return Matrix4(
+			Vector4<_T>(v[0],v[4],v[8], v[12]),
+			Vector4<_T>(v[1],v[5],v[9], v[13]),
+			Vector4<_T>(v[2],v[6],v[10],v[14]),
+			Vector4<_T>(v[3],v[7],v[11],v[15])
+		);
 	}
 
 };

@@ -61,6 +61,7 @@ D3D11VertexArray::D3D11VertexArray(D3D11APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 	}
 	else
 		m_pIndexBuffer = 0;
+
 }
 
 D3D11VertexArray::~D3D11VertexArray()

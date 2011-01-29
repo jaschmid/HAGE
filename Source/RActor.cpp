@@ -9,7 +9,7 @@ namespace HAGE {
 	}
 
 	RenderingActor::RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit) :
-		ObjectBase<RenderingActor>(ObjectId,h,source),scale(pInit->scale)
+		ObjectBase<RenderingActor>(ObjectId,h,source),scale(pInit->scale),_init(*pInit)
 	{
 		
 		_mesh = GetResource()->OpenResource<IDrawableMesh>(pInit->mesh);
@@ -25,16 +25,17 @@ namespace HAGE {
 		
 	int RenderingActor::Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer)
 	{
-		if(Input1::IsReady() )
+		if(Input1::IsReady())
 		{
 			position = Input1::Get();
+				
 			position_constants pc = c;
-			pc.model =					Matrix4<>::Translate(position)*Matrix4<>::Scale(scale);
-			pc.modelview =				c.modelview*pc.model;
-			pc.inverse_modelview =		Matrix4<>::Translate(-position)*c.inverse_modelview;
-			pc.modelview_projection =	c.modelview_projection*pc.model;
+			pc.model =					(Matrix4<>::Translate(position)*Matrix4<>::Scale(scale)).Transpose();
+			pc.modelview =				(c.modelview.Transpose()*pc.model.Transpose()).Transpose();
+			pc.inverse_modelview =		(Matrix4<>::Translate(-position)*c.inverse_modelview.Transpose()).Transpose();
+			pc.modelview_projection =	(c.modelview_projection.Transpose()*pc.model.Transpose()).Transpose();
 			pBuffer->UpdateContent(&pc);
-			pEffect->SetTexture(3,_texture->GetTexture());
+			pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());
 			pEffect->Draw(0,_mesh->GetVertexArray());
 		}
 		return 1;

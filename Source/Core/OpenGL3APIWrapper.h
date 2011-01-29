@@ -38,8 +38,6 @@
 #include <GL/glxew.h>
 #endif
 
-#include <Cg/cg.h>    /* Can't include this?  Is Cg Toolkit installed! */
-#include <Cg/cgGL.h>
 #include <boost/functional/hash.hpp>
 
 #if _DEBUG
@@ -119,6 +117,50 @@ template<> class hash<BlendStateEX>
 
 }
 
+static GLenum APIWFormatToOGLFormat(const HAGE::APIWFormat& format)
+{
+	switch(format)
+	{
+	case HAGE::R16_UNORM			:
+		return GL_R16;
+		break;
+	case HAGE::R32_FLOAT			:
+		return GL_R32F;
+		break;
+	case HAGE::R32G32_FLOAT			:
+		return GL_RG32F;
+		break;
+	case HAGE::R32G32B32_FLOAT		:
+		return GL_RGB32F;
+		break;
+	case HAGE::R32G32B32A32_FLOAT	:
+		return GL_RGBA32F;
+		break;
+	case HAGE::R8G8B8A8_UNORM		:
+		return GL_RGBA8;
+		break;
+	case HAGE::R8G8B8A8_UNORM_SRGB	:
+		return GL_SRGB8_ALPHA8;
+		break;
+	case HAGE::R8G8B8A8_SNORM		:
+		return GL_RGBA8_SNORM;
+		break;
+	case HAGE::R8G8B8A8_UINT		:
+		return GL_RGBA8UI;
+		break;
+	case HAGE::R8G8B8A8_SINT		:
+		return GL_RGBA8I;
+		break;
+	case HAGE::R8G8B8A8_TYPELESS	:
+		assert(!"Not supported");
+		return 0;
+		break;
+	default:
+		assert(!"Unknown Format!");
+		return 0;
+	}
+}
+
 class OpenGL3APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
@@ -130,6 +172,24 @@ public:
 	void PresentFrame();
 	void BeginAllocation();
 	void EndAllocation();
+	
+	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	{
+		HAGE::f32 h,w,Q;
+		w = 1.0f/tan(fovX*0.5f);
+		h = 1.0f/tan(fovY*0.5f);
+		Q = _far/(_far-_near);
+		return HAGE::Matrix4<>(
+			HAGE::Vector4<>(w,			0.0f,	0.0f,			0.0f),
+			HAGE::Vector4<>(0.0f,		h,		0.0f,			0.0f),
+			HAGE::Vector4<>(0.0f,		0.0f,	(_far+_near)/(_far-_near),		-2.0f*Q*_near),
+			HAGE::Vector4<>(0.0f,		0.0f,	1,				0.0f)
+		);
+	}
+	HAGE::Matrix4<> GenerateRenderTargetProjection(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	{
+		return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*GenerateProjectionMatrix(_near,_far,fovX,fovY);
+	}
 
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
@@ -144,11 +204,7 @@ public:
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
 	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
-
-	CGcontext& GetCGC(){return myCgContext;}
-	CGprofile& GetVertexProfile(){return myCgVertexProfile;}
-	CGprofile& GetFragmentProfile(){return myCgFragmentProfile;}
-
+	
 	struct VertexFormatEntry
 	{
 		HAGE::u32						uVertexSize;
@@ -159,7 +215,6 @@ public:
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
 	const VertexFormatEntry*	GetVertexFormat(HAGE::u8 code);
-	void checkForCgError(const char *situation);
 
 	HAGE::u16					GetRasterizerStateCode(const HAGE::APIWRasterizerState* pState);
 	void						SetRasterizerState(HAGE::u16 code);
@@ -168,7 +223,21 @@ public:
 	void						SetBlendState(HAGE::u16 code);
 
 private:
-	typedef std::unordered_map<std::string,HAGE::u8> VertexStringTableType;
+	
+	typedef std::basic_string<char,std::char_traits<char>,HAGE::global_allocator<char>> global_string;
+	struct GlobalStringHash
+	{
+		size_t operator() (const global_string& key) const
+		{
+			size_t seed = 0xbadf00d;
+			for(int i= 0;i<key.length();++i)
+				boost::hash_combine<HAGE::u8>(seed,key[i]);
+			return seed;
+		}
+	};
+
+
+	typedef std::unordered_map<global_string,HAGE::u8,GlobalStringHash,std::equal_to<global_string>,HAGE::global_allocator<std::pair<global_string,HAGE::u8>>> VertexStringTableType;
 	VertexStringTableType		m_VertexStringTable;
 	typedef std::array<VertexFormatEntry,256> VertexFormatListType;
 	VertexFormatListType		m_VertexFormatList;
@@ -182,6 +251,14 @@ private:
 								m_BlendStates;
 	HAGE::u16					m_CurrentBS;
 	boost::mutex 				m_mutexAllocation;
+
+	unsigned int				m_fboId;
+
+	HAGE::u16					_backbufferWidth;
+	HAGE::u16					_backbufferHeight;
+
+	bool						_bForceDepthDisable;
+	bool						_bForceCullFlip;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -198,12 +275,8 @@ private:
     Display*                    m_pDisplay;
 	static boost::thread_specific_ptr<GLXContext> _currentRC;
 #endif
-	CGcontext					myCgContext;
-	CGprofile					myCgVertexProfile, myCgFragmentProfile;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
-
-	friend class D3D11Effect;
 };
 
 class OGL3VertexBuffer : public HAGE::APIWVertexBuffer
@@ -229,13 +302,24 @@ public:
 	OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
 	void Clear(HAGE::Vector4<> Color);
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
-	virtual ~OGL3Texture(){}
+	virtual ~OGL3Texture();
 private:
 	HAGE::u32			_xSize;
 	HAGE::u32			_ySize;
 	HAGE::u32			_mipLevels;
 	HAGE::APIWFormat	_format;
 	HAGE::u32			_miscFlags;
+
+	bool				_bClearColor;
+	HAGE::Vector4<>		_ClearColor;
+	bool				_bClearDepth;
+	HAGE::f32			_ClearDepth;
+	bool				_bClearStencil;
+	HAGE::u32			_ClearStencil;
+
+	unsigned int		_tbo;
+	friend class OGL3Effect;
+	friend class OpenGL3APIWrapper;
 };
 
 class OGL3VertexArray : public HAGE::APIWVertexArray
@@ -276,19 +360,19 @@ class OGL3Effect : public HAGE::APIWEffect
 public:
 	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
 	~OGL3Effect();
-	
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0);
+	virtual void SetConstant(const char* pName,const HAGE::APIWConstantBuffer* constant);
+	virtual void SetTexture(const char* pName,const HAGE::APIWTexture* texture);
+	virtual void Draw(HAGE::APIWVertexArray* pArray);
 private:
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u16					m_RastState;
 	HAGE::u16					m_BlendState;
-	char*						_cVertexShader;
-	char*						_cPixelShader;
 
-	char*						_glVertexShader;
-	char*						_glFragmentShader;
+	std::vector<const OGL3ConstantBuffer*,HAGE::global_allocator<const OGL3ConstantBuffer*>>	_constantBuffers;	
+	std::vector<int,HAGE::global_allocator<int>>					_textureSlots;
+	std::vector<const OGL3Texture*,HAGE::global_allocator<const OGL3Texture*>>					_textures;
 
-	GLuint						_glVShader,_glFShader,_glProgram;
+	GLuint						_glVShader,_glFShader,_glGShader,_glProgram;
 };
 
 #endif

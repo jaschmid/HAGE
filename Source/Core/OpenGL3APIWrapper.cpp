@@ -30,21 +30,25 @@ static int ctxErrorHandler( Display *dpy, XErrorEvent *ev )
 void ProcessXEvents();
 
 #endif
-
-void OpenGL3APIWrapper::checkForCgError(const char *situation)
+/*
+bool OpenGL3APIWrapper::checkForCgError(const char *situation)
 {
   CGerror error;
-  const char *string = cgGetLastErrorString(&error);
-
-  if (error != CG_NO_ERROR) {
-    printf("%s: %s: %s\n",
-      "HAGE", situation, string);
-    if (error == CG_COMPILER_ERROR) {
-      printf("%s\n", cgGetLastListing(myCgContext));
-    }
-    exit(1);
-  }
-}
+  bool bError = false;
+  const char *string;
+  while((string = cgGetLastErrorString(&error)) && error != CG_NO_ERROR)
+	{
+		error = cgGetError();
+		if(situation)
+			printf("%s: %s: %s\n","HAGE", situation, string);
+		if (error == CG_COMPILER_ERROR) {
+			if(situation)
+				printf("%s\n", cgGetLastListing(myCgContext));
+		}
+		bError= true;
+	}
+  return bError;
+}*/
 
 HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateOpenGL3Wrapper()
 {
@@ -67,7 +71,9 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 #endif
 	m_NextVertexFormatEntry(0),
 	m_CurrentRS(-1),
-	m_CurrentBS(-1)
+	m_CurrentBS(-1),
+	_bForceDepthDisable(false),
+	_bForceCullFlip(false)
 {
 
 #ifdef TARGET_WINDOWS
@@ -80,6 +86,12 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	pfd.cColorBits = 32;
 	pfd.cDepthBits = 32;
 	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	RECT backbufferRect;
+
+	GetClientRect(m_hWnd,&backbufferRect);
+	_backbufferWidth = backbufferRect.right;
+	_backbufferHeight = backbufferRect.bottom;
 
 	int nPixelFormat = ChoosePixelFormat(m_hDC, &pfd);
 
@@ -255,27 +267,26 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 
 	printf("Initializing Open GL %i.%i\n",OpenGLVersion[0],OpenGLVersion[1]);
 	
+	glError();
 	 //prepare the loading context
-	glEnableClientState(GL_VERTEX_ARRAY);
-
+	//glEnableClientState(GL_VERTEX_ARRAY);
+	
+	glError();
 #ifdef TARGET_WINDOWS
 	//disable VSync
 	wglSwapIntervalEXT(0);
 #endif
 
+	glError();
 	glClearColor(0.5f, 0.1f, 0.2f, 0.0f);  /* Red background */
 	
-	myCgContext = cgCreateContext();
-	checkForCgError("creating context");
-	
-	myCgVertexProfile = cgGetProfile("glslv");//cgGLGetLatestProfile(CG_GL_VERTEX);
-	myCgFragmentProfile = cgGetProfile("glslf");//cgGLGetLatestProfile(CG_GL_FRAGMENT);
-	//cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
-	cgSetAutoCompile(myCgContext,CG_COMPILE_MANUAL);
-
+	glError();
+		
+	glError();
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
-	
+
+	glGenFramebuffers(1, &m_fboId);
 	glFlush();
 #ifdef TARGET_WINDOWS
 	wglMakeCurrent(NULL, NULL);
@@ -286,17 +297,24 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 #endif
 
 	 //prepare the loading context
-	glEnableClientState(GL_VERTEX_ARRAY);
+	//glEnableClientState(GL_VERTEX_ARRAY);
 	
 	glClearColor(0.5f, 0.1f, 0.2f, 0.0f); 
 	//cgSetParameterSettingMode(myCgContext, CG_DEFERRED_PARAMETER_SETTING);
 	
 	SetRasterizerState(GetRasterizerStateCode(&HAGE::DefaultRasterizerState));
+	
+	glError();
+
 	SetBlendState(GetBlendStateCode(&HAGE::DefaultBlendState,1,false));
+
+	glError();
 	
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	
 	glFlush();
+	
+	glError();
 #ifdef TARGET_WINDOWS
 	wglMakeCurrent(NULL, NULL);
 #elif defined(TARGET_LINUX)
@@ -308,16 +326,9 @@ OpenGL3APIWrapper::~OpenGL3APIWrapper()
 {
 	delete m_DebugUIRenderer;
 
-    cgDestroyContext( myCgContext );
-
 	// Cleanup OpenGL
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(0);
 
 #ifdef TARGET_WINDOWS
-	wglMakeCurrent(NULL, NULL);
 	if(m_hrc)
 	{
 		wglDeleteContext(m_hrc);
@@ -331,7 +342,6 @@ OpenGL3APIWrapper::~OpenGL3APIWrapper()
 
 #elif defined(TARGET_LINUX)
 
-    glXMakeCurrent( m_pDisplay, 0, 0 );
     glXDestroyContext(m_pDisplay,m_hrc);
 	glXDestroyContext(m_pDisplay,m_hrcL);
 #endif
@@ -350,11 +360,13 @@ void OpenGL3APIWrapper::BeginAllocation()
 	m_backupC=glXGetCurrentContext();
     glXMakeCurrent( m_pDisplay, *m_pWindow, m_hrcL );
 #endif
+	glError();
 }
 
 void OpenGL3APIWrapper::EndAllocation()
 {
 	glFlush();
+	glError();
 #ifdef TARGET_WINDOWS
 	if(!wglMakeCurrent(m_hDC, m_backupC))
 	{
@@ -379,17 +391,100 @@ void OpenGL3APIWrapper::BeginFrame()
     // might aswell do that here...
     ProcessXEvents();
 #endif
-	
+	glError();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glError();
+}
+
+void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget,HAGE::APIWTexture* _pTextureDepthStencil)
+{
+	glError();
+
+	OGL3Texture* pTextureRenderTarget=(OGL3Texture*)_pTextureRenderTarget;
+	OGL3Texture* pTextureDepthStencil=(OGL3Texture*)_pTextureDepthStencil;
+
+	if(pTextureRenderTarget == nullptr && pTextureDepthStencil == nullptr)
+	{
+		glViewport(0,0,_backbufferWidth,_backbufferHeight);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_BACK);
+		_bForceDepthDisable=false;
+		_bForceCullFlip=false;
+	}
+	else
+	{
+		_bForceCullFlip=true;
+		glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
+		glError();
+		if(pTextureRenderTarget)
+		{
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pTextureRenderTarget->_tbo, 0);
+			glDrawBuffer(GL_BACK);
+			glError();
+		}
+		else
+		{
+			glDrawBuffer(GL_NONE);
+			glError();
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, 0, 0);
+			glError();
+		}
+		if(pTextureDepthStencil)
+		{
+			_bForceDepthDisable=false;
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pTextureDepthStencil->_tbo, 0);
+			glError();
+		}
+		else
+		{
+			_bForceDepthDisable=true;
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
+			glError();
+		}
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		assert(status == GL_FRAMEBUFFER_COMPLETE);
+		if(pTextureRenderTarget)
+		{
+			if(pTextureRenderTarget->_bClearColor)
+				glClear(GL_COLOR_BUFFER_BIT);
+			glViewport(0,0,pTextureRenderTarget->_xSize,pTextureRenderTarget->_ySize);
+			glError();
+		}
+		if(pTextureDepthStencil)
+		{
+			if(pTextureDepthStencil->_bClearDepth)
+				glClear(GL_DEPTH_BUFFER_BIT);
+			if(pTextureDepthStencil->_bClearStencil)
+				glClear(GL_STENCIL_BUFFER_BIT);
+			glViewport(0,0,pTextureDepthStencil->_xSize,pTextureDepthStencil->_ySize);
+			glError();
+		}
+	}
 	
+	if(m_RasterizerStates.GetItem(m_CurrentRS).bDepthClipEnable && !_bForceDepthDisable)
+		glEnable (GL_DEPTH_TEST);
+	else
+		glDisable (GL_DEPTH_TEST);
+		
+	switch(m_RasterizerStates.GetItem(m_CurrentRS).CullMode)
+	{
+		case HAGE::CULL_NONE:	glDisable(GL_CULL_FACE);					break;
+		case HAGE::CULL_CCW:	glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CCW:GL_CW);	break;
+		case HAGE::CULL_CW:		glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CW:GL_CCW);	break;
+	}
+
+	glError();
 }
 
 void OpenGL3APIWrapper::PresentFrame()
 {
+	glError();
 	// Debug UI
 	m_DebugUIRenderer->Draw();
 		
 	glFlush();
+	glError();
 
 #ifdef TARGET_WINDOWS
 
@@ -479,7 +574,7 @@ HAGE::APIWVertexArray* OpenGL3APIWrapper::CreateVertexArray(HAGE::u32 nPrimitive
 
 HAGE::u8	OpenGL3APIWrapper::GetVertexFormatCode(const char* name)
 {
-	std::string s_name(name);
+	global_string s_name(name);
 	auto item=m_VertexStringTable.find(s_name);
 	assert(item != m_VertexStringTable.end());
 	return item->second;
@@ -497,7 +592,7 @@ const OpenGL3APIWrapper::VertexFormatEntry*	OpenGL3APIWrapper::GetVertexFormat(H
 
 void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries)
 {
-	std::string s_name(szName);
+	global_string s_name(szName);
 	assert( m_VertexStringTable.find(s_name) == m_VertexStringTable.end());
 	assert( m_NextVertexFormatEntry <= 255 );
 
@@ -533,7 +628,7 @@ void OpenGL3APIWrapper::RegisterVertexFormat(const char* szName,const HAGE::Vert
 
 	new_entry.uVertexSize = vertex_size;
 
-	m_VertexStringTable.insert(std::pair<std::string,HAGE::u8>(s_name,(HAGE::u8)m_NextVertexFormatEntry));
+	m_VertexStringTable.insert(std::pair<global_string,HAGE::u8>(s_name,(HAGE::u8)m_NextVertexFormatEntry));
 
 	++m_NextVertexFormatEntry;
 }
@@ -550,7 +645,7 @@ void		OpenGL3APIWrapper::SetRasterizerState(HAGE::u16 code)
 	m_CurrentRS=code;
 	const HAGE::APIWRasterizerState& state = m_RasterizerStates.GetItem(code);
 
-	if(state.bDepthClipEnable)
+	if(state.bDepthClipEnable && !_bForceDepthDisable)
 		glEnable (GL_DEPTH_TEST);
 	else
 		glDisable (GL_DEPTH_TEST);
@@ -558,8 +653,8 @@ void		OpenGL3APIWrapper::SetRasterizerState(HAGE::u16 code)
 	switch(state.CullMode)
 	{
 		case HAGE::CULL_NONE:	glDisable(GL_CULL_FACE);					break;
-		case HAGE::CULL_CCW:	glEnable(GL_CULL_FACE);glFrontFace(GL_CW);	break;
-		case HAGE::CULL_CW:		glEnable(GL_CULL_FACE);glFrontFace(GL_CCW);	break;
+		case HAGE::CULL_CCW:	glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CCW:GL_CW);	break;
+		case HAGE::CULL_CW:		glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CW:GL_CCW);	break;
 	}
 
 	if(state.bWireframe)

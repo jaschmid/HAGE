@@ -12,6 +12,7 @@ OGL3VertexBuffer::OGL3VertexBuffer(OpenGL3APIWrapper* pWrapper,const char* szVer
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboID);
 	glBufferData(GL_ARRAY_BUFFER, m_BufferSize, pData, bDynamic?GL_DYNAMIC_DRAW:GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glError();
 }
 
 void OGL3VertexBuffer::UpdateContent(const void* pData)
@@ -19,6 +20,7 @@ void OGL3VertexBuffer::UpdateContent(const void* pData)
 	glBindBuffer(GL_ARRAY_BUFFER, m_vboID);
 	glBufferData(GL_ARRAY_BUFFER, m_BufferSize, pData, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glError();
 }
 
 OGL3VertexBuffer::~OGL3VertexBuffer()

@@ -18,16 +18,14 @@ namespace HAGE
 		// add later
 
 		//set functions
-		void SetConstant(u32 index,const APIWConstantBuffer* pBuffer);
-		void SetTexture(u32 index,const APIWTexture* pTexture);
+		void SetConstant(const char* name,const APIWConstantBuffer* pBuffer);
+		void SetTexture(const char* name,const APIWTexture* pTexture);
 
 		//drawing functions
 		void Draw(u32 pass, const APIWVertexArray* pArray) const;
 	private:
 		RenderingAPIWrapper*				_pWrapper;
 		APIWEffect*							_pEffect;
-		std::vector<const APIWConstantBuffer*>	_pConstants;
-		std::vector<const APIWTexture*>			_pTextures;
 	};
 };
 

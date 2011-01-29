@@ -41,6 +41,8 @@ namespace HAGE {
 				}
 			}
 		}
+		else
+			Output::Set(position);
 	
 		out = m_guidObjectId;
 

@@ -1,4 +1,6 @@
 #include <HAGE.h>
+#define INITGUID
+
 #include "D3D11APIWrapper.h"
 #include "ResourceDomain.h"
 
@@ -6,7 +8,7 @@
 
 HWND GetHwnd();
 HINSTANCE GetHInstance();
-
+/*
 bool D3D11APIWrapper::checkForCgError(const char *situation)
 {
   CGerror error;
@@ -24,7 +26,7 @@ bool D3D11APIWrapper::checkForCgError(const char *situation)
 		bError= true;
 	}
   return bError;
-}
+}*/
 
 HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateD3D11Wrapper()
 {
@@ -154,14 +156,7 @@ D3D11APIWrapper::D3D11APIWrapper() :
     _vp.TopLeftY = 0;
     m_pContext->RSSetViewports( 1, &_vp );
 
-	// INIT CG
 
-	myCgContext = cgCreateContext();
-    checkForCgError( "creating context" );
-	
-	myCgVertexProfile = CG_PROFILE_VS_4_0;
-	myCgFragmentProfile = CG_PROFILE_PS_4_0;
-	myCgGeometryProfile = CG_PROFILE_GS_4_0;
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	// depth
 	/*
@@ -192,8 +187,6 @@ D3D11APIWrapper::D3D11APIWrapper() :
 D3D11APIWrapper::~D3D11APIWrapper()
 {
 	delete m_DebugUIRenderer;
-	
-    cgDestroyContext( myCgContext );
 
 	if(m_pSwapChain)m_pSwapChain->Release();
 	if(m_pRenderTargetView)m_pRenderTargetView->Release();

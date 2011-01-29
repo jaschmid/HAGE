@@ -10,6 +10,7 @@ OGL3ConstantBuffer::OGL3ConstantBuffer(OpenGL3APIWrapper* pWrapper,HAGE::u32 nSi
     glBufferData(GL_UNIFORM_BUFFER, m_nSize,
                      NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	glError();
 }
 
 OGL3ConstantBuffer::~OGL3ConstantBuffer()

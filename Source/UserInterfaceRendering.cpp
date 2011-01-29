@@ -8,43 +8,40 @@
 	*/
 namespace HAGE {
 	const char* Effect2D =
-	"uniform struct\n"
-	"{\n"
-	"	 float4 color;\n"
+	"H_CONSTANT_BUFFER_BEGIN(Effect2DConstants)\n"
+	"	 float4 const_color;\n"
 	"    float4x4 position_matrix;\n"
 	"    float4x4 texture_matrix;\n"
-	"} cbuffer0_Effect2DConstants: BUFFER[0];\n"
+	"H_CONSTANT_BUFFER_END\n"
 	"\n"
-	"// cbuffer Effect2DConstants : register(b0)\n"
-	"#define PositionMatrix       cbuffer0_Effect2DConstants.position_matrix\n"
-	"#define TextureMatrix        cbuffer0_Effect2DConstants.texture_matrix\n"
-	"#define ConstantColor        cbuffer0_Effect2DConstants.color\n"
+	"VS_IN_BEGIN\n"
+	"  DECL_VS_IN(float2,position);\n"
+	"  DECL_VS_IN(float2,texcoord);\n"
+	"VS_IN_END\n"
+	"VS_OUT_BEGIN\n"
+	"  DECL_VS_OUT(float4,color);\n"
+	"  DECL_VS_OUT(float2,tex);\n"
+	"  DECL_VS_POSITION;\n"
+	"VS_OUT_END\n"
 	"\n"
-	"struct Effect2DV_Input {\n"
-	"  float2 cposition : POSITION;\n"
-	"  float2 ctexcoord : TEXCOORD0;\n"
-	"};\n"
-	"struct Effect2DV_Output {\n"
-	"  float4 vcolor    : TEXCOORD0;\n"
-	"  float2 vtexture  : TEXCOORD1;\n"
-	"  float4 vposition : POSITION;\n"
-	"};\n"
-	"struct Effect2DF_Output {\n"
-	"  float4 fcolor : COLOR;\n"
-	"};\n"
-	"\n"
-	"\n"
-	"void vertex(in Effect2DV_Input IN, out Effect2DV_Output OUT)\n"
+	"VERTEX_SHADER\n"
 	"{	\n"
-	"\n"
-	"  OUT.vposition = mul( PositionMatrix,	float4( IN.cposition, 0.0f, 1.0f ) );\n "
-	"  OUT.vtexture = mul( TextureMatrix,	float4( IN.ctexcoord, 0.0f, 1.0f ) ).xy;\n"
-	"  OUT.vcolor = ConstantColor;\n"
+	"  VS_OUT_POSITION = mul( position_matrix,	float4( VS_IN(position), 0.0f, 1.0f ) );\n "
+	"  VS_OUT(tex) = mul( texture_matrix,	float4( VS_IN(texcoord), 0.0f, 1.0f ) ).xy;\n"
+	"  VS_OUT(color) = const_color;\n"
 	"}"
 	"\n"
-	"void fragment(in Effect2DV_Output IN, out Effect2DF_Output OUT)\n"
+	"FS_IN_BEGIN\n"
+	"  DECL_FS_IN(float4,color);\n"
+	"  DECL_FS_IN(float2,tex);\n"
+	"FS_IN_END\n"
+	"FS_OUT_BEGIN\n"
+	"  DECL_FS_COLOR;\n"
+	"FS_OUT_END\n"
+	"\n"
+	"FRAGMENT_SHADER\n"
 	"{\n"
-	"  OUT.fcolor = IN.vcolor;\n"
+	"  FS_OUT_COLOR = FS_IN(color);\n"
 	"}\n";
 
 	struct Effect2DConstants
@@ -126,7 +123,8 @@ namespace HAGE {
 			constants.position_matrix = Matrix4<>::Translate(Vector3<>(m_vMousePosition,0.0f))*Matrix4<>::Scale(Vector3<>(0.1f,0.1f,0.0f));
 
 			m_pConstants->UpdateContent(&constants);
-			m_pEffect2D->Draw(m_pVASquare,&m_pConstants);
+			m_pEffect2D->SetConstant("Effect2DConstants",m_pConstants);
+			m_pEffect2D->Draw(m_pVASquare);
 		}
 	}
 }

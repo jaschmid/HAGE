@@ -19,8 +19,7 @@
 #include <Windows.h>
 #include <D3DCommon.h>
 #include <D3D11.h>
-#include <Cg/cg.h>
-#include <Cg/cgD3D11.h>
+#include <D3Dcompiler.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
@@ -42,6 +41,25 @@ public:
 	void BeginAllocation();
 	void EndAllocation();
 
+	
+	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	{
+		HAGE::f32 h,w,Q;
+		w = 1.0f/tan(fovX*0.5f);
+		h = 1.0f/tan(fovY*0.5f);
+		Q = _far/(_far-_near);
+		return HAGE::Matrix4<>(
+			HAGE::Vector4<>(w,		0.0f,	0.0f,			0.0f),
+			HAGE::Vector4<>(0.0f,		h,		0.0f,			0.0f),
+			HAGE::Vector4<>(0.0f,		0.0f,	Q,				-Q*_near),
+			HAGE::Vector4<>(0.0f,		0.0f,	1,				0.0f)
+		);
+	}
+	HAGE::Matrix4<> GenerateRenderTargetProjection(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	{
+		return GenerateProjectionMatrix(_near,_far,fovX,fovY);
+	}
+
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
 	HAGE::APIWVertexArray* CreateVertexArray(
 		HAGE::u32 nPrimitives,
@@ -58,16 +76,10 @@ public:
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
 	ID3D11DeviceContext*		GetContext(){return m_pContext;}
-	CGcontext& GetCGC(){return myCgContext;}
-	CGprofile& GetVertexProfile(){return myCgVertexProfile;}
-	CGprofile& GetFragmentProfile(){return myCgFragmentProfile;}
-	CGprofile& GetGeometryProfile(){return myCgGeometryProfile;}
 
 	const ArrayFormatEntry*		GetArrayFormat(const VertexFormatKey& code);
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
-
-	bool checkForCgError(const char *situation);
 
 
 	struct VertexFormatEntry
@@ -127,9 +139,6 @@ private:
 	ID3D11RenderTargetView*     m_pRenderTargetView;
 	ID3D11DepthStencilView *    m_pDepthStencilView;
     D3D11_VIEWPORT				_vp;
-
-	CGcontext					myCgContext;
-	CGprofile					myCgVertexProfile, myCgFragmentProfile, myCgGeometryProfile;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
@@ -218,7 +227,9 @@ public:
 	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
 	~D3D11Effect();
 	
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0);
+	virtual void SetConstant(const char* pName,const HAGE::APIWConstantBuffer* constant);
+	virtual void SetTexture(const char* pName,const HAGE::APIWTexture* texture);
+	virtual void Draw(HAGE::APIWVertexArray* pArray);
 private:
 
 	ID3D11VertexShader* CompileVertexShader(const char* shader);
@@ -226,18 +237,39 @@ private:
 	ID3D11GeometryShader* CompileGeometryShader(const char* shader);
 	void CreateInputLayout(const D3D11APIWrapper::VertexFormatKey& v);
 
-	CGprogram					m_CgVertexProgram;
-	CGprogram					m_CgFragmentProgram;
-	CGprogram					m_CgGeometryProgram;
 	ID3D11VertexShader*         m_pVertexShader;
 	ID3D11PixelShader*          m_pPixelShader;
 	ID3D11GeometryShader*       m_pGeometryShader;
     ID3D10Blob*					m_pCompiledShader;
 	ID3D11RasterizerState*		m_pRasterizerState;
 	ID3D11BlendState*			m_pBlendState;
-
+	typedef D3D11APIWrapper::global_string global_string;
 	typedef std::unordered_map<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*,D3D11APIWrapper::VertexFormatHash,std::equal_to<D3D11APIWrapper::VertexFormatKey>,HAGE::global_allocator<std::pair<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*>>> ArrayLayoutListType;
 	ArrayLayoutListType			m_ArrayLayoutList;
+
+	void ParseBindPoints(const D3D11_SHADER_INPUT_BIND_DESC& desc,int bindPoint);
+
+	struct	BindPoints
+	{
+		union
+		{
+			struct
+			{
+				int _VSBindPoint;
+				int _GSBindPoint;
+				int _PSBindPoint;
+			};
+			int _ArrayBindPoints[3];
+		};
+	};
+	typedef std::map<D3D11APIWrapper::global_string,BindPoints,std::less<D3D11APIWrapper::global_string>,HAGE::global_allocator<std::pair<D3D11APIWrapper::global_string,BindPoints>>> BindPointMap;
+	BindPointMap				_constantBinds;
+	BindPointMap				_textureBinds;
+	BindPointMap				_samplerBinds;
+
+	std::vector<const D3D11ConstantBuffer*,HAGE::global_allocator<const D3D11ConstantBuffer*>>	_boundConstants[3];
+	std::vector<const D3D11Texture*,HAGE::global_allocator<const D3D11Texture*>>				_boundTextures[3];
+	//std::vector<D3D11ConstantBuffer*,HAGE::global_allocator<D3D11ConstantBuffer*>> _boundSamplers;
 
 	D3D11APIWrapper*			m_pWrapper;
 };

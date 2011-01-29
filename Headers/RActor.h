@@ -22,6 +22,8 @@ private:
 	TResourceAccess<ITextureImage>						_texture;
 	TResourceAccess<IDrawableMesh>						_mesh;
 
+	ActorRInit		_init;
+
 	Vector3<>		scale;
 	Vector3<>		position;
 	Vector3<u8>		color;

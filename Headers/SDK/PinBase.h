@@ -19,7 +19,7 @@
 
 namespace HAGE {
 
-const u32 FRAME_BUFFER_COUNT = 3;
+const u32 FRAME_BUFFER_COUNT = 2;
 #define FRAMESKIP_ENABLED
 
 class WrapMessage : public MessageHelper<WrapMessage>

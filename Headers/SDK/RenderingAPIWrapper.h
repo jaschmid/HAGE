@@ -145,6 +145,9 @@ public:
 	virtual void BeginAllocation() = 0;
 	virtual void EndAllocation() = 0;
 
+	virtual HAGE::Matrix4<> GenerateProjectionMatrix(f32 near,f32 far,f32 fovX,f32 fovY)	= 0;
+	virtual	HAGE::Matrix4<> GenerateRenderTargetProjection(f32 near,f32 far,f32 fovX,f32 fovY) = 0;
+
 	static RenderingAPIAllocator* QueryAPIAllocator(){return _pAllocator;}
 protected:
 	static RenderingAPIAllocator* _pAllocator;
@@ -202,7 +205,9 @@ class APIWEffect
 {
 public:
 	virtual ~APIWEffect(){}
-	virtual void Draw(HAGE::APIWVertexArray* pArray,HAGE::APIWConstantBuffer* const * pConstants,HAGE::u32 nConstants = 1,HAGE::APIWTexture* const * pTextures = nullptr,HAGE::u32 nTextures = 0)=0;
+	virtual void SetConstant(const char* pName,const APIWConstantBuffer* constant)=0;
+	virtual void SetTexture(const char* pName,const APIWTexture* texture)=0;
+	virtual void Draw(HAGE::APIWVertexArray* pArray)=0;
 };
 
 struct VertexDescriptionEntry

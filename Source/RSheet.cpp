@@ -81,7 +81,7 @@ namespace HAGE {
 		}
 		pBuffer->UpdateContent(&c);
 		_pVertexBuffer->UpdateContent(_pVertexData->data());
-		pEffect->SetTexture(3,_texture->GetTexture());
+		pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());
 		pEffect->Draw(0,_pVertexArray);
 
 		return 1;

@@ -4,7 +4,7 @@
 template<class _Key,_Key _Size,class _Item> class FixedSizeKeyStorage
 {
 private:
-	typedef typename std::unordered_map<_Item,_Key> ItemToKeyMapType;
+	typedef typename std::unordered_map<_Item,_Key,std::tr1::hash<_Item>,std::equal_to<_Item>,HAGE::global_allocator<std::pair<_Item,_Key>>> ItemToKeyMapType;
 	ItemToKeyMapType				m_ItemToKeyMap;
 	typedef typename std::array<_Item,_Size> ItemStorageType;
 	ItemStorageType					m_ItemStorage;

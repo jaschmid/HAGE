@@ -10,23 +10,19 @@ EffectContainer::EffectContainer(RenderingAPIWrapper* pWrapper,const char* pProg
 	_pEffect = _pWrapper->CreateEffect(pProgram,pRasterizerState,pBlendState,nBlendStates,AlphaToCoverage);
 }
 
-void EffectContainer::SetConstant(u32 index,const APIWConstantBuffer* pBuffer)
+void EffectContainer::SetConstant(const char* pName,const APIWConstantBuffer* pBuffer)
 {
-	if(index+1 > _pConstants.size())
-		_pConstants.resize(index+1);
-	_pConstants[index] = pBuffer;
+	_pEffect->SetConstant(pName,pBuffer);
 }
 
-void EffectContainer::SetTexture(u32 index,const APIWTexture* pTexture)
+void EffectContainer::SetTexture(const char* pName,const APIWTexture* pTexture)
 {
-	if(index+1 > _pTextures.size())
-		_pTextures.resize(index+1);
-	_pTextures[index] = pTexture;
+	_pEffect->SetTexture(pName,pTexture);
 }
 
 void EffectContainer::Draw(u32 pass, const APIWVertexArray* pArray) const
 {
-	_pEffect->Draw(const_cast<APIWVertexArray*>(pArray),const_cast<HAGE::APIWConstantBuffer* const *>(_pConstants.data()),_pConstants.size(),const_cast<HAGE::APIWTexture* const *>(_pTextures.data()),_pTextures.size());
+	_pEffect->Draw(const_cast<APIWVertexArray*>(pArray));
 }
 
 }
