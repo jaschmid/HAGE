@@ -294,18 +294,20 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u1
 	glGetProgramiv(_glProgram,GL_ACTIVE_UNIFORM_BLOCKS,&nAttribs);
 	glGetProgramiv(_glProgram,GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH,&nAttribsLength);
 	_constantBuffers.resize(nAttribs);
-	/*
+	delete cAttribName;
+
 	cAttribName = new char[nAttribsLength];
 	for(int i =0;i<nAttribs;++i)
 	{
 		int len;
 		int buflen;
+		glUniformBlockBinding(_glProgram,i,i);
 		glGetActiveUniformBlockiv(_glProgram,i,GL_UNIFORM_BLOCK_BINDING,&len);
 		glGetActiveUniformBlockName(_glProgram,i,nAttribsLength,&buflen,cAttribName);
-		glUniformBlockBinding(_glProgram,glGetUniformBlockIndex(_glProgram,cAttribName),i);
-		printf("Uniform Block %i \@ %i= %s\n",i,len,	cAttribName);
+		int index=glGetUniformBlockIndex(_glProgram,cAttribName);
+		printf("Uniform Block %i(%i) \@ %i= %s\n",i,index,len,	cAttribName);
 	}
-	*/
+	delete cAttribName;
 	glGetProgramiv(_glProgram,GL_ACTIVE_UNIFORMS,&nAttribs);
 	glGetProgramiv(_glProgram,GL_ACTIVE_UNIFORM_MAX_LENGTH,&nAttribsLength);
 	cAttribName = new char[nAttribsLength];
@@ -318,16 +320,17 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u1
 		glGetActiveUniform(_glProgram,i,nAttribsLength,&len,&size,&type,cAttribName);
 		if(IsTextureUniform(type))
 		{
-			if(i+1 > _textureSlots.size())
+			int loc = glGetUniformLocation(_glProgram,cAttribName);
+			if(loc+1 > _textureSlots.size())
 			{
-				_textureSlots.resize(i+1);
+				_textureSlots.resize(loc+1);
 			}
-			_textureSlots[i] = nTextures;
-			glUniform1i(glGetUniformLocation(_glProgram,cAttribName),nTextures);
+			_textureSlots[loc] = nTextures;
+			glUniform1i(loc,nTextures);
 			glError();
 			nTextures++;
 		}
-		//printf("Uniform %i \@ %i= %s, size %i, type %i\n",i,glGetUniformLocation(_glProgram,cAttribName),	cAttribName,size,type);
+		printf("Uniform %i \@ %i= %s, size %i, type %i\n",i,glGetUniformLocation(_glProgram,cAttribName),	cAttribName,size,type);
 	}
 	_textures.resize(nTextures);
 	delete cAttribName;
@@ -358,18 +361,22 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
 	
 	for(HAGE::u32 i =0; i<_constantBuffers.size();++i)
 	{
+		assert(_constantBuffers[i]);
+
 		glBindBufferBase(GL_UNIFORM_BUFFER,i,_constantBuffers[i]->m_cbo);
-		glUniformBlockBinding(_glProgram, i, i);
 		glError();
 	}
 	for(HAGE::u32 i =0; i<_textures.size();++i)
 	{
-		glActiveTexture(GL_TEXTURE0+i);
-		if(_textures[i]->_miscFlags & HAGE::TEXTURE_CUBE)
-			glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[i]->_tbo);
-		else
-			glBindTexture(GL_TEXTURE_2D, _textures[i]->_tbo);
-		glError();
+		if(_textures[i])
+		{
+			glActiveTexture(GL_TEXTURE0+i);
+			if(_textures[i]->_miscFlags & HAGE::TEXTURE_CUBE)
+				glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[i]->_tbo);
+			else
+				glBindTexture(GL_TEXTURE_2D, _textures[i]->_tbo);
+			glError();
+		}
 	}	
 	// set states
 
@@ -430,14 +437,22 @@ void OGL3Effect::SetConstant(const char* pName,const HAGE::APIWConstantBuffer* c
 	strcpy(&temp[1],pName);
 	int loc = glGetUniformBlockIndex(_glProgram,temp);
 	if(loc >= 0 && loc < _constantBuffers.size())
+	{
 		_constantBuffers[loc] = (const OGL3ConstantBuffer*)constant;
+	}
 }
 
 void OGL3Effect::SetTexture(const char* pName,const HAGE::APIWTexture* texture)
 {
 	int loc = glGetUniformLocation(_glProgram,pName);
+	//printf("Attempt to Attach %s to loc %i :",pName,loc);
 	if(loc >= 0 && loc < _textureSlots.size())
+	{
+		//printf("SUCCESS\n",pName,loc);
 		_textures[_textureSlots[loc]] = (const OGL3Texture*)texture;
+	}
+	else;
+		//printf("FAILED\n",pName,loc);
 }
 
 #endif NO_OGL
