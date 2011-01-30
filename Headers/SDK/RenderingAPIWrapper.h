@@ -126,6 +126,20 @@ typedef struct _APIWBlendState
 extern const APIWBlendState DefaultBlendState;
 extern const APIWRasterizerState DefaultRasterizerState;
 
+typedef struct _APIWDisplaySettings
+{
+	bool	bFullscreen;
+	u32		xRes;
+	u32		yRes;
+} APIWDisplaySettings;
+
+typedef enum _APIWRendererType
+{
+	APIW_D3DWRAPPER,
+	APIW_OGLWRAPPER,
+	APIW_DEFAULT
+} APIWRendererType;
+
 class RenderingAPIAllocator
 {
 public:
@@ -156,14 +170,7 @@ protected:
 class RenderingAPIWrapper : public RenderingAPIAllocator
 {
 public:
-#ifndef NO_D3D
-#ifdef TARGET_WINDOWS
-	static RenderingAPIWrapper* CreateD3D11Wrapper();
-#endif
-#endif
-#ifndef NO_OGL
-	static RenderingAPIWrapper* CreateOpenGL3Wrapper();
-#endif
+	static RenderingAPIWrapper* CreateRenderingWrapper(APIWRendererType type,const APIWDisplaySettings* pSettings);
 
 	virtual ~RenderingAPIWrapper(){};
 
@@ -171,6 +178,7 @@ public:
 	virtual void PresentFrame() = 0;
 
 	virtual void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil) = 0;
+	virtual void UpdateDisplaySettings(const APIWDisplaySettings* pSettings) = 0;
 };
 
 class APIWVertexBuffer

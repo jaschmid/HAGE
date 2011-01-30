@@ -9,6 +9,8 @@
 
 HWND GetHwnd();
 HINSTANCE GetHInstance();
+extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height);
+extern void ChangeDisplayMode(HAGE::u32 xRes,HAGE::u32 yRes);
 
 #elif defined(TARGET_LINUX)
 
@@ -50,16 +52,16 @@ bool OpenGL3APIWrapper::checkForCgError(const char *situation)
   return bError;
 }*/
 
-HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateOpenGL3Wrapper()
+HAGE::RenderingAPIWrapper* OpenGL3APIWrapper::CreateOGL3Wrapper(const HAGE::APIWDisplaySettings* displaySettings)
 {
-	RenderingAPIWrapper* pResult = new OpenGL3APIWrapper();
+	HAGE::RenderingAPIWrapper* pResult = new OpenGL3APIWrapper(displaySettings);
 	_pAllocator= pResult;
-	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
-	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<ITextureImage>::Get(),&CTextureImageLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::IDrawableMesh>::Get(),&HAGE::CDrawableMeshLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::ITextureImage>::Get(),&HAGE::CTextureImageLoader::Initialize);
 	return pResult;
 }
 
-OpenGL3APIWrapper::OpenGL3APIWrapper() :
+OpenGL3APIWrapper::OpenGL3APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
 #ifdef TARGET_WINDOWS
 	m_hInst(GetHInstance()),
 	m_hWnd(GetHwnd()),
@@ -73,7 +75,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	m_CurrentRS(-1),
 	m_CurrentBS(-1),
 	_bForceDepthDisable(false),
-	_bForceCullFlip(false)
+	_bForceCullFlip(false),
+	_currentDisplaySettings(*pSettings)
 {
 
 #ifdef TARGET_WINDOWS
@@ -84,14 +87,12 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	pfd.dwFlags    = PFD_DOUBLEBUFFER | PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 32;
-	pfd.cDepthBits = 32;
+	pfd.cDepthBits = 24;
 	pfd.iLayerType = PFD_MAIN_PLANE;
+	
+	SetWindowSize(_currentDisplaySettings.bFullscreen,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
 
 	RECT backbufferRect;
-
-	GetClientRect(m_hWnd,&backbufferRect);
-	_backbufferWidth = backbufferRect.right;
-	_backbufferHeight = backbufferRect.bottom;
 
 	int nPixelFormat = ChoosePixelFormat(m_hDC, &pfd);
 
@@ -110,7 +111,7 @@ OpenGL3APIWrapper::OpenGL3APIWrapper() :
 	int attribs[] =
 	{
 		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+		WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 		0
@@ -397,6 +398,11 @@ void OpenGL3APIWrapper::BeginFrame()
 	glError();
 }
 
+void OpenGL3APIWrapper::UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings)
+{
+	_currentDisplaySettings = *pSettings;
+}
+
 void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget,HAGE::APIWTexture* _pTextureDepthStencil)
 {
 	glError();
@@ -406,7 +412,7 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 
 	if(pTextureRenderTarget == nullptr && pTextureDepthStencil == nullptr)
 	{
-		glViewport(0,0,_backbufferWidth,_backbufferHeight);
+		glViewport(0,0,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDrawBuffer(GL_BACK);
 		_bForceDepthDisable=false;

@@ -10,12 +10,14 @@
 
 extern void OSMessageQueue();
 extern void OSLeaveMessageQueue();
+extern void OSNotifyMessageQueueThreadsShutdown();
 
 namespace HAGE {
 
 	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0),
 		m_nThreads(boost::thread::hardware_concurrency()),
-		m_initbarrier(m_nThreads + 1)
+		m_initbarrier(m_nThreads),
+		m_shutdownbarrier(m_nThreads+1)
 	{
 		HAGE::TaskManager::pSharedManager= this;
 	}
@@ -29,11 +31,14 @@ namespace HAGE {
 		return _InterlockedDecrement(&m_userlandShutdownCounter);
 	}
 
-
-	void SharedTaskManager::InitUserland()
+	void SharedTaskManager::InitSysUserland()
 	{
 		DomainCreator<ResourceDomain>();
 		DomainCreator<InputDomain>();
+	}
+
+	void SharedTaskManager::InitUserland()
+	{
 		m_pMain = HAGECreateMain();
 	}
 
@@ -45,9 +50,10 @@ namespace HAGE {
 
 	InputDomain* SharedTaskManager::StartThreads()
 	{
+		boost::barrier						m_inputbarrier(2);
 		for(int i = 0;i < m_nThreads; i++)
 		{
-			workerThreadProc proc = { this , i , (u32) i, m_initbarrier };
+			workerThreadProc proc = { this , i , (u32) i, m_initbarrier, m_inputbarrier, m_shutdownbarrier};
 			workerThreads.create_thread<workerThreadProc>(proc);
 		}
 
@@ -56,10 +62,9 @@ namespace HAGE {
 			fSteptime = 0.0;
 			lastTick = boost::posix_time::microsec_clock::universal_time();
 		}
-
-		m_initbarrier.wait();
-
+		
 		// now queue the init task
+		m_inputbarrier.wait();
 
 		printf("%u threads init \n",m_nThreads);
 		// program is running
@@ -77,8 +82,11 @@ namespace HAGE {
 			nShutdownStep = nHighestStep +1;
 			bShutdown = true;
 		}
+	}
 
-		m_initbarrier.wait();
+	void SharedTaskManager::FinalizeShutdown()
+	{
+		m_shutdownbarrier.wait();
 
 		// program is completed
 
@@ -88,6 +96,7 @@ namespace HAGE {
 
 		printf("domains destroyed\n");
 	}
+	
 
 	void SharedTaskManager::workerThreadProc::operator () ()
 	{
@@ -95,11 +104,14 @@ namespace HAGE {
 #ifdef TARGET_WINDOWS
 		SetThreadIdealProcessor(GetCurrentThread(),nThreadId);
 #endif
-
 		TLS::thread_id.reset(&nThreadId);
 
 		if(nThreadId == 0)
+		{
+			pTaskManager->InitSysUserland();
+			inputbarrier.wait();
 			pTaskManager->InitUserland();
+		}
 
 		// run thread
 		printf("pthread %i started \n",nThreadId);
@@ -118,11 +130,14 @@ namespace HAGE {
 
 		int count;
 		if((count=pTaskManager->UserlandShutdownCounter()) == 0)
+		{
 			pTaskManager->EndUserland();
+			OSNotifyMessageQueueThreadsShutdown();
+		}
 
 		// run thread
 		printf("pthread %i completed as %i\n",nThreadId,count);
-		initbarrier.wait();
+		shutdownbarrier.wait();
 
 		TLS::thread_id.release();
 	}

@@ -9,7 +9,7 @@ namespace HAGE {
 		nWriteIndex(0),nReadIndex(0),
 		pMem((mm_vector*)DomainMemory::GlobalAllocate(sizeof(mm_vector)*FRAME_BUFFER_COUNT)),
 		m_pvpDestructors((pd_vector*)DomainMemory::GlobalAllocate(sizeof(pd_vector)*FRAME_BUFFER_COUNT)),
-		bReadWaiting(true),bWriteWaiting(false),nAvailableSlots(0)
+		nAvailableSlots(0)
 
 	{
 		for(int i=0;i<FRAME_BUFFER_COUNT;++i)
@@ -57,14 +57,13 @@ namespace HAGE {
 
 			nReadIndex = (nReadIndex+1) % FRAME_BUFFER_COUNT;
 
-			if(_InterlockedDecrement(&nAvailableSlots)==0)
-				bReadWaiting = true;
-			else
+			u32 result = _InterlockedDecrement(&nAvailableSlots);
+			if(result!=0)
 			{
-				if(bWriteWaiting)
+				if(result==FRAME_BUFFER_COUNT-1)
 				{
 #ifdef FRAMESKIP_ENABLED
-					if(FRAME_BUFFER_COUNT >= 3 && nAvailableSlots==FRAME_BUFFER_COUNT-1)
+					if(FRAME_BUFFER_COUNT >= 3)
 					{
 						//skip frames
 						i32 nNewReadIndex = (nWriteIndex+FRAME_BUFFER_COUNT-1) % FRAME_BUFFER_COUNT;
@@ -121,7 +120,6 @@ namespace HAGE {
 						nAvailableSlots=1;
 					}
 #endif
-					bWriteWaiting = false;
 					fWriteReadyCallback();
 				}
 				for(u32 i=0;i<fReadReadyCallback.size();++i)
@@ -136,14 +134,11 @@ namespace HAGE {
 			//printf("Pin %08x ready\n",this);
 		bInit=true;
 		nWriteIndex = (nWriteIndex+1) % FRAME_BUFFER_COUNT;
-
-		if(_InterlockedIncrement(&nAvailableSlots)==FRAME_BUFFER_COUNT && fReadReadyCallback.size() >= 1)
-			bWriteWaiting = true;
-		else
+		u32 result = _InterlockedIncrement(&nAvailableSlots);
+		if( result != FRAME_BUFFER_COUNT || fReadReadyCallback.size() == 0 )
 		{			
-			if(bReadWaiting)
+			if(result == 1)
 			{
-				bReadWaiting = false;
 				for(u32 i=0;i<fReadReadyCallback.size();++i)
 						fReadReadyCallback[i]();
 			}

@@ -32,16 +32,18 @@ public:
 	typedef std::vector<HAGE::u8,HAGE::global_allocator<HAGE::u8> > VertexFormatKey;
 	struct ArrayFormatEntry;
 
-	D3D11APIWrapper();
+	D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings);
 	~D3D11APIWrapper();
 
 	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
+	void UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings);
 	void BeginFrame();
 	void PresentFrame();
 	void BeginAllocation();
 	void EndAllocation();
 
-	
+	static HAGE::RenderingAPIWrapper* CreateD3D11Wrapper(const HAGE::APIWDisplaySettings* displaySettings);
+
 	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
 	{
 		HAGE::f32 h,w,Q;
@@ -80,7 +82,6 @@ public:
 	const ArrayFormatEntry*		GetArrayFormat(const VertexFormatKey& code);
 	HAGE::u8					GetVertexFormatCode(const char* name);
 	HAGE::u32					GetVertexSize(HAGE::u8 code);
-
 
 	struct VertexFormatEntry
 	{
@@ -128,6 +129,9 @@ private:
 	typedef std::unordered_map<VertexFormatKey,ArrayFormatEntry,VertexFormatHash,std::equal_to<VertexFormatKey>,HAGE::global_allocator<std::pair<VertexFormatKey,ArrayFormatEntry>>> ArrayFormatListType;
 	ArrayFormatListType			m_ArrayFormatList;
 	
+	void _UpdateDisplaySettings();
+	HAGE::APIWDisplaySettings	_currentDisplaySettings;
+	HAGE::APIWDisplaySettings	_newDisplaySettings;
 
 	HINSTANCE                   m_hInst;
 	HWND                        m_hWnd;

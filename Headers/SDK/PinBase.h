@@ -19,7 +19,7 @@
 
 namespace HAGE {
 
-const u32 FRAME_BUFFER_COUNT = 2;
+const u32 FRAME_BUFFER_COUNT = 3;
 #define FRAMESKIP_ENABLED
 
 class WrapMessage : public MessageHelper<WrapMessage>
@@ -158,8 +158,6 @@ private:
 	volatile bool	bInit;
 	volatile i32	nShutdown;
 	volatile i32	nFreeSlots;
-	volatile bool	bWriteWaiting;
-	volatile bool	bReadWaiting;
 	callback_list fReadReadyCallback;
 	boost::function<void()> fWriteReadyCallback;
 	guid			sourceStamp;

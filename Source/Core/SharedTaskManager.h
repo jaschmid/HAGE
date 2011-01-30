@@ -16,6 +16,7 @@ public:
 	SharedTaskManager();
 	InputDomain* StartThreads();
 	void StopThreads();
+	void FinalizeShutdown();
 	~SharedTaskManager();
 
 	struct workerThreadProc
@@ -24,6 +25,8 @@ public:
 		i32				nCore;
 		u32				nThreadId;
 		boost::barrier& initbarrier;
+		boost::barrier& inputbarrier;
+		boost::barrier& shutdownbarrier;
 
 		void operator () ();
 	};
@@ -54,7 +57,8 @@ public:
 	}
 
 	volatile i32 UserlandShutdownCounter();
-
+	
+	void InitSysUserland();
 	void InitUserland();
 	void EndUserland();
 	
@@ -80,6 +84,7 @@ private:
 	IMain*								m_pMain;
 	const int							m_nThreads;
 	boost::barrier						m_initbarrier;
+	boost::barrier						m_shutdownbarrier;
 	volatile i32						m_userlandShutdownCounter;
 
 	std::vector<SharedDomainBase*>		m_DomainsToDestruct;

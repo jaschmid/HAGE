@@ -163,19 +163,19 @@ namespace HAGE {
 	"  DECL_GS_IN_POSITION;\n"
 	"GS_IN_END\n"
 	"GS_OUT_BEGIN\n"
+	"  DECL_GS_OUT(float4,vertex_color);\n"
 	"  DECL_GS_OUT_POSITION;\n"
 	"  DECL_GS_OUT_LAYER;\n"
-	"  DECL_GS_OUT(float4,color);\n"
 	"GS_OUT_END\n"
 	"\n"
-	"void OutputTriangleToStream(int iStream,float4 input[3],GS_STREAM_OUT(TRIANGLE_OUT))\n"
+	"void OutputTriangleToStream(int iStream,float4 input_triangle[3],GS_STREAM_OUT(TRIANGLE_OUT))\n"
 	"{\n"
 	"	GS_INIT_OUT;\n"
 	"	for( int v = 0; v < 3; v++ )\n"
 	"	{\n"
 	"		GS_OUT_LAYER = iStream;\n"
-	"		GS_OUT_POSITION =  mul( CubeSide[iStream], input[v] );\n"
-	"		GS_OUT(color) = float4(GS_OUT_POSITION.w,GS_OUT_POSITION.w,GS_OUT_POSITION.w,1.0f);\n"
+	"		GS_OUT_POSITION =  mul( CubeSide[iStream], input_triangle[v] );\n"
+	"		GS_OUT(vertex_color) = float4(GS_OUT_POSITION.w,GS_OUT_POSITION.w,GS_OUT_POSITION.w,1.0f);\n"
 	"		GS_END_VERTEX;\n"
 	"	}\n"
 	"	GS_END_PRIMITIVE;\n"
@@ -183,9 +183,9 @@ namespace HAGE {
 	"int GetCubeSide(float3 position)\n"
 	"{\n"
 	"	float3 abs_position = abs(position);\n"
-	"	if(abs_position.x > abs_position.y && abs_position.x > abs_position.z) return (position.x>0.0f)?0:1;\n"
-	"	else if(abs_position.y > abs_position.z) return (position.y>0.0f)?2:3;\n"
-	"	else return (position.z>0.0f)?4:5;\n"
+	"	if(abs_position.x > abs_position.y && abs_position.x > abs_position.z) return (position.x>0.0f)?int(0):int(1);\n"
+	"	else if(abs_position.y > abs_position.z) return (position.y>0.0f)?int(2):int(3);\n"
+	"	else return (position.z>0.0f)?int(4):int(5);\n"
 	"}\n"
 	"\n"
 	"\n"
@@ -208,7 +208,7 @@ namespace HAGE {
 	"}\n\n"
 	"\n"
 	"FS_IN_BEGIN\n"
-	"  DECL_FS_IN(float4,color);\n"
+	"  DECL_FS_IN(float4,vertex_color);\n"
 	"FS_IN_END\n"
 	"FS_OUT_BEGIN\n"
 	"  DECL_FS_COLOR;\n"
@@ -216,7 +216,7 @@ namespace HAGE {
 	"\n"
 	"FRAGMENT_SHADER\n"
 	"{\n"
-	"  FS_OUT_COLOR = FS_IN(color);\n"
+	"  FS_OUT_COLOR = FS_IN(vertex_color);\n"
 	"}\n";
 
 	bool RenderingDomain::MessageProc(const Message* m)
@@ -372,8 +372,21 @@ namespace HAGE {
 		Factory.RegisterObjectType<RenderingSheet>();
 		Factory.RegisterObjectType<RenderingLight>();
 
-		//pWrapper = RenderingAPIWrapper::CreateD3D11Wrapper();
-		pWrapper = RenderingAPIWrapper::CreateOpenGL3Wrapper();
+		std::string api = settings->getstringSetting("rendering_api");
+		APIWRendererType type;
+		if(api == "direct3d")
+			type = APIW_D3DWRAPPER;
+		else if(api == "opengl")
+			type = APIW_OGLWRAPPER;
+		else
+			type = APIW_DEFAULT;
+
+		APIWDisplaySettings d_settings;
+		d_settings.xRes = settings->getu32Setting("x_res");
+		d_settings.yRes = settings->getu32Setting("y_res");
+		d_settings.bFullscreen = settings->getBoolSetting("fullscreen");
+
+		pWrapper = RenderingAPIWrapper::CreateRenderingWrapper(type,&d_settings);
 
 		pWrapper->BeginAllocation();
 

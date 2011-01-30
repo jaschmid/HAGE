@@ -29,7 +29,7 @@ f32 cloth_center_z 0.0
 f32 cloth_init_normal_x 0.0
 f32 cloth_init_normal_y 0.0
 f32 cloth_init_normal_z 1.0
-f32 cloth_half_extent_x -0.95
+f32 cloth_half_extent_x -1.45
 f32 cloth_half_extent_y -0.95
 f32 cloth_half_extent_z 0.01
 f32 cloth_max_dt 0.005
@@ -55,3 +55,7 @@ f32 light3_r 0.4
 f32 light3_g 0.3
 f32 light3_b 0.3
 f32 light3_range 20.0
+string rendering_api direct3d
+bool fullscreen true
+u32 x_res 1024
+u32 y_res 768

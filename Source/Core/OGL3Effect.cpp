@@ -36,7 +36,7 @@ void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
  };
 }
 
-static const char* extStr = "#version 400\nlayout(std140) uniform;\n#define _H_GLSL\n";
+static const char* extStr = "#version 330\nlayout(std140) uniform;\n#define _H_GLSL\n";
 static const char* vsStr = "#define _V_SHADER\n";
 static const char* gsStr = "#define _G_SHADER\n";
 static const char* fsStr = "#define _F_SHADER\n";
@@ -73,8 +73,8 @@ static const char* preproc =
 	"	#ifdef _F_SHADER\n"
 	"		#define DECL_FS_IN(x,y) in x y\n"
 	"		#define FS_IN(x) x\n"
-	"		#define FS_OUT_COLOR (gl_FragColor)\n"
-	"		#define DECL_FS_COLOR float4 gl_FragColor\n"
+	"		#define FS_OUT_COLOR (_FragOut)\n"
+	"		#define DECL_FS_COLOR out float4 _FragOut\n"
 	"		#define H_TEXTURE_2D(x) uniform sampler2D x\n"
 	"		#define H_TEXTURE_CUBE(x) uniform samplerCube x\n"
 	"		#define H_SAMPLE_2D(sampler,coord) (texture(sampler,float2((coord).x,1.0-(coord).y)))\n"
@@ -84,8 +84,8 @@ static const char* preproc =
 	"		#define FS_IN(x) _FS_IN##x\n"
 	"		#define FS_OUT_COLOR (_FS_OUT##_target)\n"
 	"		#define DECL_FS_COLOR float4 _FS_OUT##_target\n"
-	"		#define H_TEXTURE_2D(x) \n"
-	"		#define H_TEXTURE_CUBE(x) \n"
+	"		#define H_TEXTURE_2D(x) const float x=0.0\n"
+	"		#define H_TEXTURE_CUBE(x) const float x=0.0\n"
 	"		#define H_SAMPLE_2D(x,y) (vec4(0.0,0.0,0.0,0.0))\n"
 	"		#define H_SAMPLE_CUBE(x,y) (vec4(0.0,0.0,0.0,0.0))\n"
 	"	#endif\n"
@@ -97,9 +97,9 @@ static const char* preproc =
 	"		#define GS_OUT_LAYER (gl_Layer)\n"
 	"		#define DECL_GS_IN(x,y) in x y[]\n"
 	"		#define DECL_GS_OUT(x,y) out x y\n"
-	"		#define DECL_GS_IN_POSITION\n"
-	"		#define DECL_GS_OUT_POSITION\n"
-	"		#define DECL_GS_OUT_LAYER\n"
+	"		#define DECL_GS_IN_POSITION float4 _GS_IN##_position\n"
+	"		#define DECL_GS_OUT_POSITION float4 _GS_OUT##_target\n"
+	"		#define DECL_GS_OUT_LAYER int _GS_OUT##_layer\n"
 	"		#define GS_END_VERTEX EmitVertex()\n"
 	"		#define GS_END_PRIMITIVE EndPrimitive()\n"
 	"	#else\n"
@@ -110,7 +110,7 @@ static const char* preproc =
 	"		#define GS_OUT_LAYER (_GS_OUT##_layer)\n"
 	"		#define DECL_GS_IN(x,y) x _GS_IN##y\n"
 	"		#define DECL_GS_OUT(x,y) x _GS_OUT##y\n"
-	"		#define DECL_GS_IN_POSITION\n"
+	"		#define DECL_GS_IN_POSITION float4 _GS_IN##_position\n"
 	"		#define DECL_GS_OUT_POSITION float4 _GS_OUT##_target\n"
 	"		#define DECL_GS_OUT_LAYER int _GS_OUT##_layer\n"
 	"		#define GS_END_VERTEX\n"
@@ -146,9 +146,12 @@ static const char* preproc =
 	"	#define float4x4 mat4\n"
 	"	#define float3x3 mat3\n"
 	"	#define float2x2 mat2\n"
-	"	#define mul(x,y) ((x)*(y))\n"
 	"	#define static\n"
-	"	#define saturate(x) clamp((x), 0.0,1.0)\n"
+	"	float saturate(float val){ return clamp((val), 0.0,1.0); }\n"
+	"	float2 saturate(float2 val){ return clamp((val), 0.0,1.0); }\n"
+	"	float3 saturate(float3 val){ return clamp((val), 0.0,1.0); }\n"
+	"	float4 saturate(float4 val){ return clamp((val), 0.0,1.0); }\n"
+	"	float4 mul(float4x4 mat,float4 vec)	{return mat*vec;}\n"
 	"#endif\n";
 
 char *replace_str(const char *str, const char *orig, const char *rep, char* buffer)
@@ -250,7 +253,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u1
 		glError();
 	}
 
-	glBindFragDataLocationEXT(_glProgram,0,"target0");
+	glBindFragDataLocation(_glProgram,0,"_FragOut");
 	glLinkProgram(_glProgram);
 	CheckShader(_glProgram,GL_LINK_STATUS,&bCompile,"link prog");
 	glError();

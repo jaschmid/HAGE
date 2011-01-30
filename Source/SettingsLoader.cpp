@@ -65,6 +65,17 @@ namespace HAGE{
 			else if(strcmp(a.c_str(),"i8") == 0){
 				file >> a;
 				file >> i8Settings[a];
+			}
+			else if(strcmp(a.c_str(),"bool") == 0){
+				file >> a;
+				std::string b;
+				file >> b;
+				if(b == "true")
+					boolSettings[a]=true;
+				else if(b == "false")
+					boolSettings[a]=false;
+				else
+					assert(!"Unknown boolean expression");
 			}else{
 				std::cout << "...Setting loading error: Unkown data type " << a <<" Error might occured while application is running" << std::endl;
 				assert(false);

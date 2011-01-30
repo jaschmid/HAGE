@@ -21,6 +21,7 @@ void __InternalHAGEMain();
 #include <vector>
 
 #include <stdio.h>
+#include <DXGI.h>
 
 #ifdef COMPILER_GCC
 _CRTIMP FILE* __cdecl __MINGW_NOTHROW	_fdopen (int, const char*);
@@ -28,11 +29,25 @@ _CRTIMP FILE* __cdecl __MINGW_NOTHROW	_fdopen (int, const char*);
 
 #include <boost/uuid/string_generator.hpp>
 
+#define WM_THREADS_SHUTDOWN WM_USER
+#define WM_MAGIC_PRESENT WM_USER+1
+struct wm_magic_present
+{
+	IDXGISwapChain* pSwapChain;
+};
 struct RawInputDevice
 {
 	std::wstring		szName;
 	HAGE::guid			hage_guid;
 	RID_DEVICE_INFO		DevInfo;
+};
+
+enum MESSAGE_QUEUE_STATUS
+{
+	MESSAGE_QUEUE_RUNNING,
+	MESSAGE_QUEUE_REQUEST_PAUSE,
+	MESSAGE_QUEUE_PAUSED,
+	MESSAGE_QUEUE_REQUEST_RESUME
 };
 
 namespace WindowsGlobal
@@ -44,7 +59,16 @@ namespace WindowsGlobal
 	bool		bShutdown= false;
     MSG         DestroyMessage;
 
+	static	int MessageQueueStatus = 0;
+
+	DWORD		dwMessageThreadId;
+
+	static HAGE::u32 windowXSize;
+	static HAGE::u32 windowYSize;
+
 	static const WORD MAX_CONSOLE_LINES = 500;
+	static const DWORD wStyleEx = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
+	static const DWORD wStyle = WS_CAPTION | WS_VISIBLE | WS_OVERLAPPED | WS_SYSMENU | WS_BORDER;
 
 	//input stuff
 	static const int RAW_INPUT_BUFFER_SIZE = 1024*65;
@@ -53,6 +77,17 @@ namespace WindowsGlobal
 };
 
 using namespace WindowsGlobal;
+
+extern void OSRequestMessageQueuePause()
+{
+	if(MessageQueueStatus == MESSAGE_QUEUE_RUNNING)
+		MessageQueueStatus = MESSAGE_QUEUE_REQUEST_PAUSE;
+}
+extern void OSRequestMessageQueueResume()
+{
+	if(MessageQueueStatus == MESSAGE_QUEUE_PAUSED)
+		MessageQueueStatus = MESSAGE_QUEUE_REQUEST_RESUME;
+}
 
 HWND GetHwnd()
 {
@@ -101,6 +136,8 @@ int CALLBACK WinMain(
 	instance=hInstance;
 	CmdShow=nCmdShow;
 
+	dwMessageThreadId = GetCurrentThreadId();
+
 	// allocate a console for this app
 	AllocConsole();
 
@@ -135,10 +172,10 @@ int CALLBACK WinMain(
 
     RegisterClassEx(&WndClsEx);
 
-    hWnd = CreateWindowEx(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
+    hWnd = CreateWindowEx(wStyleEx,
                           WndClsEx.lpszClassName,
                           L"HAGE MAIN WINDOW",
-                          WS_CAPTION | WS_VISIBLE | WS_OVERLAPPED | WS_SYSMENU | WS_BORDER,
+                          wStyle,
                           100,
                           120,
                           640,
@@ -150,6 +187,9 @@ int CALLBACK WinMain(
 
     ShowWindow(hWnd, CmdShow);
     UpdateWindow(hWnd);
+
+	windowXSize = 640;
+	windowYSize = 480;
 
 	// get all input devices
 
@@ -265,7 +305,7 @@ int CALLBACK WinMain(
 	}
 
 	HAGE::SharedTaskManager* pSharedTaskManager =new HAGE::SharedTaskManager();
-
+	MessageQueueStatus=MESSAGE_QUEUE_RUNNING;
 	pInput = pSharedTaskManager->StartThreads();
 
 	// Message queue
@@ -273,12 +313,22 @@ int CALLBACK WinMain(
     MSG         Msg;
     while( GetMessage(&Msg, NULL, 0, 0) )
     {
+		if(MessageQueueStatus== MESSAGE_QUEUE_REQUEST_PAUSE)
+		{
+			MessageQueueStatus=MESSAGE_QUEUE_PAUSED;
+			while(MessageQueueStatus == MESSAGE_QUEUE_PAUSED);
+			MessageQueueStatus=MESSAGE_QUEUE_RUNNING;
+		}
+        TranslateMessage(&Msg);
 		if( Msg.message == WM_CLOSE )
 		{
 			bShutdown= true;
 			pSharedTaskManager->StopThreads();
 		}
-        TranslateMessage(&Msg);
+		else if(Msg.message == WM_THREADS_SHUTDOWN)
+		{
+			pSharedTaskManager->FinalizeShutdown();
+		}
         DispatchMessage(&Msg);
     }
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_NORMAL);
@@ -288,8 +338,47 @@ int CALLBACK WinMain(
 	return 0;
 }
 
+extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height)
+{
+	windowXSize = width;
+	windowYSize = height;
+	DEVMODE desktop_mode;
+	EnumDisplaySettings (NULL, ENUM_CURRENT_SETTINGS, &desktop_mode);
+
+	LONG xPos,yPos;
+
+	if(bFullscreen)
+	{
+		DEVMODE settings;
+		settings = desktop_mode;
+		settings.dmPelsWidth = width;
+		settings.dmPelsHeight = height;
+		settings.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
+		ChangeDisplaySettings(&settings, CDS_FULLSCREEN);
+
+		SetWindowLongPtr(hWnd,GWL_STYLE,WS_VISIBLE|WS_POPUP);
+		SetWindowLongPtr(hWnd,GWL_EXSTYLE,WS_EX_TOPMOST);
+		xPos = 0;
+		yPos = 0;
+	}
+	else
+	{
+		ChangeDisplaySettings(NULL, 0);
+		SetWindowLongPtr(hWnd,GWL_STYLE,wStyle);
+		SetWindowLongPtr(hWnd,GWL_EXSTYLE,wStyleEx);
+		xPos = (desktop_mode.dmPelsWidth-width)/2;
+		yPos = (desktop_mode.dmPelsHeight-height)/2;
+	}
+	
+	SetWindowPos(hWnd,HWND_TOPMOST,xPos,yPos,width,height,SWP_FRAMECHANGED|SWP_SHOWWINDOW);
+	SetFocus(hWnd);
+}
+
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	//return DefWindowProc(hWnd,Msg,wParam,lParam);
 	if(bShutdown)
 	{
 		if(Msg == WM_DESTROY)
@@ -299,6 +388,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
     switch(Msg)
     {
+	case WM_MAGIC_PRESENT:
+		{
+			wm_magic_present* pMagic = (wm_magic_present*)lParam;
+			pMagic->pSwapChain->Present(NULL,NULL);
+		}
+		return 0;
 	case WM_ACTIVATE:
 		if(wParam & WA_ACTIVE || wParam & WA_CLICKACTIVE)
 		{
@@ -407,6 +502,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, Msg, wParam, lParam);
     }
     return 0;
+}
+
+extern void OSNotifyMessageQueueThreadsShutdown()
+{
+	assert(PostMessage(hWnd,WM_THREADS_SHUTDOWN,0,0));
 }
 
 extern void OSLeaveMessageQueue()

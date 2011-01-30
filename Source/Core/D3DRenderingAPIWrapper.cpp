@@ -8,6 +8,13 @@
 
 HWND GetHwnd();
 HINSTANCE GetHInstance();
+extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height);
+extern void ChangeDisplayMode(HAGE::u32 xRes,HAGE::u32 yRes);
+#define WM_MAGIC_PRESENT WM_USER+1
+struct wm_magic_present
+{
+	IDXGISwapChain* pSwapChain;
+};
 /*
 bool D3D11APIWrapper::checkForCgError(const char *situation)
 {
@@ -28,16 +35,16 @@ bool D3D11APIWrapper::checkForCgError(const char *situation)
   return bError;
 }*/
 
-HAGE::RenderingAPIWrapper* HAGE::RenderingAPIWrapper::CreateD3D11Wrapper()
+HAGE::RenderingAPIWrapper* D3D11APIWrapper::CreateD3D11Wrapper(const HAGE::APIWDisplaySettings* displaySettings)
 {
-	RenderingAPIWrapper* pResult = new D3D11APIWrapper();
+	RenderingAPIWrapper* pResult = new D3D11APIWrapper(displaySettings);
 	_pAllocator= pResult;
-	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IDrawableMesh>::Get(),&CDrawableMeshLoader::Initialize);
-	HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<ITextureImage>::Get(),&CTextureImageLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::IDrawableMesh>::Get(),&HAGE::CDrawableMeshLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::ITextureImage>::Get(),&HAGE::CTextureImageLoader::Initialize);
 	return pResult;
 }
 
-D3D11APIWrapper::D3D11APIWrapper() :
+D3D11APIWrapper::D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
 	m_hInst(GetHInstance()),
 	m_hWnd(GetHwnd()),
 	m_pSwapChain(nullptr),
@@ -45,17 +52,17 @@ D3D11APIWrapper::D3D11APIWrapper() :
 	m_pContext(nullptr),
 	m_pRenderTargetView(nullptr),
 	m_pDepthStencilView(nullptr),
-	m_NextVertexFormatEntry(0)
+	m_NextVertexFormatEntry(0),
+	_newDisplaySettings(*pSettings)
 {
 	// Device and Swap Chain
 
+	/*SetWindowSize(_currentDisplaySettings.bFullscreen,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
+	if(_currentDisplaySettings.bFullscreen)
+		ChangeDisplayMode(_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);*/
+
 	HRESULT hr = S_OK;
-
-    RECT rc;
-    GetClientRect( m_hWnd, &rc );
-    UINT width = rc.right - rc.left;
-    UINT height = rc.bottom - rc.top;
-
+	
     UINT createDeviceFlags = 0;//D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -77,21 +84,27 @@ D3D11APIWrapper::D3D11APIWrapper() :
     UINT numFeatureLevels = _countof(featureLevels);
     D3D_FEATURE_LEVEL featureLevelOut;
 
+	RECT window;
+	GetClientRect(m_hWnd,&window);
+	
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory( &sd, sizeof( sd ) );
-    sd.BufferCount = 1;
-    sd.BufferDesc.Width = width;
-    sd.BufferDesc.Height = height;
+    sd.BufferCount = 2;
+    sd.BufferDesc.Width = window.right-window.left;
+    sd.BufferDesc.Height = window.bottom-window.top;
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.RefreshRate.Numerator = 60;
-    sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     sd.OutputWindow = m_hWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
-
+	sd.Windowed = 1;
+	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
     D3D_DRIVER_TYPE driverType;
+
+	_currentDisplaySettings.xRes = sd.BufferDesc.Width;
+	_currentDisplaySettings.yRes = sd.BufferDesc.Height;
+	_currentDisplaySettings.bFullscreen = !sd.Windowed;
+
     for( UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++ )
     {
         driverType = driverTypes[driverTypeIndex];
@@ -103,60 +116,10 @@ D3D11APIWrapper::D3D11APIWrapper() :
             break;
     }
 
-	// Create the render target view
-	{
-		ID3D11Texture2D* pRenderTargetTexture;
-		hr = m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pRenderTargetTexture );
+	// adjust display settings
+	_UpdateDisplaySettings();
 
-		assert( SUCCEEDED( hr ) );
-
-		hr = m_pDevice->CreateRenderTargetView( pRenderTargetTexture, NULL, &m_pRenderTargetView );
-		pRenderTargetTexture->Release();
-
-		assert( SUCCEEDED( hr ) );
-	}
-
-	// Create Depth Stencil
-	D3D11_TEXTURE2D_DESC DSDesc;
-	DSDesc.ArraySize          = 1;
-	DSDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
-	DSDesc.CPUAccessFlags     = 0;
-	DSDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	DSDesc.Width              = width;
-    DSDesc.Height             = height;
-	DSDesc.MipLevels          = 1;
-	DSDesc.MiscFlags          = 0;
-	DSDesc.SampleDesc.Count   = 1;
-	DSDesc.SampleDesc.Quality = 0;
-	DSDesc.Usage              = D3D11_USAGE_DEFAULT;
-
-	{
-		ID3D11Texture2D * DSBuffer;
-		hr = m_pDevice->CreateTexture2D( &DSDesc, NULL, &DSBuffer );
-
-		assert( SUCCEEDED( hr ) );
-
-		hr = m_pDevice->CreateDepthStencilView( DSBuffer, NULL, &m_pDepthStencilView );
-
-		DSBuffer->Release();
-
-		assert( SUCCEEDED( hr ) );
-	}
-
-    m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
-
-
-	// set viewport
-    GetClientRect( m_hWnd, &rc );
-    _vp.Width = (FLOAT)(rc.right - rc.left);
-    _vp.Height = (FLOAT)(rc.bottom - rc.top);
-    _vp.MinDepth = 0.0f;
-    _vp.MaxDepth = 1.0f;
-    _vp.TopLeftX = 0;
-    _vp.TopLeftY = 0;
-    m_pContext->RSSetViewports( 1, &_vp );
-
-
+	
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	// depth
 	/*
@@ -182,6 +145,124 @@ D3D11APIWrapper::D3D11APIWrapper() :
 	m_pContext->OMSetDepthStencilState(pDDState,0);
 
 	pDDState->Release();*/
+}
+
+void D3D11APIWrapper::UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings)
+{
+	_newDisplaySettings = *pSettings;
+}
+
+extern void OSRequestMessageQueuePause();
+extern void OSRequestMessageQueueResume();
+
+void D3D11APIWrapper::_UpdateDisplaySettings()
+{
+	if((_newDisplaySettings.xRes != _currentDisplaySettings.xRes) || 
+		(_newDisplaySettings.yRes != _currentDisplaySettings.yRes) ||
+		(_newDisplaySettings.bFullscreen != _currentDisplaySettings.bFullscreen) )
+	{
+		_currentDisplaySettings=_newDisplaySettings;
+		if(m_pDepthStencilView)
+			m_pDepthStencilView->Release();
+		if(m_pRenderTargetView)
+			m_pRenderTargetView->Release();
+		ID3D11RenderTargetView* pTarget[1] = {nullptr};
+		m_pContext->OMSetRenderTargets( 1, pTarget, nullptr );
+		m_pContext->ClearState();
+
+		IDXGIOutput* pOut = nullptr;
+		m_pSwapChain->GetContainingOutput(&pOut);
+		DXGI_MODE_DESC goal;	
+		ZeroMemory( &goal, sizeof( goal ) );
+		goal.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		goal.Width = _currentDisplaySettings.xRes;
+		goal.Height = _currentDisplaySettings.yRes;
+		DXGI_MODE_DESC enums[128];
+		UINT numModes=128;
+		INT goodMode=-1;
+		pOut->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,0,&numModes,enums);
+		for(int i =0;i<numModes;++i)
+		{
+			if(enums[i].Width == _currentDisplaySettings.xRes && enums[i].Height == _currentDisplaySettings.yRes)
+				if(goodMode == -1 || (
+					((float)enums[goodMode].RefreshRate.Numerator/(float)enums[goodMode].RefreshRate.Denominator) 
+						< 
+					(float)enums[i].RefreshRate.Numerator/(float)enums[i].RefreshRate.Denominator
+					))
+					goodMode = i;
+		}
+		assert(goodMode != -1);
+		HRESULT hr;
+		if(_currentDisplaySettings.bFullscreen)
+			hr = m_pSwapChain->SetFullscreenState(true,pOut);
+		else
+			hr = m_pSwapChain->SetFullscreenState(false,nullptr);
+		assert(SUCCEEDED(hr)); //causes deadlock in present
+		//SetWindowSize(_currentDisplaySettings.bFullscreen,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
+		hr = m_pSwapChain->ResizeTarget(&enums[goodMode]);
+		assert(SUCCEEDED(hr));
+				
+		hr = m_pSwapChain->ResizeBuffers(2,_currentDisplaySettings.xRes, _currentDisplaySettings.yRes,enums[goodMode].Format,DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+		assert(SUCCEEDED(hr));
+		pOut->Release();
+
+		
+		// Create the render target view
+		{
+			ID3D11Texture2D* pRenderTargetTexture;
+			hr = m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pRenderTargetTexture );
+
+			assert( SUCCEEDED( hr ) );
+
+			hr = m_pDevice->CreateRenderTargetView( pRenderTargetTexture, NULL, &m_pRenderTargetView );
+			pRenderTargetTexture->Release();
+
+			assert( SUCCEEDED( hr ) );
+		}
+
+		// Create Depth Stencil
+		D3D11_TEXTURE2D_DESC DSDesc;
+		DSDesc.ArraySize          = 1;
+		DSDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+		DSDesc.CPUAccessFlags     = 0;
+		DSDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		DSDesc.Width              = _currentDisplaySettings.xRes;
+		DSDesc.Height             = _currentDisplaySettings.yRes;
+		DSDesc.MipLevels          = 1;
+		DSDesc.MiscFlags          = 0;
+		DSDesc.SampleDesc.Count   = 1;
+		DSDesc.SampleDesc.Quality = 0;
+		DSDesc.Usage              = D3D11_USAGE_DEFAULT;
+
+		{
+			ID3D11Texture2D * DSBuffer;
+			hr = m_pDevice->CreateTexture2D( &DSDesc, NULL, &DSBuffer );
+
+			assert( SUCCEEDED( hr ) );
+
+			hr = m_pDevice->CreateDepthStencilView( DSBuffer, NULL, &m_pDepthStencilView );
+
+			DSBuffer->Release();
+
+			assert( SUCCEEDED( hr ) );
+		}
+
+		m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
+
+		// set viewport
+		_vp.Width = (FLOAT)(_currentDisplaySettings.xRes);
+		_vp.Height = (FLOAT)(_currentDisplaySettings.yRes);
+		_vp.MinDepth = 0.0f;
+		_vp.MaxDepth = 1.0f;
+		_vp.TopLeftX = 0;
+		_vp.TopLeftY = 0;
+		m_pContext->RSSetViewports( 1, &_vp );
+		//printf("Init on %08x\n",GetCurrentThreadId());
+		Sleep(2000);
+		hr= m_pSwapChain->Present( 0, 0 );
+		//printf("HR: %08x\n",hr);
+		//assert(SUCCEEDED(hr) && hr!= DXGI_STATUS_OCCLUDED);
+	}
 }
 
 D3D11APIWrapper::~D3D11APIWrapper()
@@ -213,6 +294,7 @@ void D3D11APIWrapper::BeginFrame()
     m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
 }
 
+
 void D3D11APIWrapper::PresentFrame()
 {
 	/*
@@ -221,11 +303,27 @@ void D3D11APIWrapper::PresentFrame()
 	*/
 
 	// Debug UI
+//	AttachThreadInput();
+//	AttachThreadInput();
 	m_DebugUIRenderer->Draw();
 
     // Show the rendered frame on the screen
+	/*wm_magic_present magic;
+	magic.pSwapChain = m_pSwapChain;
+	SendMessage(m_hWnd,WM_MAGIC_PRESENT,0,(LPARAM)&magic);*/
+	/*if(_currentDisplaySettings.bFullscreen)
+		SetWindowPos(m_hWnd,HWND_TOPMOST,0,0,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes,SWP_SHOWWINDOW|SWP_FRAMECHANGED);*/
+	//printf("About to present on %08x\n",GetCurrentThreadId());
     m_pSwapChain->Present( 0, 0 );
+	//printf("Presented on %08x\n",GetCurrentThreadId());
+	/*
+	static int i = 0;
+	++i;
+	if(i%10==0)
+		_newDisplaySettings.bFullscreen = !_currentDisplaySettings.bFullscreen;*/
 
+	_UpdateDisplaySettings();
+	
 	//framerate hack yay
     static HAGE::u64 last = 0;
 	static HAGE::u64 freq = 0;

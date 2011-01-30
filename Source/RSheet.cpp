@@ -45,9 +45,9 @@ namespace HAGE {
 		for(int ix= 0;ix<SheetSize;ix++)
 			for(int iy= 0;iy<SheetSize;iy++)
 			{
-				(*_pVertexData)[iy*SheetSize+ix].texcoord = Vector2<>((f32)ix/(f32)SheetSize,(f32)iy/(f32)SheetSize);
+				(*_pVertexData)[iy*SheetSize+ix].texcoord = Vector2<>((f32)iy/(f32)SheetSize,(f32)ix/(f32)SheetSize);
 				(*_pVertexData)[iy*SheetSize+ix].color = Vector3<>(1.0f,1.0f,1.0f);
-				(*_pVertexData)[iy*SheetSize+ix + nVertices/2].texcoord = Vector2<>((f32)ix/(f32)SheetSize,(f32)iy/(f32)SheetSize);
+				(*_pVertexData)[iy*SheetSize+ix + nVertices/2].texcoord = Vector2<>((f32)iy/(f32)SheetSize,(f32)ix/(f32)SheetSize);
 				(*_pVertexData)[iy*SheetSize+ix + nVertices/2].color = Vector3<>(1.0f,1.0f,1.0f);
 			}
 		for(int i= 0;i<nVertices;i++)

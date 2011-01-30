@@ -164,15 +164,18 @@ static GLenum APIWFormatToOGLFormat(const HAGE::APIWFormat& format)
 class OpenGL3APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
-	OpenGL3APIWrapper();
+	OpenGL3APIWrapper(const HAGE::APIWDisplaySettings* displaySettings);
 	~OpenGL3APIWrapper();
 
 	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
+	void UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings);
 	void BeginFrame();
 	void PresentFrame();
 	void BeginAllocation();
 	void EndAllocation();
 	
+	static HAGE::RenderingAPIWrapper* CreateOGL3Wrapper(const HAGE::APIWDisplaySettings* displaySettings);
+
 	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
 	{
 		HAGE::f32 h,w,Q;
@@ -254,11 +257,10 @@ private:
 
 	unsigned int				m_fboId;
 
-	HAGE::u16					_backbufferWidth;
-	HAGE::u16					_backbufferHeight;
-
 	bool						_bForceDepthDisable;
 	bool						_bForceCullFlip;
+
+	HAGE::APIWDisplaySettings	_currentDisplaySettings;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;

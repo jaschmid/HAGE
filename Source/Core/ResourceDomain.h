@@ -66,6 +66,8 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 
 		friend class CResourceManager;
 		friend class RenderingAPIWrapper;
+		friend class D3D11APIWrapper;
+		friend class OpenGL3APIWrapper;
 };
 
 }

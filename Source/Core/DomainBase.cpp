@@ -16,6 +16,11 @@ namespace HAGE {
 		if(recieved == nInputCallbacks + nOutputCallbacks && !bShutdown)
 		{
 			nCallbacksRecieved=nDelayedInputCallbacks;
+			/*
+			if(this == (SharedDomainBase*)domain_access<RenderingDomain>::Get())
+			{
+				printf("Queue Rendering\n");
+			}*/
 
 			if(bInit)
 				staticQueue(false);
@@ -28,7 +33,11 @@ namespace HAGE {
 	}
 
 	void SharedDomainBase::StepComplete()
-	{
+	{		/*
+		if(this == (SharedDomainBase*)domain_access<RenderingDomain>::Get())
+		{
+			printf("Complete Rendering\n");
+		}*/
 
 		for(u32 i=0;i<inputPins.size();++i)
 		{
@@ -120,7 +129,12 @@ namespace HAGE {
 	}
 
 	void SharedDomainBase::Step(u64 step)
-	{
+	{/*
+		if(this == (SharedDomainBase*)domain_access<RenderingDomain>::Get())
+		{
+			printf("Step Rendering\n");
+		}*/
+
 		Factory.Step(step);
 		ProcessMessages();
 
