@@ -110,6 +110,36 @@ typedef enum _APIWTextureFlags
 	TEXTURE_GPU_NO_READ			= 0x00000010,
 	TEXTURE_GPU_DEPTH_STENCIL	= 0x00000020
 } APIWTextureFlags;
+typedef enum _APIWFilterFlags
+{
+	FILTER_MIN_POINT			= 0x00000000,
+	FILTER_MIN_LINEAR			= 0x00000001,
+	FILTER_MAG_POINT			= 0x00000000,
+	FILTER_MAG_LINEAR			= 0x00000002,
+	FILTER_MIP_POINT			= 0x00000000,
+	FILTER_MIP_LINEAR			= 0x00000004,
+	FILTER_COMPARISON			= 0x00000008,
+	FILTER_ANISOTROPIC			= 0x00000040
+} APIWFilterFlags;
+typedef enum _APIWComparison
+{
+	COMPARISON_NEVER			= 0x000000001,
+	COMPARISON_LESS				= 0x000000002,
+	COMPARISON_EQUAL			= 0x000000003,
+	COMPARISON_LESS_EQUAL		= 0x000000004,
+	COMPARISON_GREATER			= 0x000000005,
+	COMPARISON_NOT_EQUAL		= 0x000000006,
+	COMPARISON_GREATER_EQUAL	= 0x000000007,
+	COMPARISON_ALWAYS			= 0x000000008
+} APIWComparison;
+typedef enum _APIWAddressModes
+{
+	ADDRESS_WRAP			= 0x00000001,
+	ADDRESS_MIRROR			= 0x00000002,
+	ADDRESS_CLAMP			= 0x00000003,
+	ADDRESS_BORDER			= 0x00000004,
+	ADDRESS_MIRROR_ONCE		= 0x00000005,
+} APIWAddressModes;
 
 typedef struct _APIWBlendState
 {
@@ -123,8 +153,29 @@ typedef struct _APIWBlendState
 	bool				bWriteR,bWriteG,bWriteB,bWriteA;
 } APIWBlendState;
 
+typedef struct _APIWSamplerState
+{
+	u32					FilterFlags;
+	APIWComparison		ComparisonFunction;
+	APIWAddressModes	AddressModeU;
+	APIWAddressModes	AddressModeV;
+	APIWAddressModes	AddressModeW;
+	float				BorderColor[4];
+	f32					MaxAnisotropy;
+	f32					MipLODBias;
+	f32					MipLODMin;
+	f32					MipLODMax;
+} APIWSamplerState;
+
+typedef struct _APIWSampler
+{
+	char				SamplerName[32];
+	APIWSamplerState	State;
+} APIWSampler;
+
 extern const APIWBlendState DefaultBlendState;
 extern const APIWRasterizerState DefaultRasterizerState;
+extern const APIWSamplerState DefaultSamplerState;
 
 typedef struct _APIWDisplaySettings
 {
@@ -152,9 +203,11 @@ public:
 	virtual APIWVertexBuffer* CreateVertexBuffer(const char* szVertexFormat,const void* pData,u32 nElements,bool bDynamic = false, bool bInstanceData = false) = 0;
 	virtual APIWConstantBuffer* CreateConstantBuffer(u32 nSize) = 0;
 	virtual APIWEffect* CreateEffect(const char* pProgram,
-		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
-		const u32 nBlendStates = 1, bool AlphaToCoverage = false) = 0;
+		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, 
+		const APIWBlendState* pBlendState = &DefaultBlendState,const u32 nBlendStates = 1, bool AlphaToCoverage = false,
+		const APIWSampler* pSamplers= nullptr,u32 nSamplers = 0) = 0;
 	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData) = 0;
+	//virtual APIWSampler* CreateSampler(APIWSamplerState* pSamplerState) = 0;
 
 	virtual void BeginAllocation() = 0;
 	virtual void EndAllocation() = 0;

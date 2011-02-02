@@ -161,6 +161,8 @@ static GLenum APIWFormatToOGLFormat(const HAGE::APIWFormat& format)
 	}
 }
 
+class OGL3Effect;
+
 class OpenGL3APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
@@ -173,6 +175,9 @@ public:
 	void PresentFrame();
 	void BeginAllocation();
 	void EndAllocation();
+
+	const OGL3Effect* GetCurrentEffect() const{return _currentEffect;}
+	void SetCurrentEffect(const OGL3Effect* pEffect){_currentEffect=pEffect;}
 	
 	static HAGE::RenderingAPIWrapper* CreateOGL3Wrapper(const HAGE::APIWDisplaySettings* displaySettings);
 
@@ -205,7 +210,8 @@ public:
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
 	virtual HAGE::APIWEffect* CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
-		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
+		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
 	
 	struct VertexFormatEntry
@@ -261,6 +267,7 @@ private:
 	bool						_bForceCullFlip;
 
 	HAGE::APIWDisplaySettings	_currentDisplaySettings;
+	const OGL3Effect*			_currentEffect;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -360,7 +367,8 @@ private:
 class OGL3Effect : public HAGE::APIWEffect
 {
 public:
-	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend);
+	OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend,
+		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	~OGL3Effect();
 	virtual void SetConstant(const char* pName,const HAGE::APIWConstantBuffer* constant);
 	virtual void SetTexture(const char* pName,const HAGE::APIWTexture* texture);
@@ -369,10 +377,17 @@ private:
 	OpenGL3APIWrapper*			m_pWrapper;
 	HAGE::u16					m_RastState;
 	HAGE::u16					m_BlendState;
+	
+	struct Sampler
+	{
+		GLuint sampler;
+		HAGE::APIWSamplerState state;
+	};
 
 	std::vector<const OGL3ConstantBuffer*,HAGE::global_allocator<const OGL3ConstantBuffer*>>	_constantBuffers;	
-	std::vector<int,HAGE::global_allocator<int>>					_textureSlots;
+	std::vector<int,HAGE::global_allocator<int>>												_textureSlots;
 	std::vector<const OGL3Texture*,HAGE::global_allocator<const OGL3Texture*>>					_textures;
+	std::vector<Sampler,HAGE::global_allocator<Sampler>>										_samplers;
 
 	GLuint						_glVShader,_glFShader,_glGShader,_glProgram;
 };

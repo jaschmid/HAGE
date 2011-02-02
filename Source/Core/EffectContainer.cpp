@@ -4,10 +4,10 @@
 namespace HAGE {
 
 EffectContainer::EffectContainer(RenderingAPIWrapper* pWrapper,const char* pProgram,const APIWRasterizerState* pRasterizerState, const APIWBlendState* pBlendState,
-		const u32 nBlendStates, bool AlphaToCoverage) :
+		const u32 nBlendStates, bool AlphaToCoverage,const APIWSampler* pSamplers,u32 nSamplers) :
 	_pWrapper(pWrapper)
 {
-	_pEffect = _pWrapper->CreateEffect(pProgram,pRasterizerState,pBlendState,nBlendStates,AlphaToCoverage);
+	_pEffect = _pWrapper->CreateEffect(pProgram,pRasterizerState,pBlendState,nBlendStates,AlphaToCoverage,pSamplers,nSamplers);
 }
 
 void EffectContainer::SetConstant(const char* pName,const APIWConstantBuffer* pBuffer)

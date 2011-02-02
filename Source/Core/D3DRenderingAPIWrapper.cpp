@@ -10,11 +10,35 @@ HWND GetHwnd();
 HINSTANCE GetHInstance();
 extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height);
 extern void ChangeDisplayMode(HAGE::u32 xRes,HAGE::u32 yRes);
-#define WM_MAGIC_PRESENT WM_USER+1
-struct wm_magic_present
+#define WM_THREADS_SHUTDOWN			WM_USER
+#define WM_REMOTE_FUNCTION_CALL		WM_USER+1
+
+class RemoteFunctionCall
 {
-	IDXGISwapChain* pSwapChain;
+public:
+	virtual void Call() = 0;
 };
+
+inline D3D11_SAMPLER_DESC HAGESamplerToD3DSamplerState(const HAGE::APIWSamplerState& SamplerState);
+
+class ChangeResolutionCall : public RemoteFunctionCall
+{
+public:
+	ChangeResolutionCall(D3D11APIWrapper* pWrapper) : _pWrapper(pWrapper) {}
+	void Call(){_pWrapper->_UpdateDisplaySettings_RemoteCall();}
+private:
+	D3D11APIWrapper* _pWrapper;
+};
+
+class InitCall : public RemoteFunctionCall
+{
+public:
+	InitCall(D3D11APIWrapper* pWrapper) : _pWrapper(pWrapper) {}
+	void Call(){_pWrapper->_Initialize_RemoteCall();}
+private:
+	D3D11APIWrapper* _pWrapper;
+};
+
 /*
 bool D3D11APIWrapper::checkForCgError(const char *situation)
 {
@@ -53,7 +77,21 @@ D3D11APIWrapper::D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
 	m_pRenderTargetView(nullptr),
 	m_pDepthStencilView(nullptr),
 	m_NextVertexFormatEntry(0),
-	_newDisplaySettings(*pSettings)
+	_newDisplaySettings(*pSettings),
+	_currentEffect(nullptr)
+{
+	InitCall initCall(this);
+	SendMessage(m_hWnd,WM_REMOTE_FUNCTION_CALL,0,(LPARAM)&initCall);
+
+	// adjust display settings
+	_UpdateDisplaySettings();
+
+	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
+	D3D11_SAMPLER_DESC sampler= HAGESamplerToD3DSamplerState(HAGE::DefaultSamplerState);
+	m_pDevice->CreateSamplerState(&sampler,&_defaultSampler);
+}
+
+void D3D11APIWrapper::_Initialize_RemoteCall()
 {
 	// Device and Swap Chain
 
@@ -115,36 +153,6 @@ D3D11APIWrapper::D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
         if( SUCCEEDED( hr ) )
             break;
     }
-
-	// adjust display settings
-	_UpdateDisplaySettings();
-
-	
-	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
-	// depth
-	/*
-	ID3D11DepthStencilState* pDDState;
-	D3D11_DEPTH_STENCIL_DESC DDesc;
-	DDesc.DepthEnable = true;
-	DDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	DDesc.DepthFunc = D3D11_COMPARISON_NEVER;
-	DDesc.StencilEnable = false;
-	DDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-	DDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-	DDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	DDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	DDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	DDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	DDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	DDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	DDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	DDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-
-	m_pDevice->CreateDepthStencilState(&DDesc,&pDDState);
-
-	m_pContext->OMSetDepthStencilState(pDDState,0);
-
-	pDDState->Release();*/
 }
 
 void D3D11APIWrapper::UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings)
@@ -161,108 +169,110 @@ void D3D11APIWrapper::_UpdateDisplaySettings()
 		(_newDisplaySettings.yRes != _currentDisplaySettings.yRes) ||
 		(_newDisplaySettings.bFullscreen != _currentDisplaySettings.bFullscreen) )
 	{
-		_currentDisplaySettings=_newDisplaySettings;
-		if(m_pDepthStencilView)
-			m_pDepthStencilView->Release();
-		if(m_pRenderTargetView)
-			m_pRenderTargetView->Release();
-		ID3D11RenderTargetView* pTarget[1] = {nullptr};
-		m_pContext->OMSetRenderTargets( 1, pTarget, nullptr );
-		m_pContext->ClearState();
+		
+		ChangeResolutionCall updateCall(this);
+		SendMessage(m_hWnd,WM_REMOTE_FUNCTION_CALL,0,(LPARAM)&updateCall);
+	}
+}
 
-		IDXGIOutput* pOut = nullptr;
-		m_pSwapChain->GetContainingOutput(&pOut);
-		DXGI_MODE_DESC goal;	
-		ZeroMemory( &goal, sizeof( goal ) );
-		goal.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		goal.Width = _currentDisplaySettings.xRes;
-		goal.Height = _currentDisplaySettings.yRes;
-		DXGI_MODE_DESC enums[128];
-		UINT numModes=128;
-		INT goodMode=-1;
-		pOut->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,0,&numModes,enums);
-		for(int i =0;i<numModes;++i)
-		{
-			if(enums[i].Width == _currentDisplaySettings.xRes && enums[i].Height == _currentDisplaySettings.yRes)
-				if(goodMode == -1 || (
-					((float)enums[goodMode].RefreshRate.Numerator/(float)enums[goodMode].RefreshRate.Denominator) 
-						< 
-					(float)enums[i].RefreshRate.Numerator/(float)enums[i].RefreshRate.Denominator
-					))
-					goodMode = i;
-		}
-		assert(goodMode != -1);
-		HRESULT hr;
-		if(_currentDisplaySettings.bFullscreen)
-			hr = m_pSwapChain->SetFullscreenState(true,pOut);
-		else
-			hr = m_pSwapChain->SetFullscreenState(false,nullptr);
-		assert(SUCCEEDED(hr)); //causes deadlock in present
-		//SetWindowSize(_currentDisplaySettings.bFullscreen,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
-		hr = m_pSwapChain->ResizeTarget(&enums[goodMode]);
-		assert(SUCCEEDED(hr));
+void D3D11APIWrapper::_UpdateDisplaySettings_RemoteCall()
+{
+	_currentDisplaySettings=_newDisplaySettings;
+	if(m_pDepthStencilView)
+		m_pDepthStencilView->Release();
+	if(m_pRenderTargetView)
+		m_pRenderTargetView->Release();
+	ID3D11RenderTargetView* pTarget[1] = {nullptr};
+	m_pContext->OMSetRenderTargets( 1, pTarget, nullptr );
+	m_pContext->ClearState();
+
+	IDXGIOutput* pOut = nullptr;
+	m_pSwapChain->GetContainingOutput(&pOut);
+	DXGI_MODE_DESC goal;	
+	ZeroMemory( &goal, sizeof( goal ) );
+	goal.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	goal.Width = _currentDisplaySettings.xRes;
+	goal.Height = _currentDisplaySettings.yRes;
+	DXGI_MODE_DESC enums[128];
+	UINT numModes=128;
+	INT goodMode=-1;
+	pOut->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,0,&numModes,enums);
+	for(int i =0;i<numModes;++i)
+	{
+		if(enums[i].Width == _currentDisplaySettings.xRes && enums[i].Height == _currentDisplaySettings.yRes)
+			if(goodMode == -1 || (
+				((float)enums[goodMode].RefreshRate.Numerator/(float)enums[goodMode].RefreshRate.Denominator) 
+					< 
+				(float)enums[i].RefreshRate.Numerator/(float)enums[i].RefreshRate.Denominator
+				))
+				goodMode = i;
+	}
+	assert(goodMode != -1);
+	HRESULT hr;
+	if(_currentDisplaySettings.bFullscreen)
+		hr = m_pSwapChain->SetFullscreenState(true,pOut);
+	else
+		hr = m_pSwapChain->SetFullscreenState(false,nullptr);
+	assert(SUCCEEDED(hr)); //causes deadlock in present
+	//SetWindowSize(_currentDisplaySettings.bFullscreen,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
+	hr = m_pSwapChain->ResizeTarget(&enums[goodMode]);
+	assert(SUCCEEDED(hr));
 				
-		hr = m_pSwapChain->ResizeBuffers(2,_currentDisplaySettings.xRes, _currentDisplaySettings.yRes,enums[goodMode].Format,DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-		assert(SUCCEEDED(hr));
-		pOut->Release();
+	hr = m_pSwapChain->ResizeBuffers(2,_currentDisplaySettings.xRes, _currentDisplaySettings.yRes,enums[goodMode].Format,DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+	assert(SUCCEEDED(hr));
+	pOut->Release();
 
 		
-		// Create the render target view
-		{
-			ID3D11Texture2D* pRenderTargetTexture;
-			hr = m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pRenderTargetTexture );
+	// Create the render target view
+	{
+		ID3D11Texture2D* pRenderTargetTexture;
+		hr = m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pRenderTargetTexture );
 
-			assert( SUCCEEDED( hr ) );
+		assert( SUCCEEDED( hr ) );
 
-			hr = m_pDevice->CreateRenderTargetView( pRenderTargetTexture, NULL, &m_pRenderTargetView );
-			pRenderTargetTexture->Release();
+		hr = m_pDevice->CreateRenderTargetView( pRenderTargetTexture, NULL, &m_pRenderTargetView );
+		pRenderTargetTexture->Release();
 
-			assert( SUCCEEDED( hr ) );
-		}
-
-		// Create Depth Stencil
-		D3D11_TEXTURE2D_DESC DSDesc;
-		DSDesc.ArraySize          = 1;
-		DSDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
-		DSDesc.CPUAccessFlags     = 0;
-		DSDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		DSDesc.Width              = _currentDisplaySettings.xRes;
-		DSDesc.Height             = _currentDisplaySettings.yRes;
-		DSDesc.MipLevels          = 1;
-		DSDesc.MiscFlags          = 0;
-		DSDesc.SampleDesc.Count   = 1;
-		DSDesc.SampleDesc.Quality = 0;
-		DSDesc.Usage              = D3D11_USAGE_DEFAULT;
-
-		{
-			ID3D11Texture2D * DSBuffer;
-			hr = m_pDevice->CreateTexture2D( &DSDesc, NULL, &DSBuffer );
-
-			assert( SUCCEEDED( hr ) );
-
-			hr = m_pDevice->CreateDepthStencilView( DSBuffer, NULL, &m_pDepthStencilView );
-
-			DSBuffer->Release();
-
-			assert( SUCCEEDED( hr ) );
-		}
-
-		m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
-
-		// set viewport
-		_vp.Width = (FLOAT)(_currentDisplaySettings.xRes);
-		_vp.Height = (FLOAT)(_currentDisplaySettings.yRes);
-		_vp.MinDepth = 0.0f;
-		_vp.MaxDepth = 1.0f;
-		_vp.TopLeftX = 0;
-		_vp.TopLeftY = 0;
-		m_pContext->RSSetViewports( 1, &_vp );
-		//printf("Init on %08x\n",GetCurrentThreadId());
-		Sleep(2000);
-		hr= m_pSwapChain->Present( 0, 0 );
-		//printf("HR: %08x\n",hr);
-		//assert(SUCCEEDED(hr) && hr!= DXGI_STATUS_OCCLUDED);
+		assert( SUCCEEDED( hr ) );
 	}
+
+	// Create Depth Stencil
+	D3D11_TEXTURE2D_DESC DSDesc;
+	DSDesc.ArraySize          = 1;
+	DSDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+	DSDesc.CPUAccessFlags     = 0;
+	DSDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	DSDesc.Width              = _currentDisplaySettings.xRes;
+	DSDesc.Height             = _currentDisplaySettings.yRes;
+	DSDesc.MipLevels          = 1;
+	DSDesc.MiscFlags          = 0;
+	DSDesc.SampleDesc.Count   = 1;
+	DSDesc.SampleDesc.Quality = 0;
+	DSDesc.Usage              = D3D11_USAGE_DEFAULT;
+
+	{
+		ID3D11Texture2D * DSBuffer;
+		hr = m_pDevice->CreateTexture2D( &DSDesc, NULL, &DSBuffer );
+
+		assert( SUCCEEDED( hr ) );
+
+		hr = m_pDevice->CreateDepthStencilView( DSBuffer, NULL, &m_pDepthStencilView );
+
+		DSBuffer->Release();
+
+		assert( SUCCEEDED( hr ) );
+	}
+
+	m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
+
+	// set viewport
+	_vp.Width = (FLOAT)(_currentDisplaySettings.xRes);
+	_vp.Height = (FLOAT)(_currentDisplaySettings.yRes);
+	_vp.MinDepth = 0.0f;
+	_vp.MaxDepth = 1.0f;
+	_vp.TopLeftX = 0;
+	_vp.TopLeftY = 0;
+	m_pContext->RSSetViewports( 1, &_vp );
 }
 
 D3D11APIWrapper::~D3D11APIWrapper()
@@ -454,17 +464,185 @@ inline D3D11_BLEND_DESC HAGEBlendToD3DBlendState(const HAGE::APIWBlendState* pBl
 	return res;
 }
 
+inline D3D11_TEXTURE_ADDRESS_MODE HAGEAddressModeToD3DAddressMode(const HAGE::APIWAddressModes AddressMode)
+{
+	switch(AddressMode)
+	{
+	case HAGE::ADDRESS_WRAP:
+		return D3D11_TEXTURE_ADDRESS_WRAP;
+		break;
+	case HAGE::ADDRESS_MIRROR:
+		return D3D11_TEXTURE_ADDRESS_MIRROR;
+		break;
+	case HAGE::ADDRESS_CLAMP:
+		return D3D11_TEXTURE_ADDRESS_CLAMP;
+		break;
+	case HAGE::ADDRESS_BORDER:
+		return D3D11_TEXTURE_ADDRESS_BORDER;
+		break;
+	case HAGE::ADDRESS_MIRROR_ONCE:
+		return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
+		break;
+	}
+}
+
+inline D3D11_COMPARISON_FUNC HAGEComparisonFuncToD3DComparisonFunc(const HAGE::APIWComparison comparison)
+{
+	switch(comparison)
+	{
+		case HAGE::COMPARISON_NEVER:
+			return D3D11_COMPARISON_NEVER;
+			break;
+		case HAGE::COMPARISON_LESS:
+			return D3D11_COMPARISON_LESS;
+			break;
+		case HAGE::COMPARISON_EQUAL:
+			return D3D11_COMPARISON_EQUAL;
+			break;
+		case HAGE::COMPARISON_LESS_EQUAL:
+			return D3D11_COMPARISON_LESS_EQUAL;
+			break;
+		case HAGE::COMPARISON_GREATER:
+			return D3D11_COMPARISON_GREATER;
+			break;
+		case HAGE::COMPARISON_NOT_EQUAL:
+			return D3D11_COMPARISON_NOT_EQUAL;
+			break;
+		case HAGE::COMPARISON_GREATER_EQUAL:
+			return D3D11_COMPARISON_GREATER_EQUAL;
+			break;
+		case HAGE::COMPARISON_ALWAYS:
+			return D3D11_COMPARISON_ALWAYS;
+			break;
+	}
+}
+
+inline D3D11_FILTER HAGEFilterToD3DFilter(const HAGE::u32 FilterFlags)
+{
+	if(FilterFlags & HAGE::FILTER_COMPARISON)
+	{
+		if(FilterFlags & HAGE::FILTER_ANISOTROPIC)
+			return D3D11_FILTER_COMPARISON_ANISOTROPIC;
+		else
+		{
+			if(FilterFlags & HAGE::FILTER_MIN_LINEAR)
+			{
+				if(FilterFlags & HAGE::FILTER_MAG_LINEAR)
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+					else
+						return D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT ;
+				}
+				else
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+					else
+						return D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT;
+				}
+			}
+			else
+			{
+				if(FilterFlags & HAGE::FILTER_MAG_LINEAR)
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR;
+					else
+						return D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT;
+				}
+				else
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR;
+					else
+						return D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+				}
+			}
+		}
+	}
+	else
+	{
+		if(FilterFlags & HAGE::FILTER_ANISOTROPIC)
+			return D3D11_FILTER_ANISOTROPIC;
+		else
+		{
+			if(FilterFlags & HAGE::FILTER_MIN_LINEAR)
+			{
+				if(FilterFlags & HAGE::FILTER_MAG_LINEAR)
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+					else
+						return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT ;
+				}
+				else
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+					else
+						return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+				}
+			}
+			else
+			{
+				if(FilterFlags & HAGE::FILTER_MAG_LINEAR)
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+					else
+						return D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+				}
+				else
+				{
+					if(FilterFlags & HAGE::FILTER_MIP_LINEAR)
+						return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+					else
+						return D3D11_FILTER_MIN_MAG_MIP_POINT;
+				}
+			}
+		}
+	}
+}
+
+inline D3D11_SAMPLER_DESC HAGESamplerToD3DSamplerState(const HAGE::APIWSamplerState& SamplerState)
+{
+	D3D11_SAMPLER_DESC res;
+	res.Filter = HAGEFilterToD3DFilter(SamplerState.FilterFlags);
+	res.AddressU=HAGEAddressModeToD3DAddressMode(SamplerState.AddressModeU);
+	res.AddressV=HAGEAddressModeToD3DAddressMode(SamplerState.AddressModeV);
+	res.AddressW=HAGEAddressModeToD3DAddressMode(SamplerState.AddressModeW);
+	res.BorderColor[0] = SamplerState.BorderColor[0];
+	res.BorderColor[1] = SamplerState.BorderColor[1];
+	res.BorderColor[2] = SamplerState.BorderColor[2];
+	res.BorderColor[3] = SamplerState.BorderColor[3];
+	res.ComparisonFunc =  HAGEComparisonFuncToD3DComparisonFunc(SamplerState.ComparisonFunction);
+	res.MaxAnisotropy = SamplerState.MaxAnisotropy;
+	res.MaxLOD = SamplerState.MipLODMax;
+	res.MinLOD = SamplerState.MipLODMin;
+	res.MipLODBias = SamplerState.MipLODBias;
+	return res;
+}
 HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
-		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
+		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers )
 {
 	ID3D11RasterizerState*	rast;
 	ID3D11BlendState*		blend;
+	D3DSampler samplers[16]; // assume 16 samplers max
+	assert(nSamplers <= 16);
 	D3D11_RASTERIZER_DESC	rastDesc = HAGERasterizerToD3DRasterizerState(pRasterizerState);
 	D3D11_BLEND_DESC		blendDesc = HAGEBlendToD3DBlendState(pBlendState,nBlendStates,AlphaToCoverage);
+	for(int i =0;i<nSamplers;++i)
+	{
+		D3D11_SAMPLER_DESC sampler= HAGESamplerToD3DSamplerState(pSamplers[i].State);
+		memcpy(samplers[i].Name,pSamplers[i].SamplerName,32);
+		m_pDevice->CreateSamplerState(&sampler,&samplers[i].pSampler);
+	}
 	m_pDevice->CreateRasterizerState(&rastDesc,&rast);
 	m_pDevice->CreateBlendState(&blendDesc,&blend);
-	return new D3D11Effect(this,pProgram,rast,blend);
+	return new D3D11Effect(this,pProgram,rast,blend,samplers,nSamplers);
 }
 
 HAGE::APIWVertexArray* D3D11APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,

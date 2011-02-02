@@ -310,9 +310,11 @@ OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 	}
 	glError();
 	
+	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mipLevels-1);
 
 	// set glTexParameter
-	glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	/*glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glError();
 	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glError();
@@ -324,10 +326,10 @@ OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 	glError();
 	if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
 	{	
-		//glTexParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-		//glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_ALWAYS);
+		glTexParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+		glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 		//glTexParameteri(target, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE); 
-	}
+	}*/
 
 	glBindTexture(target,0);
 

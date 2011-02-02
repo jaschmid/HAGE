@@ -29,6 +29,7 @@
 class D3D11APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
+	friend class D3D11Effect;
 	typedef std::vector<HAGE::u8,HAGE::global_allocator<HAGE::u8> > VertexFormatKey;
 	struct ArrayFormatEntry;
 
@@ -73,7 +74,8 @@ public:
 	HAGE::APIWConstantBuffer* CreateConstantBuffer(HAGE::u32 nSize);
 	virtual HAGE::APIWEffect* CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
-		const HAGE::u32 nBlendStates, bool AlphaToCoverage);
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
+		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	virtual HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
@@ -97,6 +99,19 @@ public:
 		HAGE::u32						nElements;
 	};
 
+	struct D3DSampler
+	{
+		char				Name[32];
+		ID3D11SamplerState*	pSampler;
+	};
+	
+	//should be called from main UI thread
+	void _UpdateDisplaySettings_RemoteCall();
+	void _Initialize_RemoteCall();
+
+	inline ID3D11SamplerState*	GetDefaultSampler(){_defaultSampler->AddRef();return _defaultSampler;}
+	inline D3D11Effect* GetCurrentEffect(){return _currentEffect;}
+	inline void SetCurrentEffect(D3D11Effect* pNew){_currentEffect=pNew;}
 private:
 
 	typedef std::basic_string<char,std::char_traits<char>,HAGE::global_allocator<char>> global_string;
@@ -130,6 +145,8 @@ private:
 	ArrayFormatListType			m_ArrayFormatList;
 	
 	void _UpdateDisplaySettings();
+
+
 	HAGE::APIWDisplaySettings	_currentDisplaySettings;
 	HAGE::APIWDisplaySettings	_newDisplaySettings;
 
@@ -142,11 +159,12 @@ private:
 	ID3D11DeviceContext*        m_pContext;
 	ID3D11RenderTargetView*     m_pRenderTargetView;
 	ID3D11DepthStencilView *    m_pDepthStencilView;
+	ID3D11SamplerState*			_defaultSampler;
+	D3D11Effect*				_currentEffect;
     D3D11_VIEWPORT				_vp;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
-	friend class D3D11Effect;
 
 };
 
@@ -228,7 +246,7 @@ private:
 class D3D11Effect : public HAGE::APIWEffect, public boost::intrusive::list_base_hook<>
 {
 public:
-	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState);
+	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState, D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers);
 	~D3D11Effect();
 	
 	virtual void SetConstant(const char* pName,const HAGE::APIWConstantBuffer* constant);
@@ -263,7 +281,7 @@ private:
 				int _GSBindPoint;
 				int _PSBindPoint;
 			};
-			int _ArrayBindPoints[3];
+			int _ShaderStages[3];
 		};
 	};
 	typedef std::map<D3D11APIWrapper::global_string,BindPoints,std::less<D3D11APIWrapper::global_string>,HAGE::global_allocator<std::pair<D3D11APIWrapper::global_string,BindPoints>>> BindPointMap;
@@ -273,7 +291,7 @@ private:
 
 	std::vector<const D3D11ConstantBuffer*,HAGE::global_allocator<const D3D11ConstantBuffer*>>	_boundConstants[3];
 	std::vector<const D3D11Texture*,HAGE::global_allocator<const D3D11Texture*>>				_boundTextures[3];
-	//std::vector<D3D11ConstantBuffer*,HAGE::global_allocator<D3D11ConstantBuffer*>> _boundSamplers;
+	std::vector<ID3D11SamplerState*,HAGE::global_allocator<ID3D11SamplerState*>>				_boundSamplers[3];
 
 	D3D11APIWrapper*			m_pWrapper;
 };

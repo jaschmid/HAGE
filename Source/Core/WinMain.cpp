@@ -29,12 +29,15 @@ _CRTIMP FILE* __cdecl __MINGW_NOTHROW	_fdopen (int, const char*);
 
 #include <boost/uuid/string_generator.hpp>
 
-#define WM_THREADS_SHUTDOWN WM_USER
-#define WM_MAGIC_PRESENT WM_USER+1
-struct wm_magic_present
+#define WM_THREADS_SHUTDOWN			WM_USER
+#define WM_REMOTE_FUNCTION_CALL		WM_USER+1
+
+class RemoteFunctionCall
 {
-	IDXGISwapChain* pSwapChain;
+public:
+	virtual void Call() = 0;
 };
+
 struct RawInputDevice
 {
 	std::wstring		szName;
@@ -388,10 +391,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
     switch(Msg)
     {
-	case WM_MAGIC_PRESENT:
+	case WM_REMOTE_FUNCTION_CALL:
 		{
-			wm_magic_present* pMagic = (wm_magic_present*)lParam;
-			pMagic->pSwapChain->Present(NULL,NULL);
+			RemoteFunctionCall* pMagic = (RemoteFunctionCall*)lParam;
+			pMagic->Call();
 		}
 		return 0;
 	case WM_ACTIVATE:

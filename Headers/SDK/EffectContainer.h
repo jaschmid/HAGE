@@ -11,7 +11,7 @@ namespace HAGE
 	public:
 		// create effect directly
 		EffectContainer(RenderingAPIWrapper* pWrapper,const char* pProgram,const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, const APIWBlendState* pBlendState = &DefaultBlendState,
-		const u32 nBlendStates = 1, bool AlphaToCoverage = false);
+		const u32 nBlendStates = 1, bool AlphaToCoverage = false,const APIWSampler* pSamplers=nullptr,u32 nSamplers=0);
 
 		// create effect from file
 

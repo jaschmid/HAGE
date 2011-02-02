@@ -77,8 +77,14 @@ static const char* preproc =
 	"		#define DECL_FS_COLOR out float4 _FragOut\n"
 	"		#define H_TEXTURE_2D(x) uniform sampler2D x\n"
 	"		#define H_TEXTURE_CUBE(x) uniform samplerCube x\n"
+	"		#define H_TEXTURE_2D_CMP(x) uniform sampler2DShadow x\n"
+	"		#define H_TEXTURE_CUBE_CMP(x) uniform samplerCubeShadow x\n"
 	"		#define H_SAMPLE_2D(sampler,coord) (texture(sampler,float2((coord).x,1.0-(coord).y)))\n"
 	"		#define H_SAMPLE_CUBE(sampler,coord) (texture(sampler,float3((coord).x,(coord).y,(coord).z)))\n"
+	"		#define H_SAMPLE_2D_CMP(sampler,coord,cmp) (texture(sampler,float3((coord).x,1.0-(coord).y,(cmp))))\n"
+	"		#define H_SAMPLE_CUBE_CMP(sampler,coord,cmp) (texture(sampler,float4((coord).x,(coord).y,(coord).z,(cmp))))\n"
+	"		#define H_SAMPLE_2D_CMP0(sampler,coord,cmp) (textureLod(sampler,float3((coord).x,1.0-(coord).y,(cmp)),0.0f))\n"
+	"		#define H_SAMPLE_CUBE_CMP0(sampler,coord,cmp) (textureLod(sampler,float4((coord).x,(coord).y,(coord).z,(cmp)),0.0f))\n"
 	"	#else\n"
 	"		#define DECL_FS_IN(x,y) x _FS_IN##y\n"
 	"		#define FS_IN(x) _FS_IN##x\n"
@@ -86,8 +92,14 @@ static const char* preproc =
 	"		#define DECL_FS_COLOR float4 _FS_OUT##_target\n"
 	"		#define H_TEXTURE_2D(x) const float x=0.0\n"
 	"		#define H_TEXTURE_CUBE(x) const float x=0.0\n"
+	"		#define H_TEXTURE_2D_CMP(x) const float x=0.0\n"
+	"		#define H_TEXTURE_CUBE_CMP(x) const float x=0.0\n"
 	"		#define H_SAMPLE_2D(x,y) (vec4(0.0,0.0,0.0,0.0))\n"
 	"		#define H_SAMPLE_CUBE(x,y) (vec4(0.0,0.0,0.0,0.0))\n"
+	"		#define H_SAMPLE_2D_CMP(x,y,z) (float(0.0))\n"
+	"		#define H_SAMPLE_CUBE_CMP(x,y,z) (float(0.0))\n"
+	"		#define H_SAMPLE_2D_CMP0(x,y,z) (float(0.0))\n"
+	"		#define H_SAMPLE_CUBE_CMP0(x,y,z) (float(0.0))\n"
 	"	#endif\n"
 	"	#ifdef _G_SHADER\n"
 	"		#define GS_IN_POSITION(i) (gl_in[(i)].gl_Position)\n"
@@ -174,19 +186,125 @@ static bool IsTextureUniform(int type)
 	switch(type)
 	{
 	case GL_SAMPLER_1D:
+	case GL_SAMPLER_1D_SHADOW:
 	case GL_SAMPLER_2D:
+	case GL_SAMPLER_2D_SHADOW:
 	case GL_SAMPLER_3D:
 	case GL_SAMPLER_CUBE:
-	case GL_SAMPLER_1D_SHADOW:
-	case GL_SAMPLER_2D_SHADOW:
+	case GL_SAMPLER_CUBE_SHADOW:
 		return true;
 	default:
 		return false;
 	};
 }
 
+static GLint OGLTextureWrapFromHAGEAddressMode(HAGE::APIWAddressModes mode)
+{
+	switch(mode)
+	{	
+	case HAGE::ADDRESS_WRAP:
+		return GL_REPEAT;
+		break;
+	case HAGE::ADDRESS_MIRROR:
+		return GL_MIRRORED_REPEAT;
+		break;
+	case HAGE::ADDRESS_CLAMP:
+		return GL_CLAMP_TO_EDGE;
+		break;
+	case HAGE::ADDRESS_BORDER:
+		return GL_CLAMP_TO_BORDER;
+		break;
+	case HAGE::ADDRESS_MIRROR_ONCE:
+		return GL_MIRROR_CLAMP_TO_EDGE_ATI;
+		break;
+	}
+}
 
-OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend) 
+inline GLint HAGEComparisonFuncToOGLComparisonFunc(const HAGE::APIWComparison comparison)
+{
+	switch(comparison)
+	{
+		case HAGE::COMPARISON_NEVER:
+			return GL_NEVER;
+			break;
+		case HAGE::COMPARISON_LESS:
+			return GL_LESS;
+			break;
+		case HAGE::COMPARISON_EQUAL:
+			return GL_EQUAL;
+			break;
+		case HAGE::COMPARISON_LESS_EQUAL:
+			return GL_LEQUAL;
+			break;
+		case HAGE::COMPARISON_GREATER:
+			return GL_GREATER;
+			break;
+		case HAGE::COMPARISON_NOT_EQUAL:
+			return GL_NOTEQUAL;
+			break;
+		case HAGE::COMPARISON_GREATER_EQUAL:
+			return GL_GEQUAL;
+			break;
+		case HAGE::COMPARISON_ALWAYS:
+			return GL_ALWAYS;
+			break;
+	}
+}
+
+GLint OGLTextureMagFromHAGEFilterFlags(HAGE::u32 flags)
+{
+	if(flags & HAGE::FILTER_MAG_LINEAR)
+		return GL_LINEAR;
+	else
+		return GL_NEAREST;
+}
+
+GLint OGLTextureMinFromHAGEFilterFlags(HAGE::u32 flags)
+{
+	if(flags & HAGE::FILTER_MIN_LINEAR)
+	{
+		if(flags & HAGE::FILTER_MIP_LINEAR)
+			return GL_LINEAR_MIPMAP_LINEAR;
+		else
+			return GL_LINEAR_MIPMAP_NEAREST;
+	}
+	else
+	{
+		if(flags & HAGE::FILTER_MIP_LINEAR)
+			return GL_NEAREST_MIPMAP_LINEAR;
+		else
+			return GL_NEAREST_MIPMAP_NEAREST;
+	}
+}
+
+static GLuint CreateOGLSamplerFromHAGESamplerState(HAGE::APIWSamplerState state)
+{
+	GLuint ret;
+	glGenSamplers(1,&ret);
+	glSamplerParameteri(ret,GL_TEXTURE_WRAP_S,OGLTextureWrapFromHAGEAddressMode(state.AddressModeU));
+	glSamplerParameteri(ret,GL_TEXTURE_WRAP_T,OGLTextureWrapFromHAGEAddressMode(state.AddressModeV));
+	glSamplerParameteri(ret,GL_TEXTURE_WRAP_R,OGLTextureWrapFromHAGEAddressMode(state.AddressModeW));
+	if(state.FilterFlags & HAGE::FILTER_ANISOTROPIC)
+		glSamplerParameterf(ret,GL_TEXTURE_MAX_ANISOTROPY_EXT,state.MaxAnisotropy);
+	else
+	{
+		glSamplerParameteri(ret,GL_TEXTURE_MIN_FILTER,OGLTextureMinFromHAGEFilterFlags(state.FilterFlags));
+		glSamplerParameteri(ret,GL_TEXTURE_MAG_FILTER,OGLTextureMagFromHAGEFilterFlags(state.FilterFlags));
+	}
+	glSamplerParameterf(ret,GL_TEXTURE_MIN_LOD,state.MipLODMin);
+	glSamplerParameterf(ret,GL_TEXTURE_MAX_LOD,state.MipLODMax);
+	glSamplerParameterf(ret,GL_TEXTURE_LOD_BIAS,state.MipLODBias);
+	if(state.FilterFlags & HAGE::FILTER_COMPARISON)
+	{
+		glSamplerParameteri(ret,GL_TEXTURE_COMPARE_MODE,(state.FilterFlags & HAGE::FILTER_COMPARISON)?GL_COMPARE_R_TO_TEXTURE:GL_NONE);
+		glSamplerParameteri(ret,GL_TEXTURE_COMPARE_FUNC,HAGEComparisonFuncToOGLComparisonFunc(state.ComparisonFunction));
+	}
+	glSamplerParameterfv(ret,GL_TEXTURE_BORDER_COLOR,state.BorderColor);
+	return ret;
+}
+
+
+OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u16 rasterizer,HAGE::u16 blend,const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers ) 
 	:m_pWrapper(pWrapper),m_BlendState(blend),m_RastState(rasterizer)
 {
 	glError();
@@ -329,6 +447,21 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u1
 			glUniform1i(loc,nTextures);
 			glError();
 			nTextures++;
+			
+			Sampler samp;
+			for(int s = 0;s<nSamplers;++s)
+				if(strcmp(cAttribName,pSamplers[s].SamplerName) == 0)
+				{
+					samp.sampler = CreateOGLSamplerFromHAGESamplerState(pSamplers[s].State);
+					samp.state = pSamplers[s].State;
+					break;
+				}
+			if(samp.sampler == 0)
+			{
+				samp.sampler = CreateOGLSamplerFromHAGESamplerState(HAGE::DefaultSamplerState);
+				samp.state = HAGE::DefaultSamplerState;
+			}
+			_samplers.push_back(samp);
 		}
 		printf("Uniform %i \@ %i= %s, size %i, type %i\n",i,glGetUniformLocation(_glProgram,cAttribName),	cAttribName,size,type);
 	}
@@ -354,34 +487,40 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
 
 	assert(nConstants<=N_CBUFFERS);
 	*/
-	glUseProgram(_glProgram);
-	glError();
-
-	// set cBuffers
-	
-	for(HAGE::u32 i =0; i<_constantBuffers.size();++i)
+	// setup
+	if(m_pWrapper->GetCurrentEffect() != this)
 	{
-		assert(_constantBuffers[i]);
-
-		glBindBufferBase(GL_UNIFORM_BUFFER,i,_constantBuffers[i]->m_cbo);
+		glUseProgram(_glProgram);
 		glError();
-	}
-	for(HAGE::u32 i =0; i<_textures.size();++i)
-	{
-		if(_textures[i])
+
+		// set cBuffers
+	
+		for(HAGE::u32 i =0; i<_constantBuffers.size();++i)
 		{
-			glActiveTexture(GL_TEXTURE0+i);
-			if(_textures[i]->_miscFlags & HAGE::TEXTURE_CUBE)
-				glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[i]->_tbo);
-			else
-				glBindTexture(GL_TEXTURE_2D, _textures[i]->_tbo);
+			assert(_constantBuffers[i]);
+
+			glBindBufferBase(GL_UNIFORM_BUFFER,i,_constantBuffers[i]->m_cbo);
 			glError();
 		}
-	}	
-	// set states
+		for(HAGE::u32 i =0; i<_textures.size();++i)
+		{
+			if(_textures[i])
+			{
+				glActiveTexture(GL_TEXTURE0+i);
+				if(_textures[i]->_miscFlags & HAGE::TEXTURE_CUBE)
+					glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[i]->_tbo);
+				else
+					glBindTexture(GL_TEXTURE_2D, _textures[i]->_tbo);
+				glBindSampler(i,_samplers[i].sampler);
+				glError();
+			}
+		}	
+		// set states
 
-	m_pWrapper->SetBlendState(m_BlendState);
-	m_pWrapper->SetRasterizerState(m_RastState);
+		m_pWrapper->SetBlendState(m_BlendState);
+		m_pWrapper->SetRasterizerState(m_RastState);
+		m_pWrapper->SetCurrentEffect(this);
+	}
 
 	pArray->Init();
 	glBindVertexArray(pArray->m_vaoID);	
@@ -439,6 +578,8 @@ void OGL3Effect::SetConstant(const char* pName,const HAGE::APIWConstantBuffer* c
 	if(loc >= 0 && loc < _constantBuffers.size())
 	{
 		_constantBuffers[loc] = (const OGL3ConstantBuffer*)constant;
+		if(m_pWrapper->GetCurrentEffect() == this)
+			glBindBufferBase(GL_UNIFORM_BUFFER,loc,_constantBuffers[loc]->m_cbo);
 	}
 }
 
@@ -450,6 +591,15 @@ void OGL3Effect::SetTexture(const char* pName,const HAGE::APIWTexture* texture)
 	{
 		//printf("SUCCESS\n",pName,loc);
 		_textures[_textureSlots[loc]] = (const OGL3Texture*)texture;
+
+		if(m_pWrapper->GetCurrentEffect() == this)
+		{		
+			glActiveTexture(GL_TEXTURE0+_textureSlots[loc]);
+			if(_textures[_textureSlots[loc]]->_miscFlags & HAGE::TEXTURE_CUBE)
+				glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[_textureSlots[loc]]->_tbo);
+			else
+				glBindTexture(GL_TEXTURE_2D, _textures[_textureSlots[loc]]->_tbo);
+		}
 	}
 	else;
 		//printf("FAILED\n",pName,loc);

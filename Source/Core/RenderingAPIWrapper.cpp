@@ -26,7 +26,14 @@ extern const APIWRasterizerState DefaultRasterizerState = {
 	false
 };
 
-
+extern const APIWSamplerState DefaultSamplerState = {
+	FILTER_MIN_LINEAR|FILTER_MAG_LINEAR|FILTER_MIP_LINEAR,
+	COMPARISON_ALWAYS,
+	ADDRESS_WRAP,
+	ADDRESS_WRAP,
+	ADDRESS_WRAP,
+	16, 0.0f, 0.0f, 10.0f
+};
 RenderingAPIAllocator* RenderingAPIAllocator::_pAllocator = nullptr;
 
 RenderingAPIWrapper* RenderingAPIWrapper::CreateRenderingWrapper(APIWRendererType type,const APIWDisplaySettings* pSettings)

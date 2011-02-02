@@ -76,7 +76,8 @@ OpenGL3APIWrapper::OpenGL3APIWrapper(const HAGE::APIWDisplaySettings* pSettings)
 	m_CurrentBS(-1),
 	_bForceDepthDisable(false),
 	_bForceCullFlip(false),
-	_currentDisplaySettings(*pSettings)
+	_currentDisplaySettings(*pSettings),
+	_currentEffect(nullptr)
 {
 
 #ifdef TARGET_WINDOWS
@@ -559,9 +560,10 @@ HAGE::APIWConstantBuffer* OpenGL3APIWrapper::CreateConstantBuffer(HAGE::u32 nSiz
 
 HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pProgram,
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
-		const HAGE::u32 nBlendStates, bool AlphaToCoverage)
+		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
+		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers )
 {
-	return new OGL3Effect(this,pProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage));
+	return new OGL3Effect(this,pProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage),pSamplers,nSamplers);
 }
 
 HAGE::APIWTexture*  OpenGL3APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)

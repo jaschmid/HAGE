@@ -114,10 +114,10 @@
     <ClInclude Include="Source\Core\ResourceDomain.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\SDK\EffectContainer.h">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\ResourceFormats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\EffectContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

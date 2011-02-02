@@ -74,12 +74,18 @@ static const char* preproc =
 	"	#define POINT_OUT PointStream\n"
 	"	#define H_TEXTURE_2D(x) Texture2D x;SamplerState _Sampler##x\n"
 	"	#define H_TEXTURE_CUBE(x) TextureCube x;SamplerState _Sampler##x\n"
+	"	#define H_TEXTURE_2D_CMP(x) Texture2D x;SamplerComparisonState _Sampler##x\n"
+	"	#define H_TEXTURE_CUBE_CMP(x) TextureCube x;SamplerComparisonState _Sampler##x\n"
 	"	#define H_SAMPLE_2D(x,y) (x.Sample( _Sampler##x,(y)))\n"
 	"	#define H_SAMPLE_CUBE(x,y) (x.Sample( _Sampler##x,(y)))\n"
+	"	#define H_SAMPLE_2D_CMP(x,y,z) (x.SampleCmp( _Sampler##x,(y),(z)))\n"
+	"	#define H_SAMPLE_CUBE_CMP(x,y,z) (x.SampleCmp( _Sampler##x,(y),(z)))\n"
+	"	#define H_SAMPLE_2D_CMP0(x,y,z) (x.SampleCmpLevelZero( _Sampler##x,(y),(z)))\n"
+	"	#define H_SAMPLE_CUBE_CMP0(x,y,z) (x.SampleCmpLevelZero( _Sampler##x,(y),(z)))\n"
 	"#endif\n";
 static const int preproc_size = strlen(preproc);
 
-D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState) :
+D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState,D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers) :
 	m_pWrapper(pWrapper),
 	m_pCompiledShader(nullptr),
 	m_pRasterizerState(pRasterizerState),
@@ -109,6 +115,17 @@ D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11Ra
 			_boundConstants[b][i] = nullptr;
 		for(int i = 0;i<_boundTextures[b].size();++i)
 			_boundTextures[b][i] = nullptr;
+		for(int i = 0;i<_boundTextures[b].size();++i)
+			_boundSamplers[b][i] = m_pWrapper->GetDefaultSampler();
+	}
+	
+	for(int isampler = 0;isampler<nSamplers;++isampler)
+	{
+		auto bindpoint=_samplerBinds.find(global_string("_Sampler") + global_string(pSamplers[isampler].Name));
+		assert(bindpoint != _samplerBinds.end());
+		for(int istage = 0; istage< 3;++istage)
+			if(bindpoint->second._ShaderStages[istage] != -1)
+				_boundSamplers[istage][bindpoint->second._ShaderStages[istage]] = pSamplers[isampler].pSampler;
 	}
 
 	delete tBuffer;
@@ -123,6 +140,10 @@ D3D11Effect::~D3D11Effect()
 		i->second->Release();
 
 	m_ArrayLayoutList.clear();
+
+	for(int i = 0;i<3;++i)
+		for(auto sampler = _boundSamplers[i].begin();sampler!=_boundSamplers[i].end();++sampler)
+			(*sampler)->Release();
 
 	if(m_pCompiledShader)m_pCompiledShader->Release();
 	if(m_pVertexShader)m_pVertexShader->Release();
@@ -289,13 +310,13 @@ void D3D11Effect::ParseBindPoints(const D3D11_SHADER_INPUT_BIND_DESC& desc,int b
 	{
 		auto found = _constantBinds.find(name);
 		if(found!=_constantBinds.end())
-			found->second._ArrayBindPoints[bindPoint] = desc.BindPoint;
+			found->second._ShaderStages[bindPoint] = desc.BindPoint;
 		else
 		{
 			BindPoints p;
 			for(int i = 0;i<3;++i)
-				p._ArrayBindPoints[i] = -1;
-			p._ArrayBindPoints[bindPoint] = desc.BindPoint;
+				p._ShaderStages[i] = -1;
+			p._ShaderStages[bindPoint] = desc.BindPoint;
 			_constantBinds.insert(std::pair<global_string,BindPoints>(name,p));
 		}
 		if(_boundConstants[bindPoint].size() < desc.BindPoint+1)
@@ -305,13 +326,13 @@ void D3D11Effect::ParseBindPoints(const D3D11_SHADER_INPUT_BIND_DESC& desc,int b
 	{
 		auto found = _textureBinds.find(name);
 		if(found!=_textureBinds.end())
-			found->second._ArrayBindPoints[bindPoint] = desc.BindPoint;
+			found->second._ShaderStages[bindPoint] = desc.BindPoint;
 		else
 		{
 			BindPoints p;
 			for(int i = 0;i<3;++i)
-				p._ArrayBindPoints[i] = -1;
-			p._ArrayBindPoints[bindPoint] = desc.BindPoint;
+				p._ShaderStages[i] = -1;
+			p._ShaderStages[bindPoint] = desc.BindPoint;
 			_textureBinds.insert(std::pair<global_string,BindPoints>(name,p));
 		}
 		if(_boundTextures[bindPoint].size() < desc.BindPoint+1)
@@ -321,68 +342,86 @@ void D3D11Effect::ParseBindPoints(const D3D11_SHADER_INPUT_BIND_DESC& desc,int b
 	{	
 		auto found = _samplerBinds.find(name);
 		if(found!=_samplerBinds.end())
-			found->second._ArrayBindPoints[bindPoint] = desc.BindPoint;
+			found->second._ShaderStages[bindPoint] = desc.BindPoint;
 		else
 		{
 			BindPoints p;
 			for(int i = 0;i<3;++i)
-				p._ArrayBindPoints[i] = -1;
-			p._ArrayBindPoints[bindPoint] = desc.BindPoint;
+				p._ShaderStages[i] = -1;
+			p._ShaderStages[bindPoint] = desc.BindPoint;
 			_samplerBinds.insert(std::pair<global_string,BindPoints>(name,p));
-		}/*
-		if(_boundTextures.size() < desc.BindPoint+1)
-			_boundTextures.resize(desc.BindPoint+1);*/
+		}
+		if(_boundSamplers[bindPoint].size() < desc.BindPoint+1)
+			_boundSamplers[bindPoint].resize(desc.BindPoint+1);
 	}
 }
 
 void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
 {
-	/*
-	for(HAGE::u32 i = 0; i<nConstants; ++i)
-	{
-		m_pWrapper->GetContext()->VSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
-		m_pWrapper->GetContext()->GSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
-		m_pWrapper->GetContext()->PSSetConstantBuffers(i,1,&(((D3D11ConstantBuffer*)pConstants[i])->m_pBuffer));
-	}
 
-	for(HAGE::u32 i = 0; i<nTextures; ++i)
+	if(m_pWrapper->GetCurrentEffect() != this)
 	{
-		if(pTextures[i])
-			m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(((D3D11Texture*)pTextures[i])->_shaderResourceView));
-	}
-	*/
-	// set constants
-	for(int i= 0; i<_boundConstants[0].size();++i)
-	{
-		if(_boundConstants[0][i])
-			m_pWrapper->GetContext()->VSSetConstantBuffers(i,1,&(_boundConstants[0][i]->m_pBuffer));
-	}
-	for(int i= 0; i<_boundConstants[1].size();++i)
-	{
-		if(_boundConstants[1][i])
-			m_pWrapper->GetContext()->GSSetConstantBuffers(i,1,&(_boundConstants[1][i]->m_pBuffer));
-	}
-	for(int i= 0; i<_boundConstants[2].size();++i)
-	{
-		if(_boundConstants[2][i])
-			m_pWrapper->GetContext()->PSSetConstantBuffers(i,1,&(_boundConstants[2][i]->m_pBuffer));
-	}
+		m_pWrapper->SetCurrentEffect(this);
+		// set constants
+		for(int i= 0; i<_boundConstants[0].size();++i)
+		{
+			if(_boundConstants[0][i])
+				m_pWrapper->GetContext()->VSSetConstantBuffers(i,1,&(_boundConstants[0][i]->m_pBuffer));
+		}
+		for(int i= 0; i<_boundConstants[1].size();++i)
+		{
+			if(_boundConstants[1][i])
+				m_pWrapper->GetContext()->GSSetConstantBuffers(i,1,&(_boundConstants[1][i]->m_pBuffer));
+		}
+		for(int i= 0; i<_boundConstants[2].size();++i)
+		{
+			if(_boundConstants[2][i])
+				m_pWrapper->GetContext()->PSSetConstantBuffers(i,1,&(_boundConstants[2][i]->m_pBuffer));
+		}
 
-	// set textures
-	for(int i= 0; i<_boundTextures[0].size();++i)
-	{
-		if(_boundTextures[0][i])
-			m_pWrapper->GetContext()->VSSetShaderResources(i,1,&(_boundTextures[0][i]->_shaderResourceView));
-	}
-	for(int i= 0; i<_boundTextures[1].size();++i)
-	{
-		if(_boundTextures[1][i])
-			m_pWrapper->GetContext()->GSSetShaderResources(i,1,&(_boundTextures[1][i]->_shaderResourceView));
-	}
-	for(int i= 0; i<_boundTextures[2].size();++i)
-	{
-		if(_boundTextures[2][i])
-			m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(_boundTextures[2][i]->_shaderResourceView));
+		// set textures
+		for(int i= 0; i<_boundTextures[0].size();++i)
+		{
+			if(_boundTextures[0][i])
+				m_pWrapper->GetContext()->VSSetShaderResources(i,1,&(_boundTextures[0][i]->_shaderResourceView));
+		}
+		for(int i= 0; i<_boundTextures[1].size();++i)
+		{
+			if(_boundTextures[1][i])
+				m_pWrapper->GetContext()->GSSetShaderResources(i,1,&(_boundTextures[1][i]->_shaderResourceView));
+		}
+		for(int i= 0; i<_boundTextures[2].size();++i)
+		{
+			if(_boundTextures[2][i])
+				m_pWrapper->GetContext()->PSSetShaderResources(i,1,&(_boundTextures[2][i]->_shaderResourceView));
+		}
+	
+		// set samplers
+		for(int i= 0; i<_boundSamplers[0].size();++i)
+		{
+			if(_boundSamplers[0][i])
+				m_pWrapper->GetContext()->VSSetSamplers(i,1,&_boundSamplers[0][i]);
+		}
+		for(int i= 0; i<_boundSamplers[1].size();++i)
+		{
+			if(_boundSamplers[1][i])
+				m_pWrapper->GetContext()->GSSetSamplers(i,1,&_boundSamplers[1][i]);
+		}
+		for(int i= 0; i<_boundSamplers[2].size();++i)
+		{
+			if(_boundSamplers[2][i])
+				m_pWrapper->GetContext()->PSSetSamplers(i,1,&_boundSamplers[2][i]);
+		}
+		
+		m_pWrapper->GetContext()->RSSetState(m_pRasterizerState);
+		float blend_factor[4] = {1.0f,1.0f,1.0f,1.0f};
+		m_pWrapper->GetContext()->OMSetBlendState(m_pBlendState,blend_factor,0xffffffff);
+
+		m_pWrapper->GetContext()->VSSetShader( m_pVertexShader, NULL, 0 );
+
+		m_pWrapper->GetContext()->PSSetShader( m_pPixelShader, NULL, 0 );
+
+		m_pWrapper->GetContext()->GSSetShader( m_pGeometryShader, NULL, 0 );
 	}
 
 
@@ -428,9 +467,6 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
 		break;
 	}
 
-	m_pWrapper->GetContext()->RSSetState(m_pRasterizerState);
-	float blend_factor[4] = {1.0f,1.0f,1.0f,1.0f};
-	m_pWrapper->GetContext()->OMSetBlendState(m_pBlendState,blend_factor,0xffffffff);
 
 	if(pArray->m_pIndexBuffer)
 		m_pWrapper->GetContext()->IASetIndexBuffer(pArray->m_pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
@@ -442,12 +478,6 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
 		UINT offset = 0;
 		m_pWrapper->GetContext()->IASetVertexBuffers( i, 1, &pBuffer->m_pVertexBuffer, &stride, &offset );
 	}
-
-	m_pWrapper->GetContext()->VSSetShader( m_pVertexShader, NULL, 0 );
-
-    m_pWrapper->GetContext()->PSSetShader( m_pPixelShader, NULL, 0 );
-
-	m_pWrapper->GetContext()->GSSetShader( m_pGeometryShader, NULL, 0 );
 
     // Render a triangle
 	if(pArray->m_pIndexBuffer)
@@ -483,9 +513,24 @@ void D3D11Effect::SetConstant(const char* pName,const HAGE::APIWConstantBuffer* 
 	auto found = _constantBinds.find(global_string(pName));
 	if(found != _constantBinds.end())
 	{
-		for(int i =0;i<3;++i)
-			if(found->second._ArrayBindPoints[i] >= 0)
-				_boundConstants[i][found->second._ArrayBindPoints[i]] = (const D3D11ConstantBuffer*)constant;
+		if(found->second._ShaderStages[0] >= 0)
+		{
+			_boundConstants[0][found->second._ShaderStages[0]] = (const D3D11ConstantBuffer*)constant;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->VSSetConstantBuffers(found->second._ShaderStages[0],1,&((const D3D11ConstantBuffer*)constant)->m_pBuffer);
+		}
+		if(found->second._ShaderStages[1] >= 0)
+		{
+			_boundConstants[1][found->second._ShaderStages[1]] = (const D3D11ConstantBuffer*)constant;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->GSSetConstantBuffers(found->second._ShaderStages[1],1,&((const D3D11ConstantBuffer*)constant)->m_pBuffer);
+		}
+		if(found->second._ShaderStages[2] >= 0)
+		{
+			_boundConstants[2][found->second._ShaderStages[2]] = (const D3D11ConstantBuffer*)constant;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->PSSetConstantBuffers(found->second._ShaderStages[2],1,&((const D3D11ConstantBuffer*)constant)->m_pBuffer);
+		}
 	}
 	/*
 	int loc = glGetUniformBlockIndex(_glProgram,temp);
@@ -501,9 +546,24 @@ void D3D11Effect::SetTexture(const char* pName,const HAGE::APIWTexture* texture)
 	auto found = _textureBinds.find(global_string(pName));
 	if(found != _textureBinds.end())
 	{
-		for(int i =0;i<3;++i)
-			if(found->second._ArrayBindPoints[i] >= 0)
-				_boundTextures[i][found->second._ArrayBindPoints[i]] = (const D3D11Texture*)texture;
+		if(found->second._ShaderStages[0] >= 0)
+		{
+			_boundTextures[0][found->second._ShaderStages[0]] = (const D3D11Texture*)texture;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->VSSetShaderResources(found->second._ShaderStages[0],1,&((const D3D11Texture*)texture)->_shaderResourceView);
+		}
+		if(found->second._ShaderStages[1] >= 0)
+		{
+			_boundTextures[1][found->second._ShaderStages[1]] = (const D3D11Texture*)texture;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->GSSetShaderResources(found->second._ShaderStages[1],1,&((const D3D11Texture*)texture)->_shaderResourceView);
+		}
+		if(found->second._ShaderStages[2] >= 0)
+		{
+			_boundTextures[2][found->second._ShaderStages[2]] = (const D3D11Texture*)texture;
+			if(m_pWrapper->GetCurrentEffect() == this)
+				m_pWrapper->GetContext()->PSSetShaderResources(found->second._ShaderStages[2],1,&((const D3D11Texture*)texture)->_shaderResourceView);
+		}
 	}
 }
 #endif

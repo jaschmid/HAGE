@@ -24,9 +24,9 @@ namespace HAGE {
 	"	 float4 light_color_arg2[nLights];\n"
 	"H_CONSTANT_BUFFER_END\n"
 	"\n"
-	"H_TEXTURE_CUBE(ShadowCube1);\n"
-	"H_TEXTURE_CUBE(ShadowCube2);\n"
-	"H_TEXTURE_CUBE(ShadowCube3);\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube1);\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube2);\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube3);\n"
 	"H_TEXTURE_2D(DiffuseTexture);\n"
 	"\n"
 	"// cbuffer Transform : register(b0)\n"
@@ -89,11 +89,6 @@ namespace HAGE {
 	"    lDir[i] = LightPosition(i)-FS_IN(world_position).xyz;\n "
 	"  }\n"
 	"  \n"
-	"  float Sdist[nLights];\n"
-	"  Sdist[0] =  H_SAMPLE_CUBE(ShadowCube1,float3(-lDir[0].xyz)).r;\n"
-	"  Sdist[1] =  H_SAMPLE_CUBE(ShadowCube2,float3(-lDir[1].xyz)).r;\n"
-	"  Sdist[2] =  H_SAMPLE_CUBE(ShadowCube3,float3(-lDir[2].xyz)).r;\n"
-	"  \n"
 	"  float3 cOdist = float3(\n"
 	"    max(max(abs(lDir[0].x),abs(lDir[0].y)),abs(lDir[0].z)),\n"
 	"    max(max(abs(lDir[1].x),abs(lDir[1].y)),abs(lDir[1].z)),\n"
@@ -104,12 +99,16 @@ namespace HAGE {
 	"  cOdist = (arg1 + (float3(1.0,1.0f,1.0f)/cOdist)*arg2+1.0)/2.0;\n"
 	"  float Odist[3]; Odist[0]=cOdist.x;Odist[1]=cOdist.y;Odist[2]=cOdist.z;\n"
 	"  \n"
+	"  float visibility[nLights];\n"
+	"  visibility[0] =  H_SAMPLE_CUBE_CMP(ShadowCube1,float3(-lDir[0].xyz),Odist[0]);\n"
+	"  visibility[1] =  H_SAMPLE_CUBE_CMP(ShadowCube2,float3(-lDir[1].xyz),Odist[1]);\n"
+	"  visibility[2] =  H_SAMPLE_CUBE_CMP(ShadowCube3,float3(-lDir[2].xyz),Odist[2]);\n"
+	"  \n"
 	"  for(int i =0;i<nLights;++i)\n"
 	"  {\n"
-	"      float visibility = step(Odist[i],Sdist[i]);\n"
 	"      float3 normDir = normalize(lDir[i]);\n"
 	"      float light_intensity = saturate(dot(normDir,normal));\n"
-	"      FS_OUT_COLOR.xyz += light_intensity*LightColor(i)*visibility;\n"
+	"      FS_OUT_COLOR.xyz += light_intensity*LightColor(i)*visibility[i];\n"
 	"  }\n"
 	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*H_SAMPLE_2D(DiffuseTexture,FS_IN(tex)).xyz,1.0f));\n"
 	"}\n";
@@ -401,7 +400,19 @@ namespace HAGE {
 		_lightCubeDepth[1] = pWrapper->CreateTexture(1024,1024,1,R16_UNORM,TEXTURE_CUBE | TEXTURE_GPU_DEPTH_STENCIL,nullptr);
 		_lightCubeDepth[2] = pWrapper->CreateTexture(1024,1024,1,R16_UNORM,TEXTURE_CUBE | TEXTURE_GPU_DEPTH_STENCIL,nullptr);
 
-		_pEffect = new EffectContainer(pWrapper,default_program);
+		APIWSampler Samplers[3];
+
+		strcpy(Samplers[0].SamplerName,"ShadowCube1");
+		strcpy(Samplers[1].SamplerName,"ShadowCube2");
+		strcpy(Samplers[2].SamplerName,"ShadowCube3");
+
+		Samplers[0].State = DefaultSamplerState;
+		Samplers[0].State.ComparisonFunction = COMPARISON_LESS_EQUAL;
+		Samplers[0].State.FilterFlags |= FILTER_COMPARISON;
+
+		Samplers[2].State = (Samplers[1].State = Samplers[0].State);
+
+		_pEffect = new EffectContainer(pWrapper,default_program,&DefaultRasterizerState,&DefaultBlendState,1,false,Samplers,3);
 		_pConstants = pWrapper->CreateConstantBuffer(sizeof(position_constants));
 		_pLightConstants = pWrapper->CreateConstantBuffer(sizeof(light_constants));
 		_pShadowcubeConstants = pWrapper->CreateConstantBuffer(sizeof(shadowcube_constants));
