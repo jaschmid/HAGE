@@ -1,4 +1,9 @@
 #include <HAGE.h>
+#ifdef COMPILER_MSVC
+#pragma warning(push)
+#pragma warning(disable:4748) // Disable warning about /GS being disabled due to optimizations being disabled
+#pragma optimize("", off)
+#endif
 
 namespace HAGE {
 	
@@ -41,16 +46,22 @@ namespace HAGE {
 		DomainMemory::GlobalFree(pMem);
 	}
 
+	extern const char* GetDomainName(const guid& guid);
+
 	result LockedMessageQueue::CloseReadPin()
 	{
-		//printf("Pin %08x closed\n",this);
+		//printf("Read Pin %s closed\n",GetDomainName(sourceStamp));
 		i32 count = _InterlockedIncrement(&nClosedAccesses);
 		if(count == fReadReadyCallback.size())
 		{
-			//printf("Pin %08x ready\n",this);
+			//printf("All read pins of  %s closed, index result:%i\n",GetDomainName(sourceStamp),count);
+
 			nClosedAccesses=nShutdown;
 			for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
+			{
+				assert(*i <  pMem[nReadIndex].size());
 				((Package*)&pMem[nReadIndex][*i])->~Package();
+			}
 
 			m_pvpDestructors[nReadIndex].clear();
 			pMem[nReadIndex].clear();
@@ -60,6 +71,7 @@ namespace HAGE {
 			u32 result = _InterlockedDecrement(&nAvailableSlots);
 			if(result!=0)
 			{
+				//printf("Read Pin %s ready, index result:%i\n",GetDomainName(sourceStamp),result);
 				if(result==FRAME_BUFFER_COUNT-1)
 				{
 #ifdef FRAMESKIP_ENABLED
@@ -130,13 +142,13 @@ namespace HAGE {
 	}
 	result LockedMessageQueue::CloseWritePin()
 	{
-		//printf("Pin %08x closed\n",this);
-			//printf("Pin %08x ready\n",this);
+		//printf("Write Pin %s closed\n",GetDomainName(sourceStamp));
 		bInit=true;
 		nWriteIndex = (nWriteIndex+1) % FRAME_BUFFER_COUNT;
 		u32 result = _InterlockedIncrement(&nAvailableSlots);
 		if( result != FRAME_BUFFER_COUNT || fReadReadyCallback.size() == 0 )
-		{			
+		{	
+			//printf("Write Pin %s ready, index count %i\n",GetDomainName(sourceStamp),result);
 			if(result == 1)
 			{
 				for(u32 i=0;i<fReadReadyCallback.size();++i)
@@ -217,7 +229,6 @@ namespace HAGE {
 
 	result LockedMessageQueue::_ForwardPackage(const Package& m)
 	{
-		assert( !(bInit && nWriteIndex == nReadIndex));
 		assert(m.GetMessageCode()&MESSAGE_IS_PACKAGE);
 		assert( m.GetSource() != guidNull);
 		pMem[nWriteIndex].resize( pMem[nWriteIndex].size() + m.GetSize());
@@ -264,3 +275,9 @@ namespace HAGE {
 			DomainMemory::GlobalFree(pEntry);
 	}
 }
+
+#ifdef COMPILER_MSVC
+#pragma optimize("", on)
+#pragma warning(pop)
+#endif
+ 

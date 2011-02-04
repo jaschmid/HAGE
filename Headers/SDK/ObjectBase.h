@@ -39,6 +39,16 @@ protected:
 		domain_access<_Domain>::Get()->PostMessage(message);
 	}
 
+	static inline t64 GetTime()
+	{
+		return domain_access<_Domain>::Get()->GetTime();
+	}
+
+	static inline t64 GetElapsedTime()
+	{
+		return domain_access<_Domain>::Get()->GetElapsedTime();
+	}
+
 	static inline CoreFactory* GetFactory()
 	{
 		return &(domain_access<_Domain>::Get()->Factory);
@@ -52,6 +62,15 @@ protected:
 	static inline TaskManager* GetTasks()
 	{
 		return &(domain_access<_Domain>::Get()->Tasks);
+	}
+
+	static inline u32 GetRandInt() 
+	{
+		return TLS::getData()->random_generator->GetRandInt();
+	}
+	static inline f32 GetRandFloat() 
+	{
+		return TLS::getData()->random_generator->GetRandFloat();
 	}
 };
 

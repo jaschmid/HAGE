@@ -92,6 +92,21 @@ extern void OSRequestMessageQueueResume()
 		MessageQueueStatus = MESSAGE_QUEUE_REQUEST_RESUME;
 }
 
+extern HAGE::t64 OSGetTime()
+{
+	//time hack yay
+	static HAGE::u64 freq = 0;
+    HAGE::u64 current;
+    QueryPerformanceCounter((LARGE_INTEGER*)&current);
+
+	if(freq == 0)
+		QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+	HAGE::t64 ret;
+	ret.time_utc = (current/freq * 1000000000LL) + (current%freq*1000000000LL/freq);
+	return ret;
+}
+
 HWND GetHwnd()
 {
 	return hWnd;
@@ -335,6 +350,8 @@ int CALLBACK WinMain(
         DispatchMessage(&Msg);
     }
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_NORMAL);
+
+	InputDevices.clear();
 
 	delete pSharedTaskManager;
 

@@ -62,11 +62,16 @@ public:
 	void Free(void* p){Memory->Free(p);}
 	void PostMessage(const Message& message);
 
-	virtual void DomainStep(u64 step){};
+	virtual void DomainStep(t64 time){};
 
 	void GenerateShutdownMessage(){Tasks.Shutdown();}
 
+	inline t64 GetTime() const{return _time;}
+	inline t64 GetElapsedTime() const{return _time - _timeLast;}
 protected:
+
+	u32 GetRandInt() {return Tasks.GetRandInt();}
+	f32 GetRandFloat() {return Tasks.GetRandFloat();}
 
 	virtual bool MessageProc(const Message* pMessage);
 
@@ -85,9 +90,9 @@ protected:
 
 private:
 
-	void Init(u64 step);
-	void Step(u64 step);
-	void Shutdown(u64 step);
+	void Init();
+	void Step();
+	void Shutdown();
 
 	void Callback();
 	void StepComplete();
@@ -99,9 +104,23 @@ private:
 	boost::function<void(bool)> staticQueue;
 
 	LockedMessageQueue*		outputPin;
-	typedef std::pair<i32,LockedMessageQueue*> inputPin;
+	struct inputPin
+	{
+		i32					inputDelay;
+		LockedMessageQueue* pPin;
+		MemHandle			hTimeHandle;
+	};
 	typedef std::vector<inputPin,global_allocator<inputPin>> inputPinArray;
 	inputPinArray inputPins;
+	
+	struct timeData
+	{
+		t64		time;
+	};
+	MemHandle		_timeHandle;
+	t64				_timeBegin;
+	t64				_time;
+	t64				_timeLast;
 
 	u32				nInputCallbacks;
 	u32				nDelayedInputCallbacks;
@@ -131,15 +150,17 @@ template<class _T> const _T* DomainCreator()
 {
 	_T* r = static_cast<_T*>(TaskManager::ConstructDomain(sizeof(_T)));
 	domain_access<_T>::Set(r);
-	TLS::mode.reset((int*)THREAD_MODE_ST);
-	TLS::domain_guid.reset(const_cast<guid*>(&guid_of<_T>::Get()));
-	TLS::domain_ptr.reset((IDomain*)r);
+
+	TLS_data* p = TLS::getData();
+	TLS_data backup = *p;
+	p->mode = THREAD_MODE_ST;
+	p->domain_guid = guid_of<_T>::Get();
+	p->domain_ptr = (IDomain*)r;
+	p->random_generator = (IRandomSource*)r;
 
 	_T* result = new(r) _T;
 
-	TLS::mode.release();
-	TLS::domain_guid.release();
-	TLS::domain_ptr.release();
+	*p = backup;
 
 	return result;
 }

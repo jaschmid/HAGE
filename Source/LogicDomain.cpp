@@ -19,21 +19,14 @@ namespace HAGE {
 			void operator() ()
 			{
 				static float f=1.534523f;
-				for(int i=0;i<rand()%0xffff;++i)f=f*f;
+				for(int i=0;i<GetRandInt()%0xffff;++i)f=f*f;
 			}
 		private:
 		};
-					
-		inline static float getFRand()
-		{
-			static boost::mt19937 rgen;
-			return ((float)rgen()/(float)rgen.max())*2.0f-1.0f;
-		}
 
 		LogicDomain::LogicDomain()  : positions(0)
 		{
 			printf("Init Logic\n");
-			static boost::mt19937 rgen;
 			initSettings();
 			Factory.RegisterObjectType<LogicActor>();
 			Factory.RegisterObjectType<LogicSheet>();
@@ -49,7 +42,7 @@ namespace HAGE {
 			Factory.CreateObject<LogicActor>(boxinit);
 
 			ActorInit ainit;
-			ainit.mass = 1.0f;
+			ainit.mass = 0.2f;
 
 			Vector3<> ply_location(settings->getf32Setting("ply_spawn_x"),
 									settings->getf32Setting("ply_spawn_y"),
@@ -61,9 +54,9 @@ namespace HAGE {
 			
 			for(int i =0;i<settings->getu32Setting("num_ply_objs");++i)
 			{	
-				sprintf(ainit.mesh,"mesh%i.ply",rgen()%3);
-				ainit.behavior = rgen()%2;
-				ainit.location = ply_location + Vector3<>(getFRand(),getFRand(),getFRand())*ply_range;
+				sprintf(ainit.mesh,"mesh%i.ply",GetRandInt()%3);
+				ainit.behavior = GetRandInt()%2;
+				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		
 				Factory.CreateObject<LogicActor>(ainit);
 			}
@@ -133,9 +126,10 @@ namespace HAGE {
 			return SharedDomainBase::MessageProc(m);
 		}
 
-		void LogicDomain::DomainStep(u64 step)
+		void LogicDomain::DomainStep(t64 time)
 		{
-			static boost::mt19937 rgen;
+			//printf("Time %f, Elapsed Time: %f\n",GetTime().toSeconds(),GetElapsedTime().toSeconds());
+
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
 			for(u32 i = 0; i<nObjects2; ++i)
@@ -143,7 +137,7 @@ namespace HAGE {
 				Factory.DestroyObject(guids[i]);		
 				ActorInit ainit;	
 				ainit.mass = 1.0f;
-				sprintf(ainit.mesh,"mesh%i.ply",rgen()%3);
+				sprintf(ainit.mesh,"mesh%i.ply",GetRandInt()%3);
 				ainit.scale =Vector3<>(settings->getf32Setting("ply_scale_x"),
 									settings->getf32Setting("ply_scale_y"),
 									settings->getf32Setting("ply_scale_z"));
@@ -152,7 +146,7 @@ namespace HAGE {
 										settings->getf32Setting("ply_spawn_z"));
 				float ply_range = settings->getf32Setting("ply_spawn_range");
 				ainit.behavior = 0;
-				ainit.location = ply_location + Vector3<>(getFRand(),getFRand(),getFRand())*ply_range;
+				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 				Factory.CreateObject<LogicActor>(ainit);
 			}
 			auto result = Factory.ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );

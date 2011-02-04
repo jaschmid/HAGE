@@ -14,6 +14,7 @@
 #include "HAGE.h"
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/random.hpp>
 #include <vector>
 
 namespace HAGE {
@@ -25,27 +26,20 @@ class TaskManager
 {
 public:
 	
-	class genericTask
+	class genericTask : public IRandomSource
 	{
-	protected:
-
-		template<class _T> void SetDomain()
-		{
-			TLS::domain_guid.reset(&guid_of<_T>::Get());
-			TLS::domain_ptr.reset(domain_access<_T>::Get());
-		}
-		void ClearDomain()
-		{
-			TLS::domain_guid.release();
-			TLS::domain_ptr.release();
-		}
-		void SetMode(const int* mode)
-		{
-			TLS::mode.reset((int*)mode);
-		}
 	public:
+		virtual u32 GetRandInt() {return (u32)(gen()&0xffffffff);}
+		virtual f32 GetRandFloat() {return (f32)(((f64)gen()-(f64)gen.min())/((f64)gen.max()-(f64)gen.min()));}
 		virtual void operator() () = 0;
 		virtual ~genericTask() {}
+	private:
+		typedef boost::rand48 generator_type;
+		generator_type gen;
+
+		void SetSeed(u32 seed){gen.seed(seed);}
+
+		friend class TaskManager;
 	};
 
 	TaskManager();
@@ -85,6 +79,9 @@ private:
 		{
 			pTask->InitTask();
 		}
+		// this is an ST_TASK thus we use the domains random generator
+		virtual u32 GetRandInt() {return pTask->GetRandInt();}
+		virtual f32 GetRandFloat() {return pTask->GetRandFloat();}
 	private:
 		TaskManager* pTask;
 	};
@@ -100,6 +97,9 @@ private:
 		{
 			pTask->StepTask();
 		}
+		// this is an ST_TASK thus we use the domains random generator
+		virtual u32 GetRandInt() {return pTask->GetRandInt();}
+		virtual f32 GetRandFloat() {return pTask->GetRandFloat();}
 	private:
 		TaskManager* pTask;
 	};
@@ -117,14 +117,20 @@ private:
 			pTask->bShutdownComplete = true;
 			//no notification so we don't requeue
 		}
+		// this is an ST_TASK thus we use the domains random generator
+		virtual u32 GetRandInt() {return pTask->GetRandInt();}
+		virtual f32 GetRandFloat() {return pTask->GetRandFloat();}
 	private:
 		TaskManager* pTask;
 	};
 
+	// internal high precision random generator funcions
+	u32 GetRandInt() {return (u32)(_randomGenerator()&0xffffffff);}
+	f32 GetRandFloat() {return (f32)(((f64)_randomGenerator()-(f64)_randomGenerator.min())/((f64)_randomGenerator.max()-(f64)_randomGenerator.min()));}
+	void InitHighPrecisionGenerator(u64 seed){_randomGenerator.seed(seed);}
 
 	// functions for SharedTaskMannager
-	void TaskEnter();
-	void TaskLeave();
+	void _InternalRunTask(genericTask* pTask);
 
 	u32 GetCurrentStep();
 	u32 GetCurrentPriority();
@@ -143,6 +149,8 @@ private:
 	volatile u32 nStep;
 	volatile u32 Mode;
 
+	boost::mt19937	_randomGenerator;
+
 	void QueueDomainStep();
 	void QueueDomainInit();
 
@@ -156,6 +164,7 @@ private:
 	friend class StepTask;
 	friend class ShutdownTask;
 	friend class InitTask;
+	friend class CoreFactory;
 
 	boost::mutex	mutex;
 

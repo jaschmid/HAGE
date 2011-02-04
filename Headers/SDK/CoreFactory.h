@@ -285,7 +285,7 @@ private:
 		const function_map_type::value_type&		registration_entry;
 		u32				uRefCounter;
 		bool			bMaster;
-		u64				nStepStamp;
+		t64				timeStamp;
 		std::vector<u32> vCapabilitiesIndices;
 		MemHandle		ResultHandle;
 		const void*		pResultMem[FRAME_BUFFER_COUNT];
@@ -350,7 +350,7 @@ public:
 			}
 			inline bool isOutValid() const
 			{
-				return ((base::operator*()).pRef->nStepStamp != m_pFactory->m_nCurrentStep);
+				return ((base::operator*()).pRef->timeStamp != m_pFactory->_time);
 			}
 			inline const bool operator ==(const iterator& other) const
 			{
@@ -376,7 +376,7 @@ public:
 private:
 
 	// internal functions
-	void	Step(u64 step){ if(m_pout) m_nReadIndex = m_pout->GetRead();m_nCurrentStep=step;}
+	void	Step(t64 time){ if(m_pout) m_nReadIndex = m_pout->GetRead();_time=time;}
 	void	RegisterObjectOut( const guid& guid, const MemHandle& handle,u32 size, const void* pInitOut,u32 nInitOutSize);
 	guid _CreateObject(const guid& ObjectTypeId, void* InitValue);
 	std::pair<const void*,u32> _ForEach(boost::function<bool (void*,IObject*)> f,size_t size,const guid& capability,bool bSync,void* pDataOut,u32 nOut,bool bGetSome);
@@ -387,6 +387,8 @@ private:
 	void DestroyObjectInternal(object_map_type::iterator& item);
 	bool TryCreateObjectWithGuid(const guid& ObjectId, const guid& ObjectTypeId, void* pInitData, bool bMaster = false);
 
+	void SeedInternalNumberGenerator(u64 seed);
+
 	static SharedCoreFactory*	pCoreFactory;
 
 	PinBase*&					m_pout;
@@ -395,6 +397,7 @@ private:
 
 	TaskManager*				m_pTask;
 
+	boost::mt19937				_rand_generator;
 	boost::uuids::basic_random_generator<boost::mt19937> number_generator;
 
 	function_map_type			registeredFunctionCreation;
@@ -404,7 +407,7 @@ private:
 
 	//for iterators
 	u32 m_nReadIndex;//read index in the output pin
-	u64 m_nCurrentStep;
+	t64 _time;
 	friend class SharedDomainBase;
 	template<class _Domain> friend class DomainBase;
 	template<class _ObjectInitTraits,class _ObjectOutputTraits> friend class _ObjectBaseOutput;

@@ -10,7 +10,7 @@ class AIDomain : public DomainBase<AIDomain>
 	public:
 		AIDomain();
 		~AIDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 	private:
 		virtual bool MessageProc(const Message* pMessage);

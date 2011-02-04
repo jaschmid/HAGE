@@ -54,6 +54,60 @@ typedef signed char i8;
 
 typedef unsigned int result;
 
+typedef struct _HAGETime
+{
+	_HAGETime operator -(const _HAGETime& other) const
+	{
+		_HAGETime ret = {time_utc - other.time_utc};
+		return ret;
+	}
+	_HAGETime operator +(const _HAGETime& other) const
+	{
+		_HAGETime ret = {time_utc + other.time_utc};
+		return ret;
+	}
+	_HAGETime operator -=(const _HAGETime& other)
+	{
+		time_utc -= other.time_utc;
+		_HAGETime ret = {time_utc};
+		return ret;
+	}
+	_HAGETime operator +=(const _HAGETime& other)
+	{
+		time_utc += other.time_utc;
+		_HAGETime ret = {time_utc};
+		return ret;
+	}	
+	bool operator ==(const _HAGETime& other) const
+	{
+		return time_utc == other.time_utc;
+	}	
+	bool operator !=(const _HAGETime& other) const
+	{
+		return time_utc != other.time_utc;
+	}
+	bool operator >(const _HAGETime& other) const
+	{
+		return time_utc > other.time_utc;
+	}	
+	bool operator <(const _HAGETime& other) const
+	{
+		return time_utc < other.time_utc;
+	}
+	// precise up to microseconds
+	f32 toSeconds()
+	{
+		return static_cast<f32>(time_utc / 1000)/1000000.0f;
+	}
+	// full precision
+	f64 toSecondsDouble()
+	{
+		return static_cast<f64>(time_utc)/1000000000.0;
+	}
+	// time elapsed in nanoseconds (1/1000000000 seconds)
+	u64 time_utc;
+} t64;
+
 typedef struct _GUID
 {
 	union
@@ -98,7 +152,7 @@ template<class _C> class guid_of
 	(((u64)(b1)<<56)|((u64)(b2)<<48)|((u64)(b3)<<40)|((u64)(b4)<<32)|((u64)(b5)<<24)|((u64)(b6)<<16)|((u64)(b7)<<8)|((u64)(b8)<<0)) }}}
 #define DECLARE_GUID(x,l1,s1,s2,s3,x1) const guid guid##x = {{{ ( ((u64)(l1)<<32)|((u64)(s1)<<16)|((u64)(s2)<<0) ) , \
 	(((u64)(s3)<<48)|((u64)(x1)<<0)) }}}
-#define DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,c) DECLARE_GUID(x,l1,s1,s2,s3,x1); template<> class guid_of<c> { public: static const guid& Get(){return guid##x;} }
+#define DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,c) DECLARE_GUID(x,l1,s1,s2,s3,x1); template<> class guid_of<c> { public: static const guid& Get(){return guid##x;} static const char* Name(){return #x;} }
 #define DECLARE_CLASS_GUID(x,l1,s1,s2,s3,x1) DECLARE_CLASS_GUID_EX(x,l1,s1,s2,s3,x1,x)
 #define DEFINE_CLASS_GUID(x)
 #define DEFINE_CLASS_GUID_EX(x,c)

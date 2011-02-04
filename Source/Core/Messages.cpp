@@ -54,5 +54,23 @@ namespace HAGE {
 		if(handle.isValid())
 			PinBase::FreeMemBlock(handle);
 	}
+	 
+	 MessageReservedInitTime::MessageReservedInitTime(const MemHandle& Handle,const u64& seed)
+	 : MessageHelper<MessageReservedInitTime,Package>(id),handle(Handle),rand_seed(seed)
+	 {
+		 if(handle.isValid())
+			PinBase::ReferenceMemBlock(handle);
+	 }
+	MessageReservedInitTime::MessageReservedInitTime(const MessageReservedInitTime& m)
+		: MessageHelper<MessageReservedInitTime,Package>(m),handle(m.handle) ,rand_seed(m.rand_seed)
+	{
+		if(handle.isValid())
+			PinBase::ReferenceMemBlock(handle);
+	}
 
+	 MessageReservedInitTime::~MessageReservedInitTime()
+	{
+		if(handle.isValid())
+			PinBase::FreeMemBlock(handle);
+	}
 }

@@ -13,7 +13,15 @@
 
 namespace HAGE {
 
-class IDomain
+
+class IRandomSource
+{
+public:
+	virtual u32 GetRandInt()=0;
+	virtual f32 GetRandFloat()=0;
+};	
+
+class IDomain : public IRandomSource
 {
 public:
 	virtual void* Allocate(u64 size) = 0;

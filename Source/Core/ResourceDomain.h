@@ -11,7 +11,7 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 	public:
 		ResourceDomain();
 		~ResourceDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 	private:
 

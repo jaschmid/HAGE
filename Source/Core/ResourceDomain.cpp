@@ -93,7 +93,7 @@ namespace HAGE {
 			return found->second.back();
 		}
 
-		void ResourceDomain::DomainStep(u64 step)
+		void ResourceDomain::DomainStep(t64 time)
 		{
 			for(int i =0;i<_clients.size();++i)
 			{
@@ -138,19 +138,19 @@ namespace HAGE {
 		{
 			assert(!_registrationLocked);
 			//switch domains
-			const guid* pDomainGuid = TLS::domain_guid.release();
-			IDomain* pDomain = TLS::domain_ptr.release();
-			TLS::domain_guid.reset(const_cast<guid*>(&guid_of<ResourceDomain>::Get()));
-			TLS::domain_ptr.reset(this);
+			TLS_data* p = TLS::getData();
+
+			TLS_data backup = *p;
+
+			p->domain_guid=guid_of<ResourceDomain>::Get();
+			p->domain_ptr = this;
+			p->random_generator = this;
 
 			RegisteredResourceManager m = {&in_queue,&out_queue};
 			_clients.push_back(m);
 
 			//switch back
-			TLS::domain_guid.release();
-			TLS::domain_ptr.release();
-			TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));
-			TLS::domain_ptr.reset(pDomain);
+			*p = backup;
 
 			return _stage0Database;
 		}
@@ -160,10 +160,13 @@ namespace HAGE {
 			assert(!_registrationLocked);
 
 			//switch domains
-			const guid* pDomainGuid = TLS::domain_guid.release();
-			IDomain* pDomain = TLS::domain_ptr.release();
-			TLS::domain_guid.reset(const_cast<guid*>(&guid_of<ResourceDomain>::Get()));
-			TLS::domain_ptr.reset(this);
+			TLS_data* p = TLS::getData();
+
+			TLS_data backup = *p;
+
+			p->domain_guid=guid_of<ResourceDomain>::Get();
+			p->domain_ptr = this;
+			p->random_generator = this;
 
 			_loaderMap.insert(std::pair<guid,loaderFunction>(resourceId,loader));
 			auto found = _stage0Database.find(resourceId);
@@ -186,12 +189,9 @@ namespace HAGE {
 				delete [] loadedDependancies;
 				delete pLoader;
 			}
-
+			
 			//switch back
-			TLS::domain_guid.release();
-			TLS::domain_ptr.release();
-			TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));
-			TLS::domain_ptr.reset(pDomain);
+			*p = backup;
 		}
 
 }

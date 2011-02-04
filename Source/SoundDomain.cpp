@@ -10,7 +10,7 @@ namespace HAGE {
 			void operator() ()
 			{
 				static float f=1.534523f;
-				for(int i=0;i<rand()%0xffff;++i)f=f*f;
+				for(int i=0;i<GetRandInt()%0xffff;++i)f=f*f;
 			}
 		private:
 		};
@@ -25,7 +25,7 @@ namespace HAGE {
 			}
 		}
 		
-		void SoundDomain::DomainStep(u64 step)
+		void SoundDomain::DomainStep(t64 time)
 		{
 
 		}

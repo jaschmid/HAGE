@@ -9,6 +9,24 @@
 
 namespace HAGE {
 
+extern const char* GetDomainName(const guid& guid)
+{
+	if(guid == guid_of<LogicDomain>::Get())
+		return guid_of<LogicDomain>::Name();
+	else if(guid == guid_of<GraphicsDomain>::Get())
+		return guid_of<GraphicsDomain>::Name();
+	else if(guid == guid_of<RenderingDomain>::Get())
+		return guid_of<RenderingDomain>::Name();
+	else if(guid == guid_of<SoundDomain>::Get())
+		return guid_of<SoundDomain>::Name();
+	else if(guid == guid_of<AIDomain>::Get())
+		return guid_of<AIDomain>::Name();
+	else if(guid == guid_of<InputDomain>::Get())
+		return guid_of<InputDomain>::Name();
+	else if(guid == guid_of<ResourceDomain>::Get())
+		return guid_of<ResourceDomain>::Name();
+}
+
 class HAGEMain : public IMain
 {
 public:

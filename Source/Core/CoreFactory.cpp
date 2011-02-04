@@ -2,12 +2,18 @@
 
 namespace HAGE {
 
-	CoreFactory::CoreFactory(PinBase*& pOut,TaskManager* pTask) : m_pout(pOut),m_pTask(pTask),m_nCurrentStep(0)
+	CoreFactory::CoreFactory(PinBase*& pOut,TaskManager* pTask) : m_pout(pOut),m_pTask(pTask),_rand_generator(0),number_generator(_rand_generator)
 	{
+		_time.time_utc = 0;
 	}
 	CoreFactory::~CoreFactory()
 	{
 	}
+
+	void CoreFactory::SeedInternalNumberGenerator(u64 seed)
+	{
+		_rand_generator.seed(seed);
+	};
 
 	CoreFactory::iterator	CoreFactory::begin(const guid& capability)
 	{
@@ -68,7 +74,7 @@ namespace HAGE {
 		function_map_type::iterator it2 =registeredFunctionCreation.find(ObjectTypeId);
 		if(it2 != registeredFunctionCreation.end())
 		{
-			ObjectRefContainer container = {nullptr, *it2, 1, bMaster , m_nCurrentStep};	
+			ObjectRefContainer container = {nullptr, *it2, 1, bMaster , _time};	
 			container.nResultSize = 0xffffffff;
 			container.nInitOutSize = 0;
 			container.pInitOutData = nullptr;

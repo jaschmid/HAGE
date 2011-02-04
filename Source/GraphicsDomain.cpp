@@ -13,7 +13,7 @@ namespace HAGE {
 			void operator() ()
 			{
 				static float f=1.534523f;
-				for(int i=0;i<rand()%255;++i)f=f*f;
+				for(int i=0;i<GetRandInt()%255;++i)f=f*f;
 			}
 		private:
 		};
@@ -36,7 +36,7 @@ namespace HAGE {
 			}
 		}
 
-		void GraphicsDomain::DomainStep(u64 step)
+		void GraphicsDomain::DomainStep(t64 time)
 		{
 			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} );
 			auto result2 = Factory.ForEach<int,GraphicsSheet>( [](GraphicsSheet* o) -> int {return o->Step();} );

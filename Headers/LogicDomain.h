@@ -13,7 +13,7 @@ class LogicDomain : public DomainBase<LogicDomain>
 	public:
 		LogicDomain();
 		~LogicDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 	private:
 		

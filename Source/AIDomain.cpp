@@ -21,7 +21,7 @@ namespace HAGE {
 		}
 	}
 
-	void AIDomain::DomainStep(u64 step)
+	void AIDomain::DomainStep(t64 time)
 	{
 	}
 

@@ -1,5 +1,7 @@
 #include <HAGE.h>
 
+extern HAGE::t64 OSGetTime();
+
 namespace HAGE {
 
 	SharedDomainBase::SharedDomainBase(boost::function<void()> f,boost::function<void(bool)> f2,const guid& id)
@@ -41,14 +43,14 @@ namespace HAGE {
 
 		for(u32 i=0;i<inputPins.size();++i)
 		{
-			if(inputPins[i].first == -2)
+			if(inputPins[i].inputDelay == -2)
 			{
 				++nInputCallbacks;
 				++nDelayedInputCallbacks;
 			}
-			else if(inputPins[i].first == -1)
+			else if(inputPins[i].inputDelay == -1)
 				--nDelayedInputCallbacks;
-			else if(inputPins[i].first == 1)
+			else if(inputPins[i].inputDelay == 1)
 					--nDelayedInputCallbacks;
 		}
 
@@ -63,15 +65,15 @@ namespace HAGE {
 			}
 			for(u32 i=0;i<inputPins.size();++i)
 			{
-				if(inputPins[i].first == 0)
+				if(inputPins[i].inputDelay == 0)
 				{
 					//printf("%08x closes pin %08x\n",(SharedDomainBase*)this,inputPins[i].second);
-					inputPins[i].second->CloseReadPin();
+					inputPins[i].pPin->CloseReadPin();
 				}
-				else if( inputPins[i].first < 0)
-					inputPins[i].first ++;
-				else if( inputPins[i].first > 0)
-					inputPins[i].first --;
+				else if( inputPins[i].inputDelay < 0)
+					inputPins[i].inputDelay ++;
+				else if( inputPins[i].inputDelay > 0)
+					inputPins[i].inputDelay --;
 			}
 		}
 	}
@@ -86,7 +88,10 @@ namespace HAGE {
 	void SharedDomainBase::RegisterInput(LockedMessageQueue& in,i32 delay)
 	{
 		in.InitializeInputPin(staticCallback);
-		inputPins.push_back(inputPin(delay,&in));
+		inputPin p;
+		p.pPin = &in;
+		p.inputDelay = delay;
+		inputPins.push_back(p);
 		if(delay == -1)
 			delay = 1;
 		if(delay >= 0)
@@ -110,6 +115,8 @@ namespace HAGE {
 		{
 			return Factory.DispatchMessage((const MessageObjectUnknown*)pMessage);
 		}
+		if(pMessage->GetMessageCode() == MESSAGE_RESERVED_INIT_TIME)
+			return true;
 
 		return false;
 	}
@@ -121,29 +128,108 @@ namespace HAGE {
 			outputPin->PostMessage(message);
 		}
 	}
+	extern const char* GetDomainName(const guid& guid);
 
-	void SharedDomainBase::Init(u64 step)
+	void SharedDomainBase::Init()
 	{
-		Factory.Step(step);
+		// find time messages
+		
+		//printf("%s Base Init\n",GetDomainName(guidDomain));
+		const Message* m=nullptr;
+		u64 rand_seed = 0;
+		for(u32 i = 0;i < inputPins.size();++i)
+			if(inputPins[i].inputDelay == 0)
+				while(m=inputPins[i].pPin->GetNextMessage(m))
+					if(m->GetMessageCode() == MESSAGE_RESERVED_INIT_TIME)
+					{
+						inputPins[i].hTimeHandle = ((MessageReservedInitTime*)m)->GetHandle();
+						rand_seed = ((MessageReservedInitTime*)m)->GetSeed();
+						PinBase::ReferenceMemBlock(inputPins[i].hTimeHandle);
+					}
+		_time.time_utc = 0;
+		_timeLast = _time;
+		for(auto i = inputPins.begin();i!=inputPins.end();++i)
+		{
+			const void* values[3];
+			t64 this_time = ((const timeData*)(((PinBase*)i->pPin)->GetReadMem(i->hTimeHandle,sizeof(timeData))))->time;
+			((const timeData*)(((PinBase*)i->pPin)->GetAll(i->hTimeHandle,values)));
+			t64 times[3] = {*(const t64*)values[0],*(const t64*)values[1],*(const t64*)values[2]};
+			if(this_time > _time)
+				_time = this_time;
+			assert(_time.time_utc == 0);
+		}
+
+		if(rand_seed == 0)
+			rand_seed = OSGetTime().time_utc;
+
+		Tasks.InitHighPrecisionGenerator(rand_seed^guidDomain.ll[0]);
+		Factory.SeedInternalNumberGenerator(rand_seed^guidDomain.ll[0]);
+
+		if(inputPins.size() == 0)
+			_timeBegin = OSGetTime();
+
+		if(outputPin)
+		{
+			_timeHandle = ((PinBase*)outputPin)->AllocateMemBlock(sizeof(timeData));
+			timeData* mem =((timeData*)(((PinBase*)outputPin)->GetWriteMem(_timeHandle,sizeof(timeData))));
+			mem->time = _time;
+			//printf("%s wrote %I64x to %I64x\n",GetDomainName(guidDomain),_time.time_utc,mem);
+			outputPin->PostMessage(MessageReservedInitTime(_timeHandle,rand_seed));
+		}
+		//something wrong here
+		Factory.Step(_time);
 		ProcessMessages();
 	}
 
-	void SharedDomainBase::Step(u64 step)
+	void SharedDomainBase::Step()
 	{/*
 		if(this == (SharedDomainBase*)domain_access<RenderingDomain>::Get())
 		{
 			printf("Step Rendering\n");
 		}*/
+		//printf("%s Base Step\n",GetDomainName(guidDomain));
+		_timeLast = _time;
+		_time.time_utc = 0;
+		for(auto i = inputPins.begin();i!=inputPins.end();++i)
+		{
+			t64 this_time = ((const timeData*)(((PinBase*)i->pPin)->GetReadMem(i->hTimeHandle,sizeof(timeData))))->time;
+			if(this_time > _time)
+				_time = this_time;
+		}
+		if(inputPins.size() == 0)
+		{
+			_time = OSGetTime() - _timeBegin;
+		}
 
-		Factory.Step(step);
+		if(outputPin)
+		{			
+			timeData* mem =((timeData*)(((PinBase*)outputPin)->GetWriteMem(_timeHandle,sizeof(timeData))));
+			mem->time = _time;
+			//printf("%s wrote %I64x to %I64x\n",GetDomainName(guidDomain),_time.time_utc,mem);
+		}
+
+		Factory.Step(_time);
 		ProcessMessages();
 
-		DomainStep(step);
+		DomainStep(_time);
 	}
 
-	void SharedDomainBase::Shutdown(u64 step)
+	void SharedDomainBase::Shutdown()
 	{
-		Factory.Step(step);
+		_timeLast = _time;
+		_time.time_utc = 0;
+		for(auto i = inputPins.begin();i!=inputPins.end();++i)
+		{
+			t64 this_time = ((const timeData*)(((PinBase*)i->pPin)->GetReadMem(i->hTimeHandle,sizeof(timeData))))->time;
+			if(this_time > _time)
+				_time = this_time;
+		}
+		if(inputPins.size() == 0)
+			_time = OSGetTime() - _timeBegin;
+		if(outputPin)
+			((timeData*)(((PinBase*)outputPin)->GetWriteMem(_timeHandle,sizeof(timeData))))->time = _time;
+
+		Factory.Step(_time);
 		ProcessMessages();
 
 		Factory.Shutdown();
@@ -152,15 +238,15 @@ namespace HAGE {
 		if(outputPin)
 			outputPin->Shutdown();
 		for(u32 i = 0;i < inputPins.size();++i)
-			inputPins[i].second->Shutdown();
+			inputPins[i].pPin->Shutdown();
 	}
 
 	void SharedDomainBase::ProcessMessages()
 	{
 		const Message* m=nullptr;
 		for(u32 i = 0;i < inputPins.size();++i)
-			if(inputPins[i].first == 0)
-				while(m=inputPins[i].second->GetNextMessage(m))
+			if(inputPins[i].inputDelay == 0)
+				while(m=inputPins[i].pPin->GetNextMessage(m))
 				{
 					if(!MessageProc(m) && outputPin)
 					{

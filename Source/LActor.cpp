@@ -13,13 +13,13 @@ namespace HAGE {
 		if(_init.behavior == 1)
 		{
 			float fd2 = !position;
-			position = (Matrix4<>::AngleRotation(axis,0.01f)*Vector4<>(position,1.0f)).xyz();
+			position = (Matrix4<>::AngleRotation(axis,GetElapsedTime().toSeconds())*Vector4<>(position,1.0f)).xyz();
 			Output::Set(position);
 		}
 		else if(_init.behavior == 0)
 		{
-			speed = speed + acceleration * 0.005f;
-			position = position + speed *0.005f;
+			speed = speed + acceleration * GetElapsedTime().toSeconds();
+			position = position + speed * GetElapsedTime().toSeconds();
 		
 			Output::Set(position);
 
@@ -65,7 +65,7 @@ namespace HAGE {
 	LogicActor::LogicActor(guid ObjectId,const ActorInit& init) : GenericActor(),ObjectBase<LogicActor>(ObjectId),_init(init)
 	{
 		position=_init.location;
-		speed=Vector3<>(0.0f,0.0f,0.0f);
+		speed=Vector3<>(GetRandFloat()-0.5f,GetRandFloat()-0.5f,GetRandFloat()-0.5f);
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
 		Output::Set(position);

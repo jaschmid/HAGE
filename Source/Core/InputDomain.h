@@ -12,7 +12,7 @@ class InputDomain : public DomainBase<InputDomain>
 	public:
 		InputDomain();
 		~InputDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 		void PostInputMessage(const Message& m)
 		{

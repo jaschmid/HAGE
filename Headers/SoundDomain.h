@@ -10,7 +10,7 @@ class SoundDomain : public DomainBase<SoundDomain>
 	public:
 		SoundDomain();
 		~SoundDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 	private:
 		virtual bool MessageProc(const Message* pMessage);

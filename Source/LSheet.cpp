@@ -61,12 +61,7 @@ namespace HAGE {
 
 	bool LogicSheet::Step()
 	{
-		static clock_t tt = clock();
-		f32 dt = clock()-tt;
-		tt += dt;
-		if(dt == 0) dt = 0.01;
-		dt = dt*CLOCKS_PER_SEC / 1000.0;
-		dt /= 1000.0;
+		float dt = GetElapsedTime().toSeconds();
 		
 		int times = 1;
 		if(dt>settings->getf32Setting("cloth_max_dt")){

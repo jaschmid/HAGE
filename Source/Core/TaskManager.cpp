@@ -28,6 +28,7 @@ namespace HAGE {
 
 	void TaskManager::QueueTask(genericTask* pTask)
 	{
+		pTask->SetSeed(pDomain->GetRandInt());
 		taskList.push_back(pTask);
 	}
 	void TaskManager::Execute()
@@ -40,10 +41,13 @@ namespace HAGE {
 
 		// go to MT mode
 
-		pDomainGuid = TLS::domain_guid.release();
-		pDomain = TLS::domain_ptr.release();
-		Mode= THREAD_MODE_MT;
-		TLS::mode.reset((int*)Mode);
+		TLS_data* p = TLS::getData();
+		TLS_data backup = *p;
+
+		p->domain_guid = guidNull;
+		p->domain_ptr = nullptr;
+		p->random_generator = nullptr;
+		Mode = p->mode = THREAD_MODE_MT;
 
 		nPriority = PRIORITY_TASK;
 		nTasksToComplete = (i32)taskList.size();
@@ -58,9 +62,7 @@ namespace HAGE {
 			TaskManager* pManager = pSharedManager->getNextTaskNoBlock(&pTask,PRIORITY_TASK);
 			if(pManager && pTask)
 			{
-				pManager->TaskEnter();
-				(*pTask)();
-				pManager->TaskLeave();
+				pManager->_InternalRunTask(pTask);
 			}
 		}
 
@@ -70,9 +72,7 @@ namespace HAGE {
 
 		nPriority = PRIORITY_STEP;
 
-		TLS::mode.reset((int*)Mode);
-		TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));
-		TLS::domain_ptr.reset(pDomain);
+		*p = backup;
 
 		nTasksToComplete = 1;
 		nNextTask = 1;
@@ -172,28 +172,27 @@ namespace HAGE {
 
 	}
 
-	void TaskManager::TaskEnter()
+	void TaskManager::_InternalRunTask(genericTask* pTask)
 	{
-		TLS::domain_guid.reset(const_cast<guid*>(pGuid));
-		TLS::domain_ptr.reset((IDomain*)pDomain);
-		TLS::mode.reset((int*)Mode);
-		if(TLS::mode.get() == (int*)THREAD_MODE_ST)
+		TLS_data* p = TLS::getData();
+		p->domain_guid = *pGuid;
+		p->domain_ptr = pDomain;
+		p->mode = Mode;
+		p->random_generator = pTask;
+		if(p->mode == THREAD_MODE_ST)
 		{
 			assert(bInStage == false);
 			bInStage=true;
 		}
-	}
-
-	void TaskManager::TaskLeave()
-	{
-
-		if(TLS::mode.get() == (int*)THREAD_MODE_ST)
+		(*pTask)();
+		if(p->mode == THREAD_MODE_ST)
 		{
 			assert(bInStage == true);
 			bInStage=false;
 		}
-		TLS::domain_guid.release();
-		TLS::domain_ptr.release();
+		p->domain_guid = guidNull;
+		p->domain_ptr = nullptr;
+		p->random_generator = nullptr;
 
 		NotifyTaskCompleted();
 	}
@@ -203,21 +202,21 @@ namespace HAGE {
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		static_cast<SharedDomainBase*>(pDomain)->Init(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Init();
 	}
 	void TaskManager::StepTask()
 	{
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		static_cast<SharedDomainBase*>(pDomain)->Step(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Step();
 	}
 	void TaskManager::ShutdownTask()
 	{
 		assert(taskList.size() == 1);
 		taskList.clear();
 		++nQueueCode;
-		static_cast<SharedDomainBase*>(pDomain)->Shutdown(nStep);
+		static_cast<SharedDomainBase*>(pDomain)->Shutdown();
 	}
 
 	SharedDomainBase* TaskManager::ConstructDomain(HAGE::u32 size)

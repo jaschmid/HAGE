@@ -135,8 +135,8 @@ public:
 
 protected:
 
-	i32		nReadIndex;
-	i32		nWriteIndex;
+	volatile i32 nReadIndex;
+	volatile i32 nWriteIndex;
 	volatile i32 nAvailableSlots;
 
 private:
@@ -163,7 +163,6 @@ private:
 	guid			sourceStamp;
 	mm_vector*		pMem;
 	pd_vector*		m_pvpDestructors;
-	void*			pVoid;
 
 	template<class _T> friend class OutputPin;
 	template<class _T,class _T2> friend class InputPin;
@@ -209,6 +208,7 @@ private:
 	};
 
 	friend class CoreFactory;
+	friend class SharedDomainBase;
 };
 
 }

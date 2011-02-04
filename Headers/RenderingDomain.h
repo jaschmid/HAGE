@@ -21,7 +21,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 	public:
 		RenderingDomain();
 		~RenderingDomain();
-		void DomainStep(u64 step);
+		void DomainStep(t64 time);
 
 		const Matrix4<>& GetInvViewMatrix();
 		const Matrix4<>& GetViewMatrix();

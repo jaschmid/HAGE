@@ -13,17 +13,74 @@
 
 #include "types.h"
 #include "IDomain.h"
+#include "DomainMemory.h"
 #include <boost/thread.hpp>
 
 namespace HAGE {
 
+struct TLS_data
+{
+	guid				domain_guid;
+	IDomain*			domain_ptr;
+	i32					mode;
+	u32					thread_id;
+	IRandomSource*		random_generator;
+};
+
 class TLS
 {
+public: 
+
+#ifdef COMPILER_MSVC
+	static void Init(u32 thread_id)
+	{
+		_data.domain_guid = guidNull;
+		_data.domain_ptr = nullptr;
+		_data.random_generator = nullptr;
+		_data.mode = 0;
+		_data.thread_id = thread_id;
+	}
+
+	static TLS_data* getData()
+	{
+		return &_data;
+	}
+
+	static void Free()
+	{
+		//nothing to do
+	}
+#else
+	static void Init(u32 thread_id)
+	{
+		TLS_data* pData=(TLS_data*)DomainMemory::GlobalAlloc(sizeof(TLS_data));
+		pData->domain_guid = guidNull;
+		pData->domain_ptr = nullptr;
+		pData->random_generator = nullptr;
+		pData->mode = 0;
+		pData->thread_id = thread_id;
+		_data.reset(pData);
+	}
+
+	static TLS_data* getData()
+	{
+		return (TLS_Data*)_data;
+	}
+
+	static void Free()
+	{
+		DomainMemory::GlobalFree((TLS_Data*)_data);
+		_data.release();
+	}
+#endif
+
 public:
-	static boost::thread_specific_ptr<guid> domain_guid;
-	static boost::thread_specific_ptr<IDomain> domain_ptr;
-	static boost::thread_specific_ptr<int> mode;
-	static boost::thread_specific_ptr<u32> thread_id;
+
+#ifdef COMPILER_MSVC
+	__declspec(thread) static TLS_data _data;
+#else
+	static boost::thread_specific_ptr<TLS_data> _data;
+#endif
 };
 
 }

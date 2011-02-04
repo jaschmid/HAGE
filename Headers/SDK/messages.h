@@ -101,7 +101,24 @@ inline bool IsMessageType(u32 code,u32 type)
 
 //message codes
 enum {
-	MESSAGE_RESERVED_WRAP_QUEUE			= 0xffff0001
+	MESSAGE_RESERVED_WRAP_QUEUE			= 0xffff0001,
+	MESSAGE_RESERVED_INIT_TIME			= 0xffff0002
+};
+
+class MessageReservedInitTime : public MessageHelper<MessageReservedInitTime,Package>
+{
+public:
+	MessageReservedInitTime(const MemHandle& Handle,const u64& seed);
+	MessageReservedInitTime(const MessageReservedInitTime& m);
+	virtual ~MessageReservedInitTime();
+
+	const MemHandle& GetHandle() {return handle;}
+	const u64& GetSeed() {return rand_seed;}
+
+private:
+	static const u32 id = MESSAGE_RESERVED_INIT_TIME;
+	const MemHandle handle;
+	const u64 rand_seed;
 };
 
 enum {

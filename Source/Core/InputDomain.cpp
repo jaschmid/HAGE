@@ -25,7 +25,7 @@ namespace HAGE {
 		}
 
 
-		void InputDomain::DomainStep(u64 step)
+		void InputDomain::DomainStep(t64 time)
 		{
 			// for now just forward input
 			while(const Message* m=OSInputQueue.GetTopMessage())

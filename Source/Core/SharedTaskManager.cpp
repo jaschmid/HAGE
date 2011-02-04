@@ -104,7 +104,7 @@ namespace HAGE {
 #ifdef TARGET_WINDOWS
 		SetThreadIdealProcessor(GetCurrentThread(),nThreadId);
 #endif
-		TLS::thread_id.reset(&nThreadId);
+		TLS::Init(nThreadId);
 
 		if(nThreadId == 0)
 		{
@@ -123,9 +123,7 @@ namespace HAGE {
 		TaskManager* pManager;
 		while( pManager= pTaskManager->getNextTask(&task)  )
 		{
-            pManager->TaskEnter();
-			(*task)();
-			pManager->TaskLeave();
+            pManager->_InternalRunTask(task);
 		}
 
 		int count;
@@ -139,7 +137,7 @@ namespace HAGE {
 		printf("pthread %i completed as %i\n",nThreadId,count);
 		shutdownbarrier.wait();
 
-		TLS::thread_id.release();
+		TLS::Free();
 	}
 
 	TaskManager* SharedTaskManager::getNextTask(TaskManager::genericTask** ppTask)
@@ -202,8 +200,11 @@ namespace HAGE {
 
 	result SharedTaskManager::QueueDomain(TaskManager* pTaskManager,u64 queueCode)
 	{
-		const guid* pDomainGuid = TLS::domain_guid.release();
-		IDomain* pDomain = TLS::domain_ptr.release();
+		TLS_data* p = TLS::getData();
+		TLS_data backup = *p;
+		p->domain_guid = guidNull;
+		p->domain_ptr = nullptr;
+		p->random_generator = nullptr;
 
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
@@ -224,26 +225,27 @@ namespace HAGE {
 
 		}
 
-		TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));
-		TLS::domain_ptr.reset(pDomain);
+		*p=backup;
 
 		return S_OK;
 	}
 
 	void SharedTaskManager::Shutdown()
 	{
-
-		const guid* pDomainGuid = TLS::domain_guid.release();
-		IDomain* pDomain = TLS::domain_ptr.release();
+		
+		TLS_data* p = TLS::getData();
+		TLS_data backup = *p;
+		p->domain_guid = guidNull;
+		p->domain_ptr = nullptr;
+		p->random_generator = nullptr;
 
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
 			if(!bShutdown)
 				OSLeaveMessageQueue();
 		}
-
-		TLS::domain_guid.reset(const_cast<guid*>(pDomainGuid));
-		TLS::domain_ptr.reset(pDomain);
+		
+		*p=backup;
 	}
 
 	SharedTaskManager::TaskEntry::TaskEntry(u32 pr, u64 s, u64 qc) : priority(pr),stage(s),queueCode(qc)
@@ -272,16 +274,17 @@ namespace HAGE {
 	void SharedTaskManager::DestructDomain(SharedDomainBase* p)
 	{
 		DomainMemory* pMem = p->Memory;
-
-		TLS::mode.reset((int*)THREAD_MODE_ST);
-		TLS::domain_guid.reset(const_cast<guid*>(&guidNull));
-		TLS::domain_ptr.reset((IDomain*)p);
+		
+		TLS_data* data = TLS::getData();
+		TLS_data backup = *data;
+		data->domain_guid = p->guidDomain;
+		data->domain_ptr = (IDomain*)p;
+		data->random_generator = (IDomain*)p;
+		data->mode = THREAD_MODE_ST;
 
 		delete(p,p);
 
-		TLS::domain_ptr.release();
-		TLS::domain_guid.release();
-		TLS::mode.release();
+		*data=backup;
 
 		DomainMemory::GlobalFree(pMem);
 	}

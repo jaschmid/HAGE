@@ -265,7 +265,7 @@ namespace HAGE {
 		return _light[u];
 	}
 
-	void RenderingDomain::DomainStep(u64 step)
+	void RenderingDomain::DomainStep(t64 time)
 	{
 		pWrapper->BeginFrame();
 
