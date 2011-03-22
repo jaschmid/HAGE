@@ -31,6 +31,7 @@ _CRTIMP FILE* __cdecl __MINGW_NOTHROW	_fdopen (int, const char*);
 
 #define WM_THREADS_SHUTDOWN			WM_USER
 #define WM_REMOTE_FUNCTION_CALL		WM_USER+1
+#define WM_SHUTDOWN_BEGIN			WM_USER+2
 
 class RemoteFunctionCall
 {
@@ -338,7 +339,7 @@ int CALLBACK WinMain(
 			MessageQueueStatus=MESSAGE_QUEUE_RUNNING;
 		}
         TranslateMessage(&Msg);
-		if( Msg.message == WM_CLOSE )
+		if( Msg.message == WM_CLOSE || Msg.message == WM_SHUTDOWN_BEGIN)
 		{
 			bShutdown= true;
 			pSharedTaskManager->StopThreads();
@@ -346,6 +347,8 @@ int CALLBACK WinMain(
 		else if(Msg.message == WM_THREADS_SHUTDOWN)
 		{
 			pSharedTaskManager->FinalizeShutdown();
+			
+			DestroyWindow(hWnd);
 		}
         DispatchMessage(&Msg);
     }
@@ -399,10 +402,18 @@ extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	//return DefWindowProc(hWnd,Msg,wParam,lParam);
+	if(Msg == WM_CLOSE)
+	{
+		return 0;
+	}
+
 	if(bShutdown)
 	{
 		if(Msg == WM_DESTROY)
+		{
 			PostQuitMessage(WM_QUIT);
+		}
+
 		return DefWindowProc(hWnd,Msg,wParam,lParam);
 	}
 
@@ -526,12 +537,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
 extern void OSNotifyMessageQueueThreadsShutdown()
 {
-	assert(PostMessage(hWnd,WM_THREADS_SHUTDOWN,0,0));
+	assert(PostThreadMessage(dwMessageThreadId,WM_THREADS_SHUTDOWN,0,0));
 }
 
 extern void OSLeaveMessageQueue()
 {
-	assert(PostMessage(hWnd,WM_CLOSE,0,0));
+	assert(PostThreadMessage(dwMessageThreadId,WM_SHUTDOWN_BEGIN,0,0));
 }
 
 #endif

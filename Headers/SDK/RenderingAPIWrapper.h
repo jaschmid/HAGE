@@ -45,6 +45,12 @@ typedef enum _APIWFormat
 	R8G8B8A8_SINT		= 9,
 	R8G8B8A8_TYPELESS	= 10,
 	R16_UNORM			= 11,
+	DXTC1_UNORM			= 12,
+	DXTC1_UNORM_SRGB	= 13,
+	DXTC3_UNORM			= 14,
+	DXTC3_UNORM_SRGB	= 15,
+	DXTC5_UNORM			= 16,
+	DXTC5_UNORM_SRGB	= 17
 } APIWFormat;
 
 typedef enum _APIWCullMode
@@ -190,6 +196,108 @@ typedef enum _APIWRendererType
 	APIW_OGLWRAPPER,
 	APIW_DEFAULT
 } APIWRendererType;
+
+
+static HAGE::u32 APIWFormatPixelSize(const HAGE::APIWFormat& format)
+{
+	switch(format)
+	{
+	case HAGE::R16_UNORM			:
+		return sizeof(HAGE::u16)*2;
+	case HAGE::R32_FLOAT			:
+		return sizeof(HAGE::f32);
+	case HAGE::R32G32_FLOAT			:
+		return sizeof(HAGE::f32)*2;
+	case HAGE::R32G32B32_FLOAT		:
+		return sizeof(HAGE::f32)*3;
+	case HAGE::R32G32B32A32_FLOAT	:
+		return sizeof(HAGE::f32)*4;
+	case HAGE::R8G8B8A8_UNORM		:
+	case HAGE::R8G8B8A8_UNORM_SRGB	:
+	case HAGE::R8G8B8A8_SNORM		:
+	case HAGE::R8G8B8A8_UINT		:
+	case HAGE::R8G8B8A8_SINT		:
+	case HAGE::R8G8B8A8_TYPELESS	:
+		return sizeof(HAGE::u8)*4;
+	case HAGE::DXTC1_UNORM:
+	case HAGE::DXTC1_UNORM_SRGB:
+	case HAGE::DXTC3_UNORM:
+	case HAGE::DXTC3_UNORM_SRGB:
+	case HAGE::DXTC5_UNORM:
+	case HAGE::DXTC5_UNORM_SRGB:
+		assert(!"Compressed Texture does not have pixel Size!");
+		break;
+	default:
+		assert(!"Unknown Format!");
+		return 0;
+	}
+}
+
+static const u32 DXTC1_BLOCKSIZE = 8;
+static const u32 DXTC3_BLOCKSIZE = 16;
+static const u32 DXTC5_BLOCKSIZE = 16;
+
+static HAGE::u32 APIWFormatImagePhysicalSize(const HAGE::APIWFormat& format,u32 virtualWidth,u32 virtualHeight)
+{
+	switch(format)
+	{
+	case HAGE::R16_UNORM			:
+	case HAGE::R32_FLOAT			:
+	case HAGE::R32G32_FLOAT			:
+	case HAGE::R32G32B32_FLOAT		:
+	case HAGE::R32G32B32A32_FLOAT	:
+	case HAGE::R8G8B8A8_UNORM		:
+	case HAGE::R8G8B8A8_UNORM_SRGB	:
+	case HAGE::R8G8B8A8_SNORM		:
+	case HAGE::R8G8B8A8_UINT		:
+	case HAGE::R8G8B8A8_SINT		:
+	case HAGE::R8G8B8A8_TYPELESS	:
+		return APIWFormatPixelSize(format)*virtualWidth*virtualHeight;
+	case HAGE::DXTC1_UNORM:
+	case HAGE::DXTC1_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*(virtualHeight/4+((virtualHeight%4)?1:0))*DXTC1_BLOCKSIZE;
+	case HAGE::DXTC3_UNORM:
+	case HAGE::DXTC3_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*(virtualHeight/4+((virtualHeight%4)?1:0))*DXTC3_BLOCKSIZE;
+	case HAGE::DXTC5_UNORM:
+	case HAGE::DXTC5_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*(virtualHeight/4+((virtualHeight%4)?1:0))*DXTC5_BLOCKSIZE;
+	default:
+		assert(!"Unknown Format!");
+		return 0;
+	}
+}
+
+static HAGE::u32 APIWFormatImagePhysicalPitch(const HAGE::APIWFormat& format,u32 virtualWidth)
+{
+	switch(format)
+	{
+	case HAGE::R16_UNORM			:
+	case HAGE::R32_FLOAT			:
+	case HAGE::R32G32_FLOAT			:
+	case HAGE::R32G32B32_FLOAT		:
+	case HAGE::R32G32B32A32_FLOAT	:
+	case HAGE::R8G8B8A8_UNORM		:
+	case HAGE::R8G8B8A8_UNORM_SRGB	:
+	case HAGE::R8G8B8A8_SNORM		:
+	case HAGE::R8G8B8A8_UINT		:
+	case HAGE::R8G8B8A8_SINT		:
+	case HAGE::R8G8B8A8_TYPELESS	:
+		return APIWFormatPixelSize(format)*virtualWidth;
+	case HAGE::DXTC1_UNORM:
+	case HAGE::DXTC1_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*DXTC1_BLOCKSIZE;
+	case HAGE::DXTC3_UNORM:
+	case HAGE::DXTC3_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*DXTC3_BLOCKSIZE;
+	case HAGE::DXTC5_UNORM:
+	case HAGE::DXTC5_UNORM_SRGB:
+		return (virtualWidth/4+((virtualWidth%4)?1:0))*DXTC5_BLOCKSIZE;
+	default:
+		assert(!"Unknown Format!");
+		return 0;
+	}
+}
 
 class RenderingAPIAllocator
 {

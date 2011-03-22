@@ -28,11 +28,15 @@ extern const APIWRasterizerState DefaultRasterizerState = {
 
 extern const APIWSamplerState DefaultSamplerState = {
 	FILTER_MIN_LINEAR|FILTER_MAG_LINEAR|FILTER_MIP_LINEAR,
-	COMPARISON_ALWAYS,
-	ADDRESS_WRAP,
-	ADDRESS_WRAP,
-	ADDRESS_WRAP,
-	16, 0.0f, 0.0f, 10.0f
+	COMPARISON_NEVER,
+	ADDRESS_CLAMP,
+	ADDRESS_CLAMP,
+	ADDRESS_CLAMP,
+	{0.0f,0.0f,0.0f,0.0f},
+	16.0f, 
+	0.0f, 
+	-1000.0f, 
+	1000.0f
 };
 RenderingAPIAllocator* RenderingAPIAllocator::_pAllocator = nullptr;
 

@@ -396,6 +396,12 @@ protected:
 			Resource = new CResourceManager();
 		else
 			Resource = nullptr;
+	
+		if(!outputPin && inputPins.size() == 0)
+		{
+			// just queue self
+			staticQueue(true);
+		}
 	}
 	virtual ~DomainBase()
 	{

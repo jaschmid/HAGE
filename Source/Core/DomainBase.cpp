@@ -75,6 +75,12 @@ namespace HAGE {
 				else if( inputPins[i].inputDelay > 0)
 					inputPins[i].inputDelay --;
 			}
+
+			if(!outputPin && inputPins.size() == 0)
+			{
+				// just queue self
+				staticQueue(false);
+			}
 		}
 	}
 

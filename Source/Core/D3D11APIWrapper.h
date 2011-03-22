@@ -333,11 +333,30 @@ static DXGI_FORMAT APIWFormatToD3DFormat(const HAGE::APIWFormat& format)
 	case HAGE::R8G8B8A8_TYPELESS	:
 		return DXGI_FORMAT_R8G8B8A8_TYPELESS;
 		break;
+	case HAGE::DXTC1_UNORM:
+		return DXGI_FORMAT_BC1_UNORM;
+		break;
+	case HAGE::DXTC1_UNORM_SRGB:
+		return DXGI_FORMAT_BC1_UNORM_SRGB;
+		break;
+	case HAGE::DXTC3_UNORM:
+		return DXGI_FORMAT_BC2_UNORM;
+		break;
+	case HAGE::DXTC3_UNORM_SRGB:
+		return DXGI_FORMAT_BC2_UNORM_SRGB;
+		break;
+	case HAGE::DXTC5_UNORM:
+		return DXGI_FORMAT_BC3_UNORM;
+		break;
+	case HAGE::DXTC5_UNORM_SRGB:
+		return DXGI_FORMAT_BC3_UNORM_SRGB;
+		break;
 	default:
 		assert(!"Unknown Format!");
 		return DXGI_FORMAT_UNKNOWN;
 	}
 }
+
 
 #endif
 #endif

@@ -49,8 +49,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		EffectContainer*							_pEffect;
 		EffectContainer*							_pShadowmapEffect;
 
-
-		TResourceAccess<IDrawableMesh>						Ico;
+		TResourceAccess<IMeshData>					_Map;
 };
 
 }

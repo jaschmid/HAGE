@@ -101,7 +101,7 @@ inline bool IsMessageType(u32 code,u32 type)
 
 //message codes
 enum {
-	MESSAGE_RESERVED_WRAP_QUEUE			= 0xffff0001,
+	MESSAGE_RESERVED_WRAP_QUEUE			= 0x7fff0001,
 	MESSAGE_RESERVED_INIT_TIME			= 0xffff0002
 };
 

@@ -79,7 +79,7 @@ static const char* preproc =
 	"		#define H_TEXTURE_CUBE(x) uniform samplerCube x\n"
 	"		#define H_TEXTURE_2D_CMP(x) uniform sampler2DShadow x\n"
 	"		#define H_TEXTURE_CUBE_CMP(x) uniform samplerCubeShadow x\n"
-	"		#define H_SAMPLE_2D(sampler,coord) (texture(sampler,float2((coord).x,1.0-(coord).y)))\n"
+	"		#define H_SAMPLE_2D(sampler,coord) (texture(sampler,float2((coord).x,(coord).y)))\n"
 	"		#define H_SAMPLE_CUBE(sampler,coord) (texture(sampler,float3((coord).x,(coord).y,(coord).z)))\n"
 	"		#define H_SAMPLE_2D_CMP(sampler,coord,cmp) (texture(sampler,float3((coord).x,1.0-(coord).y,(cmp))))\n"
 	"		#define H_SAMPLE_CUBE_CMP(sampler,coord,cmp) (texture(sampler,float4((coord).x,(coord).y,(coord).z,(cmp))))\n"
@@ -300,6 +300,7 @@ static GLuint CreateOGLSamplerFromHAGESamplerState(HAGE::APIWSamplerState state)
 		glSamplerParameteri(ret,GL_TEXTURE_COMPARE_FUNC,HAGEComparisonFuncToOGLComparisonFunc(state.ComparisonFunction));
 	}
 	glSamplerParameterfv(ret,GL_TEXTURE_BORDER_COLOR,state.BorderColor);
+	glError();
 	return ret;
 }
 
@@ -449,6 +450,7 @@ OGL3Effect::OGL3Effect(OpenGL3APIWrapper* pWrapper,const char* pProgram,HAGE::u1
 			nTextures++;
 			
 			Sampler samp;
+			samp.sampler = 0;
 			for(int s = 0;s<nSamplers;++s)
 				if(strcmp(cAttribName,pSamplers[s].SamplerName) == 0)
 				{
@@ -511,6 +513,7 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
 					glBindTexture(GL_TEXTURE_CUBE_MAP, _textures[i]->_tbo);
 				else
 					glBindTexture(GL_TEXTURE_2D, _textures[i]->_tbo);
+				glError();
 				glBindSampler(i,_samplers[i].sampler);
 				glError();
 			}

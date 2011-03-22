@@ -211,10 +211,14 @@
     <ClInclude Include="Headers\SDK\TLS.h" />
     <ClInclude Include="Headers\SDK\traits.h" />
     <ClInclude Include="Headers\SDK\types.h" />
+    <ClInclude Include="Source\Core\CImageLoader.h" />
+    <ClInclude Include="Source\Core\CMapLoader.h" />
+    <ClInclude Include="Source\Core\CMeshLoader.h" />
     <ClInclude Include="Source\Core\D3D11APIWrapper.h" />
     <ClInclude Include="Source\Core\DebugUI.h" />
     <ClInclude Include="Source\Core\FixedSizeKeyStorage.h" />
     <ClInclude Include="Source\Core\InputDomain.h" />
+    <ClInclude Include="Source\Core\mpq_stormlib.h" />
     <ClInclude Include="Source\Core\OpenGL3APIWrapper.h" />
     <ClInclude Include="Source\Core\RenderDebugUI.h" />
     <ClInclude Include="Source\Core\ResourceDomain.h" />
@@ -228,6 +232,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Source\Core\CMapImageLoader.cpp" />
+    <ClCompile Include="Source\Core\CMapLoader.cpp" />
     <ClCompile Include="Source\Core\CoreFactory.cpp" />
     <ClCompile Include="Source\Core\D3D11ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\D3D11Effect.cpp" />
@@ -243,6 +249,7 @@
     <ClCompile Include="Source\Core\InputDomain.cpp" />
     <ClCompile Include="Source\Core\MeshLoader.cpp" />
     <ClCompile Include="Source\Core\Messages.cpp" />
+    <ClCompile Include="Source\Core\mpq_stormlib.cpp" />
     <ClCompile Include="Source\Core\OGL3ConstantBuffer.cpp" />
     <ClCompile Include="Source\Core\OGL3Effect.cpp" />
     <ClCompile Include="Source\Core\OGL3Texture.cpp" />
@@ -256,6 +263,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Source\Core\RawLoader.cpp" />
     <ClCompile Include="Source\Core\RenderDebugUI.cpp" />
     <ClCompile Include="Source\Core\RenderingAPIWrapper.cpp" />
     <ClCompile Include="Source\Core\ResourceDomain.cpp" />

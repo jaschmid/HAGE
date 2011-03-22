@@ -18,20 +18,6 @@ public:
 	typedef char SrcChannelType;
 };
 
-		/*
-	case HAGE::R16_UNORM			
-	case HAGE::R32_FLOAT		
-	case HAGE::R32G32_FLOAT		
-	case HAGE::R32G32B32_FLOAT	
-	case HAGE::R32G32B32A32_FLOAT	
-	case HAGE::R8G8B8A8_UNORM		
-	case HAGE::R8G8B8A8_UNORM_SRGB	
-	case HAGE::R8G8B8A8_SNORM		
-	case HAGE::R8G8B8A8_UINT		
-	case HAGE::R8G8B8A8_SINT		
-	case HAGE::R8G8B8A8_TYPELESS	
-		*/
-
 template<> class _OGLPixelTransferBufferInfo<HAGE::R16_UNORM>
 {
 public:
@@ -212,6 +198,13 @@ public:
 		case HAGE::R8G8B8A8_SINT:
 			SetValues<HAGE::R8G8B8A8_SINT>(width,height,pData);
 			break;
+		case HAGE::DXTC1_UNORM:
+		case HAGE::DXTC3_UNORM:
+		case HAGE::DXTC5_UNORM:
+			_pData = pData;
+			_DestFormat = 0;
+			_DestChannel = HAGE::APIWFormatImagePhysicalSize(_format,width,height);
+			break;
 		}
 	}
 
@@ -267,48 +260,63 @@ OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 	glError();
 
 	GLenum GL_format = APIWFormatToOGLFormat(format);
-	OGLPixelTransferBuffer Buffer(format,xSize,ySize,pData);
-	GLenum GL_pix_format = Buffer._DestFormat;
-
-	
-	if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
-	{
-		switch(GL_format)
-		{
-		case GL_R16:
-			GL_format = GL_DEPTH_COMPONENT16;
-			break;
-		case GL_R32F:
-			GL_format = GL_DEPTH_COMPONENT32F;
-			break;
-		default:
-			assert(!"Unsupported Depth Buffer Format");
-			break;
-		}
-		GL_pix_format =  GL_DEPTH_COMPONENT;
-	}
 
 	//create texture
 	glError();
-	if(miscFlags & HAGE::TEXTURE_CUBE)
+	int w=xSize,h=ySize;
+	int offset = 0;
+	for(int i = 0; i < _mipLevels; ++i)
 	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+0, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
+		OGLPixelTransferBuffer Buffer(format,w,h,pData?(&((HAGE::u8*)pData)[offset]):nullptr);
+		int psize = HAGE::APIWFormatImagePhysicalSize(_format,w,h);
+		GLenum GL_pix_format = Buffer._DestFormat;
+
+		if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
+		{
+			switch(GL_format)
+			{
+			case GL_R16:
+				GL_format = GL_DEPTH_COMPONENT16;
+				break;
+			case GL_R32F:
+				GL_format = GL_DEPTH_COMPONENT32F;
+				break;
+			default:
+				assert(!"Unsupported Depth Buffer Format");
+				break;
+			}
+			GL_pix_format =  GL_DEPTH_COMPONENT;
+		}
+
+		if(miscFlags & HAGE::TEXTURE_CUBE)
+		{
+			for(int face = 0;face < 6; ++ face)
+			{
+				if(GL_pix_format == 0) // compressed
+					glCompressedTexImage2DARB(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
+				else
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, GL_pix_format, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
+				glError();
+			}
+		}
+		else
+		{	
+			if(GL_pix_format == 0) // compressed
+				glCompressedTexImage2DARB(GL_TEXTURE_2D, i, GL_format, w, h, 0, Buffer._DestChannel, Buffer._pData);
+			else
+				glTexImage2D(GL_TEXTURE_2D, i, GL_format, w, h, 0, GL_pix_format,	Buffer._DestChannel, Buffer._pData);
+		}
 		glError();
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+1, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
-		glError();
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+2, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
-		glError();
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+3, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
-		glError();
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+4, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
-		glError();
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+5, 0, GL_format, xSize, ySize, 0, GL_pix_format, Buffer._DestChannel, NULL);
+
+		w>>=1;
+		h>>=1;
+		if(w==0)
+			w=1;
+		if(h==0)
+			h=1;
+
+		offset += psize;
 	}
-	else
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_format, xSize, ySize, 0, GL_pix_format,	Buffer._DestChannel, Buffer._pData);
-	}
-	glError();
 	
 	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mipLevels-1);

@@ -8,6 +8,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HAGE", "HAGE.vcxproj", "{F7
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HageCore", "HageCore.vcxproj", "{93796C9E-B229-4D96-8FF1-0D952A141FAA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HageGen", "HageGen\HageGen.vcxproj", "{1FC3B877-C916-492D-9C62-116645C10411}"
+	ProjectSection(ProjectDependencies) = postProject
+		{93796C9E-B229-4D96-8FF1-0D952A141FAA} = {93796C9E-B229-4D96-8FF1-0D952A141FAA}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -32,6 +37,13 @@ Global
 		{93796C9E-B229-4D96-8FF1-0D952A141FAA}.Release|Win32.Build.0 = Release|Win32
 		{93796C9E-B229-4D96-8FF1-0D952A141FAA}.Release|x64.ActiveCfg = Release|x64
 		{93796C9E-B229-4D96-8FF1-0D952A141FAA}.Release|x64.Build.0 = Release|x64
+		{1FC3B877-C916-492D-9C62-116645C10411}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FC3B877-C916-492D-9C62-116645C10411}.Debug|Win32.Build.0 = Debug|Win32
+		{1FC3B877-C916-492D-9C62-116645C10411}.Debug|x64.ActiveCfg = Debug|Win32
+		{1FC3B877-C916-492D-9C62-116645C10411}.Release|Win32.ActiveCfg = Release|Win32
+		{1FC3B877-C916-492D-9C62-116645C10411}.Release|Win32.Build.0 = Release|Win32
+		{1FC3B877-C916-492D-9C62-116645C10411}.Release|x64.ActiveCfg = Release|x64
+		{1FC3B877-C916-492D-9C62-116645C10411}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

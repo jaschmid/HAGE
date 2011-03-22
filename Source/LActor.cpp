@@ -65,7 +65,7 @@ namespace HAGE {
 	LogicActor::LogicActor(guid ObjectId,const ActorInit& init) : GenericActor(),ObjectBase<LogicActor>(ObjectId),_init(init)
 	{
 		position=_init.location;
-		speed=Vector3<>(GetRandFloat()-0.5f,GetRandFloat()-0.5f,GetRandFloat()-0.5f);
+		speed=Vector3<>(GetRandFloat()-0.5f,GetRandFloat()-0.5f,GetRandFloat()-0.5f)/10.0f;
 		acceleration=Vector3<>(0.0f,0.0f,0.0f);
 		axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
 		Output::Set(position);

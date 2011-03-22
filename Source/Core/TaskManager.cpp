@@ -149,7 +149,7 @@ namespace HAGE {
 	{
 		assert(bInStage == false);
 		nStep++;
-		if( !pSharedManager->IsShutdown(nStep) )
+		if( !pSharedManager->IsShutdown(((SharedDomainBase*)pDomain)->_time) )
 		{
 			// queue a step Task
 			taskList.push_back(&stepTask);

@@ -48,9 +48,9 @@ public:
 	TaskManager::genericTask* GetNextTaskSpecific(u64 step,u64 queueCode,TaskManager* pManager);
 	result QueueDomain(TaskManager* pTaskManager, u64 queueCode);
 	void	Shutdown();
-	bool IsShutdown(u64 step)
+	bool IsShutdown(t64 time)
 	{
-		if(bShutdown && step >= nShutdownStep)
+		if(bShutdown && time > nShutdownTime)
 			return true;
 		else
 			return false;
@@ -89,8 +89,7 @@ private:
 
 	std::vector<SharedDomainBase*>		m_DomainsToDestruct;
 
-	u64									nShutdownStep;
-	u64									nHighestStep;
+	t64									nShutdownTime;
 };
 
 }

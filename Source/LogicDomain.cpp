@@ -11,6 +11,12 @@
 
 const int nTasks = 1000;
 
+static const char* MeshNames[3] = {
+	"@art.mpq\\CREATURE\\DeathwingHuman\\DeathwingHuman.M2",
+	"@art.mpq\\CREATURE\\AncientSeaTurtleFire\\AncientSeaTurtleFire.M2",
+	"@art.mpq\\CREATURE\\Landro\\Landro.M2"
+};
+
 namespace HAGE {
 
 		class LogicTask : public TaskManager::genericTask
@@ -54,8 +60,8 @@ namespace HAGE {
 			
 			for(int i =0;i<settings->getu32Setting("num_ply_objs");++i)
 			{	
-				sprintf(ainit.mesh,"mesh%i.ply",GetRandInt()%3);
-				ainit.behavior = GetRandInt()%2;
+				strcpy(ainit.mesh,MeshNames[GetRandInt()%3]);
+				ainit.behavior = GetRandInt()%3;
 				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		
 				Factory.CreateObject<LogicActor>(ainit);
@@ -137,7 +143,7 @@ namespace HAGE {
 				Factory.DestroyObject(guids[i]);		
 				ActorInit ainit;	
 				ainit.mass = 1.0f;
-				sprintf(ainit.mesh,"mesh%i.ply",GetRandInt()%3);
+				strcpy(ainit.mesh,MeshNames[GetRandInt()%3]);
 				ainit.scale =Vector3<>(settings->getf32Setting("ply_scale_x"),
 									settings->getf32Setting("ply_scale_y"),
 									settings->getf32Setting("ply_scale_z"));

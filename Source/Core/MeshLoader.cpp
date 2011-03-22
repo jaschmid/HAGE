@@ -1,6 +1,9 @@
 #include "HAGE.h"
 #include "../../ply/rply.h"
 
+
+#include "CMeshLoader.h"
+
 namespace HAGE
 {
 
@@ -170,7 +173,7 @@ IResourceLoader* CDrawableMeshLoader::Initialize(IDataStream* pStream,const IRes
 	return new CDrawableMeshLoader(pStream,pPrev);
 }
 
-CDrawableMeshLoader::CDrawableMeshLoader(IDataStream* pStream,const IResource* pPrev)
+CDrawableMeshLoader::CDrawableMeshLoader(IDataStream* pStream,const IResource* pPrev) :_pDrawableMesh(nullptr)
 {
 	_pDependancies = new std::pair<std::string,guid>[1];
 	_pDependancies[0] = std::pair<std::string,guid>(pStream->GetIdentifierString(),guid_of<IMeshData>::Get());
@@ -181,16 +184,23 @@ CDrawableMeshLoader::~CDrawableMeshLoader()
 		delete [] _pDependancies;
 }
 
-u32 CDrawableMeshLoader::GetDependancies(const std::pair<std::string,guid>** pDependanciesOut)
+IResource* CDrawableMeshLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
-	*pDependanciesOut = _pDependancies;
-	return 1;
-}
-
-IResource* CDrawableMeshLoader::Finalize(const IResource** dependanciesIn,u32 nDependanciesIn)
-{
-	assert(nDependanciesIn == 1);
-	return (IResource*)new CDrawableMesh((const IMeshData*)dependanciesIn[0]);
+	if(_pDrawableMesh == nullptr&&nDependanciesInOut == 0)
+	{
+		*pDependanciesOut = _pDependancies;
+		nDependanciesInOut = 1;
+		return nullptr;
+	}
+	else if(_pDrawableMesh == nullptr)
+	{
+		assert(nDependanciesInOut == 1);
+		_pDrawableMesh = new CDrawableMesh((const IMeshData*)dependanciesIn[0]);
+		delete [] _pDependancies;
+		_pDependancies = nullptr;
+	}
+	
+	return _pDrawableMesh->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 }
 
 CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVertexBuffer(nullptr),_pEffect(nullptr)
@@ -208,22 +218,95 @@ CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVe
 		registered =true;
 	}
 
-	const u8* pVertexData;
-	const u8* pIndexData;
+	u32 nVertices = pData->GetNumVertices();
+	u32 nIndices = pData->GetNumIndices();
 
-	pData->GetVertexData(&pVertexData);
-	pData->GetIndexData(&pIndexData);
+	u8* pVertexData = new u8[sizeof(DefaultVertexFormat)*nVertices];
+	u8* pIndexData = new u8[sizeof(u32)*nIndices];
+
+	const u8* pPosition,*pTexcoord,*pNormal,*pColor;
+	u32 iPositionStride,iTexcoordStride,iNormalStride,iColorStride;
+
+	pData->GetVertexData(&pPosition,iPositionStride,IMeshData::POSITION);
+	pData->GetVertexData(&pTexcoord,iTexcoordStride,IMeshData::TEXCOORD0);
+	pData->GetVertexData(&pNormal,iNormalStride,IMeshData::NORMAL);
+	pData->GetVertexData(&pColor,iColorStride,IMeshData::COLOR);
+
+	DefaultVertexFormat* pWriteOut = (DefaultVertexFormat*)pVertexData;
+	for(int i = 0;i <nVertices;++i)
+	{
+		pWriteOut[i].position = *((Vector3<>*)&pPosition[iPositionStride*i]) ;
+		if(pTexcoord)
+			pWriteOut[i].texcoord0 = *((Vector2<>*)&pTexcoord[iTexcoordStride*i]) ;
+		else
+			pWriteOut[i].texcoord0 = Vector2<>(0.0f,0.0f);
+		pWriteOut[i].normal = *((Vector3<>*)&pNormal[iNormalStride*i]) ;
+		pWriteOut[i].color = *((Vector3<>*)&pColor[iColorStride*i]) ;
+	}
+
+	const u8* pIndexSource;
+	pData->GetIndexData(&pIndexSource);
+	memcpy(pIndexData,pIndexSource,sizeof(u32)*nIndices);
 
 	_pVertexBuffer = pAlloc->CreateVertexBuffer(DefaultVertexFormat::name,pVertexData,pData->GetNumVertices());
-	_pVertexArray = pAlloc->CreateVertexArray(pData->GetNumIndices()/3,PRIMITIVE_TRIANGLELIST,&_pVertexBuffer,1,(const u32*)pIndexData);
+	_pVertexArray = pAlloc->CreateVertexArray(nIndices/3,PRIMITIVE_TRIANGLELIST,&_pVertexBuffer,1,(const u32*)pIndexData);
 	_pEffect = pAlloc->CreateEffect(program);
 	_pConstants = pAlloc->CreateConstantBuffer(sizeof(testConstants));
+	_nTextures = 0;
+	_ppTextures = nullptr;
 
 	pAlloc->EndAllocation();
+
+	int i = 0;
+	const char* name;
+	while(name = pData->GetTextureName(i))
+		++i;
+
+	_nTextures = i;
+	_pTextureNames = new std::pair<std::string,guid>[_nTextures];
+	i = 0;
+	while(name = pData->GetTextureName(i))
+	{
+		_pTextureNames[i] = std::pair<std::string,guid>(name,guid_of<ITextureImage>::Get());	
+		++i;
+	}
+
+	
+	delete [] pVertexData;
+	delete [] pIndexData;
+}
+
+IResource* CDrawableMeshLoader::CDrawableMesh::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+{
+	if(_nTextures == 0)
+		return (IResource*)this;
+
+	if(nDependanciesInOut != _nTextures)
+	{
+		*pDependanciesOut = _pTextureNames;
+		nDependanciesInOut = _nTextures;
+		return nullptr;
+	}
+
+	assert(nDependanciesInOut == _nTextures);
+
+	_ppTextures = new const APIWTexture*[_nTextures];
+	for(int i = 0;i<_nTextures;++i)
+		_ppTextures[i] = ((const ITextureImage**)dependanciesIn)[i]->GetTexture();
+
+	delete [] _pTextureNames;
+	_pTextureNames = nullptr;
+	return (IResource*)this;
 }
 
 CDrawableMeshLoader::CDrawableMesh::~CDrawableMesh()
 {
+	if(_ppTextures)
+	{
+		for(int i = 0;i<_nTextures;++i)
+			delete _ppTextures[i];
+		delete [] _ppTextures;
+	}
 	if(_pVertexBuffer)delete _pVertexBuffer;
 	if(_pVertexArray)delete _pVertexArray;
 	if(_pEffect)delete _pEffect;
@@ -247,26 +330,31 @@ void CDrawableMeshLoader::CDrawableMesh::Draw(const Vector3<>& position, const M
 
 IResourceLoader* CMeshDataLoader::Initialize(IDataStream* pStream,const IResource* pPrev)
 {
-	return new CMeshDataLoader(pStream,pPrev);
+	CMeshDataLoader* pMeshLoader = new CMeshDataLoader(pStream,pPrev);
+	if(!pMeshLoader->IsValid())
+	{
+		delete pMeshLoader;
+		pMeshLoader = nullptr;
+	}
+	return pMeshLoader;
 }
 
 CMeshDataLoader::CMeshDataLoader(IDataStream* pStream,const IResource* pPrev)
 {
 	_pMeshData = new CMeshData(pStream);
-	pStream->Close();
+	if(!_pMeshData->IsValid())
+	{
+		delete _pMeshData;
+		_pMeshData = nullptr;
+	}
 }
 CMeshDataLoader::~CMeshDataLoader()
 {
 }
 
-u32 CMeshDataLoader::GetDependancies(const std::pair<std::string,guid>** pDependanciesOut)
+IResource* CMeshDataLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
-	return 0;
-}
-
-IResource* CMeshDataLoader::Finalize(const IResource** dependanciesIn,u32 nDependanciesIn)
-{
-	return (IResource*)_pMeshData;
+	return _pMeshData->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 }
 
 static int vertex_cb(p_ply_argument argument) {
@@ -301,86 +389,376 @@ static int face_cb(p_ply_argument argument) {
     return 1;
 }
 
-CMeshDataLoader::CMeshData::CMeshData(const IDataStream* pData)
+CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(false)
 {
-	if(pData->GetIdentifierString() == std::string("Null"))
+	_pData = pData;
+	if(pData->IsValid())
 	{
-		_vertexSize = sizeof(DefaultVertexFormat);
-		_pVertexData = (u8*)vertices; 
-		_pIndexData = (u8*)indices;
-		_nVertices = 12;
-		_nIndices = 60;	
+		p_ply ply = ply_open(pData->GetIdentifierString().c_str(), NULL);
+		if(ply && ply_read_header(ply))
+		{
+			std::vector<float> vX,vY,vZ;
+			std::vector<u32> tI;
+			ply_set_read_cb(ply, "vertex", "x", vertex_cb, &vX, 0);
+			ply_set_read_cb(ply, "vertex", "y", vertex_cb, &vY, 0);
+			ply_set_read_cb(ply, "vertex", "z", vertex_cb, &vZ, 1);
+			ply_set_read_cb(ply, "face", "vertex_indices", face_cb, &tI, 0);
+			assert(ply_read(ply));
+			ply_close(ply);
+		
+			_nIndices = tI.size();
+			_nVertices = vX.size();
+			DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
+			Vector3<> min(0.0f,0.0f,0.0f),max(0.0f,0.0f,0.0f);
+			for(int i =0;i<_nVertices;++i)
+			{
+				pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
+				pVertexData[i].normal   = Vector3<>(0,0,0);
+				pVertexData[i].texcoord0 = Vector2<>(0.0f,0.0f);
+				if(pVertexData[i].position.x <= min.x)
+					min.x = pVertexData[i].position.x;
+				if(pVertexData[i].position.y <= min.y)
+					min.y = pVertexData[i].position.y;
+				if(pVertexData[i].position.z <= min.z)
+					min.z = pVertexData[i].position.z;
+				if(pVertexData[i].position.x >= max.x)
+					max.x = pVertexData[i].position.x;
+				if(pVertexData[i].position.y >= max.y)
+					max.y = pVertexData[i].position.y;
+				if(pVertexData[i].position.z >= max.z)
+					max.z = pVertexData[i].position.z;
+			}
+
+			_pVertexData=(u8*)pVertexData;
+			u32* pIndexData = new u32[_nIndices];
+			memcpy(pIndexData,&tI[0],sizeof(u32)*_nIndices);
+
+			for(int i=0;i<_nIndices/3;++i)
+			{
+				Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
+				Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
+				Vector3<> face_normal = d1 % d2;
+				face_normal = face_normal / sqrtf(!face_normal);
+				pVertexData[pIndexData[i*3+0]].normal+=face_normal;
+				pVertexData[pIndexData[i*3+1]].normal+=face_normal;
+				pVertexData[pIndexData[i*3+2]].normal+=face_normal;
+			}
+
+			Vector3<> avg = (max+min)/2.0f;
+			for(int i =0;i<_nVertices;++i)
+			{
+				pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
+				pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
+				pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
+			}
+			_pIndexData=(u8*)pIndexData;
+			_bValid = true;
+			return;
+		}
+		
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+		if(TryLoadM2(pData))
+		{
+			_MD2 = true;
+			_bValid = true;
+			return;
+		}
 	}
-	else if(pData->GetIdentifierString() == std::string("Box"))
+	
+	if(pData->GetIdentifierString() == std::string("Box"))
 	{
 		_vertexSize = sizeof(DefaultVertexFormat);
 		_pVertexData = (u8*)boxVertices; 
 		_pIndexData = (u8*)boxIndices;
 		_nVertices = 4*6;
 		_nIndices = 6*6;	
+		_bValid = true;
+	}
+	else if(pData->GetIdentifierString() == std::string("Null"))
+	{
+		_vertexSize = sizeof(DefaultVertexFormat);
+		_pVertexData = (u8*)vertices; 
+		_pIndexData = (u8*)indices;
+		_nVertices = 12;
+		_nIndices = 60;	
+		_bValid = true;
 	}
 	else
 	{
-		p_ply ply = ply_open(pData->GetIdentifierString().c_str(), NULL);
-		assert(ply);
-		assert(ply_read_header(ply));
-		std::vector<float> vX,vY,vZ;
-		std::vector<u32> tI;
-		ply_set_read_cb(ply, "vertex", "x", vertex_cb, &vX, 0);
-		ply_set_read_cb(ply, "vertex", "y", vertex_cb, &vY, 0);
-		ply_set_read_cb(ply, "vertex", "z", vertex_cb, &vZ, 1);
-		ply_set_read_cb(ply, "face", "vertex_indices", face_cb, &tI, 0);
-		assert(ply_read(ply));
-		ply_close(ply);
-		
-		_nIndices = tI.size();
-		_nVertices = vX.size();
-		DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
-		Vector3<> min(0.0f,0.0f,0.0f),max(0.0f,0.0f,0.0f);
-		for(int i =0;i<_nVertices;++i)
-		{
-			pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
-			pVertexData[i].normal   = Vector3<>(0,0,0);
-			pVertexData[i].texcoord0 = Vector2<>(0.0f,0.0f);
-			if(pVertexData[i].position.x <= min.x)
-				min.x = pVertexData[i].position.x;
-			if(pVertexData[i].position.y <= min.y)
-				min.y = pVertexData[i].position.y;
-			if(pVertexData[i].position.z <= min.z)
-				min.z = pVertexData[i].position.z;
-			if(pVertexData[i].position.x >= max.x)
-				max.x = pVertexData[i].position.x;
-			if(pVertexData[i].position.y >= max.y)
-				max.y = pVertexData[i].position.y;
-			if(pVertexData[i].position.z >= max.z)
-				max.z = pVertexData[i].position.z;
-		}
-
-		_pVertexData=(u8*)pVertexData;
-		u32* pIndexData = new u32[_nIndices];
-		memcpy(pIndexData,&tI[0],sizeof(u32)*_nIndices);
-
-		for(int i=0;i<_nIndices/3;++i)
-		{
-			Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
-			Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
-			Vector3<> face_normal = d1 % d2;
-			face_normal = face_normal / sqrtf(!face_normal);
-			pVertexData[pIndexData[i*3+0]].normal+=face_normal;
-			pVertexData[pIndexData[i*3+1]].normal+=face_normal;
-			pVertexData[pIndexData[i*3+2]].normal+=face_normal;
-		}
-
-		Vector3<> avg = (max+min)/2.0f;
-		for(int i =0;i<_nVertices;++i)
-		{
-			pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
-			pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
-			pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
-		}
-		_pIndexData=(u8*)pIndexData;
+		_vertexSize = 0;
+		_pVertexData = nullptr; 
+		_pIndexData = nullptr;
+		_nVertices = 0;
+		_nIndices = 0;	
+		_bValid = false;
 	}
 }
+
+struct Sphere
+{
+        /*0x00*/ Vector3<> min;
+        /*0x0C*/ Vector3<> max;
+        /*0x18*/ float radius;
+};
+
+struct ModelHeader {
+        u8 id[4];
+        u8 version[4];
+        u32 nameLength;
+        u32 nameOfs;
+        u32 GlobalModelFlags; // 1: tilt x, 2: tilt y, 4:, 8: add another field in header, 16: ; (no other flags as of 3.1.1);
+
+        u32 nGlobalSequences; // AnimationRelated
+        u32 ofsGlobalSequences; // A list of timestamps.
+        u32 nAnimations; // AnimationRelated
+        u32 ofsAnimations; // Information about the animations in the model.
+        u32 nAnimationLookup; // AnimationRelated
+        u32 ofsAnimationLookup; // Mapping of global IDs to the entries in the Animation sequences block.
+        //u32 nD;
+        //u32 ofsD;
+        u32 nBones; // BonesAndLookups
+        u32 ofsBones; // Information about the bones in this model.
+        u32 nKeyBoneLookup; // BonesAndLookups
+        u32 ofsKeyBoneLookup; // Lookup table for key skeletal bones.
+
+        u32 nVertices; // GeometryAndRendering
+        u32 ofsVertices; // Vertices of the model.
+        u32 nViews; // GeometryAndRendering
+        //u32 ofsViews; // Views (LOD) are now in .skins.
+
+        u32 nColors; // ColorsAndTransparency
+        u32 ofsColors; // Color definitions.
+
+        u32 nTextures; // TextureAndTheifAnimation
+        u32 ofsTextures; // Textures of this model.
+
+        u32 nTransparency; // H,  ColorsAndTransparency
+        u32 ofsTransparency; // Transparency of textures.
+        //u32 nI;   // always unused ?
+        //u32 ofsI;
+        u32 nTexAnims;       // J, TextureAndTheifAnimation
+        u32 ofsTexAnims;
+        u32 nTexReplace; // TextureAndTheifAnimation
+        u32 ofsTexReplace; // Replaceable Textures.
+
+        u32 nTexFlags; // Render Flags
+        u32 ofsTexFlags; // Blending modes / render flags.
+        u32 nBoneLookup; // BonesAndLookups
+        u32 ofsBoneLookup; // A bone lookup table.
+
+        u32 nTexLookup; // TextureAndTheifAnimation
+        u32 ofsTexLookup; // The same for textures.
+
+        u32 nTexUnitLookup;          // L, TextureAndTheifAnimation, seems gone after Cataclysm
+        u32 ofsTexUnitLookup; // And texture units. Somewhere they have to be too.
+        u32 nTransparencyLookup; // M, ColorsAndTransparency
+        u32 ofsTransparencyLookup; // Everything needs its lookup. Here are the transparencies.
+        u32 nTexAnimLookup; // TextureAndTheifAnimation
+        u32 ofsTexAnimLookup; // Wait. Do we have animated Textures? Wasn't ofsTexAnims deleted? oO
+
+        Sphere collisionSphere;
+        Sphere boundSphere;
+
+        u32 nBoundingTriangles; // Miscellaneous
+        u32 ofsBoundingTriangles;
+        u32 nBoundingVertices; // Miscellaneous
+        u32 ofsBoundingVertices;
+        u32 nBoundingNormals; // Miscellaneous
+        u32 ofsBoundingNormals;
+
+        u32 nAttachments; // O, Miscellaneous
+        u32 ofsAttachments; // Attachments are for weapons etc.
+        u32 nAttachLookup; // P, Miscellaneous
+        u32 ofsAttachLookup; // Of course with a lookup.
+        u32 nEvents; //
+        u32 ofsEvents; // Used for playing sounds when dying and a lot else.
+        u32 nLights; // R
+        u32 ofsLights; // Lights are mainly used in loginscreens but in wands and some doodads too.
+        u32 nCameras; // S, Miscellaneous
+        u32 ofsCameras; // The cameras are present in most models for having a model in the Character-Tab.
+        u32 nCameraLookup; // Miscellaneous
+        u32 ofsCameraLookup; // And lookup-time again, unit16
+        u32 nRibbonEmitters; // U, Effects
+        u32 ofsRibbonEmitters; // Things swirling around. See the CoT-entrance for light-trails.
+        u32 nParticleEmitters; // V, Effects
+        u32 ofsParticleEmitters; // Spells and weapons, doodads and loginscreens use them. Blood dripping of a blade? Particles.
+};
+
+struct ModelVertex {
+        Vector3<f32> pos;
+        u8 weights[4];
+        u8 bones[4];
+        Vector3<f32> normal;
+        Vector2<f32> texcoords;
+        i32 unk1, unk2; // always 0,0 so this is probably unused
+};
+
+struct ModelView {
+    u8 id[4];                              // Signature
+    u32 nIndex;
+    u32 ofsIndex; // int16, Vertices in this model (index into vertices[])
+    u32 nTris;
+    u32 ofsTris;  // int16[3], indices
+    u32 nProps;
+    u32 ofsProps; // int32, additional vtx properties
+    u32 nSub;
+    u32 ofsSub;   // ModelGeoset, materials/renderops/submeshes
+    u32 nTex;
+    u32 ofsTex;   // ModelTexUnit, material properties/textures
+    i32 lod;                               // LOD bias?
+};
+
+struct ModelGeoset {
+        u32 id;              // mesh part id?
+        u16 vstart;  // first vertex, Starting vertex number.
+        u16 vcount;  // num vertices, Number of vertices.
+        u16 istart;  // first index, Starting triangle index (that's 3* the number of triangles drawn so far).
+        u16 icount;  // num indices, Number of triangle indices.
+        u16 nSkinnedBones;   // number of bone indices, Number of elements in the bone lookup table.
+        u16 StartBones;              // ? always 1 to 4, Starting index in the bone lookup table.
+        u16 rootBone;                // root bone?
+        u16 nBones;          //
+        Vector3<f32> BoundingBox[2];
+        f32 radius;
+};
+
+struct ModelTextureDef {
+        u32 type;
+        u32 flags;
+        u32 nameLen;
+        u32 nameOfs;
+};
+
+struct ModelTexUnit{
+        // probably the texture units
+        // size always >=number of materials it seems
+        u16 flags;           // Usually 16 for static textures, and 0 for animated textures.
+        u16 shading;         // If set to 0x8000: shaders. Used in skyboxes to ditch the need for depth buffering. See below.
+        u16 op;                      // Material this texture is part of (index into mat)
+        u16 op2;                     // Always same as above?
+        i16 colorIndex;       // A Color out of the Colors-Block or -1 if none.
+        u16 flagsIndex;      // RenderFlags (index into render flags, TexFlags)
+        u16 texunit;         // Index into the texture unit lookup table.
+        u16 mode;            // See below.
+        u16 textureid;       // Index into Texture lookup table
+        u16 texunit2;        // copy of texture unit value?
+        u16 transid;         // Index into transparency lookup table.
+        u16 texanimid;       // Index into uvanimation lookup table.
+};
+
+inline static void forceRead(IDataStream* pData,u64 size,void* pOut)
+{
+	assert(pData->Read(size,(u8*)pOut) == size);
+}
+
+inline static Vector3<> fixCoordSystem(Vector3<> v)
+{
+        return Vector3<>(v.x, v.z, -v.y);
+}
+
+bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
+{
+	ModelHeader header;
+	if(pData->Read(sizeof(header),(u8*)&header)!=sizeof(header))
+		return false;
+	static const char md2Magic[4] = {'M','D','2','0'};
+	if(memcmp(md2Magic,header.id,4) !=0)
+		return false;
+	ModelVertex* origVertices = new ModelVertex[header.ofsVertices];
+	pData->Seek(header.ofsVertices,IDataStream::ORIGIN_BEGINNING);
+	forceRead(pData,sizeof(ModelVertex)*header.nVertices,origVertices);
+	
+	_vertexSize = sizeof(DefaultVertexFormat);
+	_nVertices = header.nVertices;
+
+	DefaultVertexFormat* pVertices = new DefaultVertexFormat[header.nVertices];
+
+	for(int i = 0;i<_nVertices;++i)
+	{
+		pVertices[i].color = Vector3<>(1.0f,1.0f,1.0f);
+		pVertices[i].normal = fixCoordSystem(origVertices[i].normal.normalize());
+		pVertices[i].position = fixCoordSystem(origVertices[i].pos);
+		pVertices[i].texcoord0 = origVertices[i].texcoords;
+	}
+
+	_pVertexData = (u8*)pVertices; 
+
+	delete [] origVertices;
+
+	//add dependancy to skin file for index data
+
+	std::string skin_filename = pData->GetIdentifierString();
+
+	u32 last = skin_filename.find_last_of('.');
+	skin_filename = skin_filename.substr(0,last);
+	skin_filename.append("00.skin");
+
+	_depencancies.push_back(std::pair<std::string,guid>(skin_filename,guid_of<IRawData>::Get()));
+
+	pData->Seek(header.ofsTextures,IDataStream::ORIGIN_BEGINNING);
+	ModelTextureDef def[32];
+	assert(header.nTextures < 32);
+	forceRead(pData,header.nTextures*sizeof(ModelTextureDef),def);
+	char tmp[1025];
+	for(int i = 0;i<header.nTextures;++i)
+		if(def[i].type == 0 && def[i].nameLen > 1)
+		{
+			pData->Seek(def[i].nameOfs,IDataStream::ORIGIN_BEGINNING);
+			forceRead(pData,def[i].nameLen,tmp);
+			tmp[def[i].nameLen] = '\0';
+			_textureNames.push_back(std::string("@art.mpq\\")+std::string(tmp));
+		}
+	return true;
+}
+
+void CMeshDataLoader::CMeshData::FinalizeLoadM2(const IResource** dependanciesIn,u32 nDependanciesIn)
+{
+	assert(nDependanciesIn == _depencancies.size());
+	IRawData* pSkinData = (IRawData*)dependanciesIn[0];
+	assert(pSkinData->GetSize() >= sizeof(ModelView));
+	const u8* p;
+	u32 size = pSkinData->GetData(&p);
+	const ModelView* view=(const ModelView*)p;
+
+	static const char skinMagic[4] = {'S','K','I','N'};
+	assert(memcmp(skinMagic,view->id,4) ==0);
+
+	const u16* indexLookup = (const u16*)(p + view->ofsIndex);
+	const u16* triangles = (const u16*)(p + view->ofsTris);
+	_nIndices = view->nTris;
+	u32* indices = new u32[_nIndices];
+	for(int i =0;i<_nIndices;++i)
+		indices[i] = indexLookup[triangles[i]];
+
+	_pIndexData = (u8*)indices;
+}
+
+
+IResource* CMeshDataLoader::CMeshData::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+{
+	if(nDependanciesInOut == 0 && _depencancies.size())
+	{		
+		if(pDependanciesOut)
+		{
+			if(_depencancies.size() > 0)
+				*pDependanciesOut = _depencancies.data();
+			else
+				*pDependanciesOut = nullptr;
+		}
+		nDependanciesInOut = _depencancies.size();
+		return nullptr;
+	}
+	else
+	{
+		if(_MD2)
+			FinalizeLoadM2(dependanciesIn,nDependanciesInOut);
+
+		_depencancies.clear();
+		_pData = nullptr;
+		return (IResource*)this;
+	}
+}
+
 
 CMeshDataLoader::CMeshData::~CMeshData()
 {
@@ -390,21 +768,29 @@ u32 CMeshDataLoader::CMeshData::GetNumVertices() const
 {
 	return _nVertices;
 }
-u32 CMeshDataLoader::CMeshData::GetVertexSize() const
+
+
+u32 CMeshDataLoader::CMeshData::GetVertexData(const u8** pDataOut,u32& pOutStride,VERTEX_DATA_TYPE type) const
 {
-	return _vertexSize;
-}
-u32 CMeshDataLoader::CMeshData::GetVertexData(const u8** pDataOut) const
-{
-	if(pDataOut)
+	switch(type)
 	{
-		*pDataOut = _pVertexData;
-		return _nVertices*_vertexSize;
+	case POSITION:
+		*pDataOut = (const u8*)&((DefaultVertexFormat*)_pVertexData)->position;
+		break;
+	case TEXCOORD0:
+		*pDataOut = (const u8*)&((DefaultVertexFormat*)_pVertexData)->texcoord0;
+		break;
+	case NORMAL:
+		*pDataOut = (const u8*)&((DefaultVertexFormat*)_pVertexData)->normal;
+		break;
+	case COLOR:
+		*pDataOut = (const u8*)&((DefaultVertexFormat*)_pVertexData)->color;
+		break;
+	default:
+		return 0;
 	}
-	else
-	{
-		return _nVertices*_vertexSize;
-	}
+
+	pOutStride = sizeof(DefaultVertexFormat);
 }
 u32	CMeshDataLoader::CMeshData::GetNumIndices() const
 {
@@ -415,12 +801,24 @@ u32 CMeshDataLoader::CMeshData::GetIndexData(const u8** pDataOut) const
 	if(pDataOut)
 	{
 		*pDataOut = _pIndexData;
-		return _nIndices*sizeof(u32);
+		return _nIndices;
 	}
 	else
 	{
-		return _nIndices*sizeof(u32);
+		return _nIndices;
 	}
+}
+const char* CMeshDataLoader::CMeshData::GetTextureName(u32 index) const
+{
+	if(index < _textureNames.size())
+		return _textureNames[index].c_str();
+	else
+		return nullptr;
+}
+
+const void* CMeshDataLoader::CMeshData::GetExtendedData(EXTENDED_DATA_TYPE type) const
+{
+	return nullptr;
 }
 
 }

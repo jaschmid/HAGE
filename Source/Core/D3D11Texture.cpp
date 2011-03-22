@@ -67,13 +67,30 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		desc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE ;
 	}
 
-	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = pData;
-	data.SysMemPitch = xSize * sizeof(HAGE::u32);
-	data.SysMemSlicePitch = 0;
+	D3D11_SUBRESOURCE_DATA data[16];
 	D3D11_SUBRESOURCE_DATA* pLocalData = nullptr;
 	if(pData)
-		pLocalData = &data;
+	{		
+		HAGE::u8* pMipData = (HAGE::u8*)pData;
+		int w = xSize;
+		int h = ySize;
+		for(int i =0;i<mipLevels;++i)
+		{
+			data[i].pSysMem = pMipData;
+			data[i].SysMemPitch = APIWFormatImagePhysicalPitch(format,w);
+			data[i].SysMemSlicePitch = APIWFormatImagePhysicalSize(format,w,h);
+
+			pMipData+=APIWFormatImagePhysicalSize(format,w,h);
+
+			w>>=1;
+			h>>=1;
+			if(w==0)
+				w=1;
+			if(h==0)
+				h=1;
+		}
+		pLocalData = data;
+	}
 	HRESULT hres = pWrapper->GetDevice()->CreateTexture2D(&desc,pLocalData,&_texture);
 	assert(SUCCEEDED(hres));
 
@@ -94,13 +111,13 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		if(desc.ArraySize == 1)
 		{
 			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-			srvDesc.Texture2D.MipLevels = -1;
+			srvDesc.Texture2D.MipLevels = desc.MipLevels;
 			srvDesc.Texture2D.MostDetailedMip = 0;
 		}
 		else if(_miscFlags & HAGE::TEXTURE_CUBE )
 		{
 			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-			srvDesc.TextureCube.MipLevels = 1;
+			srvDesc.TextureCube.MipLevels = desc.MipLevels;
 			srvDesc.TextureCube.MostDetailedMip = 0;
 		}
 		hres = pWrapper->GetDevice()->CreateShaderResourceView( _texture, &srvDesc, &_shaderResourceView );
@@ -166,7 +183,7 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		hres = pWrapper->GetDevice()->CreateRenderTargetView( _texture, &renderDesc, &_renderTargetView );
 		assert(SUCCEEDED(hres));	
 	}
-	 _vp.Width = (FLOAT)(_xSize);
+	_vp.Width = (FLOAT)(_xSize);
     _vp.Height = (FLOAT)(_ySize);
     _vp.MinDepth = 0.0f;
     _vp.MaxDepth = 1.0f;

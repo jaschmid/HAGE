@@ -10,9 +10,8 @@ namespace HAGE {
 
 	bool LogicLight::Step()
 	{
-		static float t = 0.0f;
-		//t+=0.01f;
-		//_data.Position = _init.Position*(cosf(t)+1.0f);
+		/*_data.Position.x = -cosf(GetTime().toSeconds())*3.0f;
+		_data.Position.z = sinf(GetTime().toSeconds())*3.0f;*/
 		Output::Set(_data);
 		return false;
 	}

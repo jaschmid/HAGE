@@ -35,7 +35,7 @@
 namespace HAGE
 {
 	template<> class get_traits<InputDomain> : public DomainTraits<InputDomain,true> {};
-	template<> class get_traits<ResourceDomain> : public DomainTraits<ResourceDomain,false,InputDomain> {};
+	template<> class get_traits<ResourceDomain> : public DomainTraits<ResourceDomain,false> {};
 }
 
 #endif

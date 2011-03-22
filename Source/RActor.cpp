@@ -12,11 +12,18 @@ namespace HAGE {
 		ObjectBase<RenderingActor>(ObjectId,h,source),scale(pInit->scale),_init(*pInit)
 	{
 		
-		_mesh = GetResource()->OpenResource<IDrawableMesh>(pInit->mesh);
+		
 		if(strcmp(pInit->mesh,"Box")==0)
-			_texture = GetResource()->OpenResource<ITextureImage>("WoodBox.png");
+		{
+			_mesh = GetResource()->OpenResource<IDrawableMesh>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40.adt");
+			//art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp
+			_texture = GetResource()->OpenResource<ITextureImage>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt");
+		}
 		else
+		{
+			_mesh = GetResource()->OpenResource<IDrawableMesh>(pInit->mesh);
 			_texture = GetResource()->OpenResource<ITextureImage>("Null");
+		}
 		if(Input1::IsReady() )
 		{
 			position = Input1::Get();
@@ -35,7 +42,10 @@ namespace HAGE {
 			pc.inverse_modelview =		(Matrix4<>::Translate(-position)*c.inverse_modelview.Transpose()).Transpose();
 			pc.modelview_projection =	(c.modelview_projection.Transpose()*pc.model.Transpose()).Transpose();
 			pBuffer->UpdateContent(&pc);
-			pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());
+			if(_mesh->GetTexture(0))
+				pEffect->SetTexture("DiffuseTexture",_mesh->GetTexture(0));
+			else
+				pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());
 			pEffect->Draw(0,_mesh->GetVertexArray());
 		}
 		return 1;

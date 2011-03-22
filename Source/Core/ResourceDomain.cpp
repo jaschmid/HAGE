@@ -1,5 +1,6 @@
 #include "HAGE.h"
 #include "ResourceDomain.h"
+#include "mpq_stormlib.h"
 
 namespace HAGE {
 
@@ -18,11 +19,11 @@ namespace HAGE {
 			return _filename;
 		}
 
-		u64 ResourceDomain::CFileStream::Read(u64 nReadMax,u8* pReadOut) const
+		u64 ResourceDomain::CFileStream::Read(u64 nReadMax,u8* pReadOut)
 		{
 			return fread(pReadOut,1,nReadMax,_file);
 		}
-		u64 ResourceDomain::CFileStream::Seek(i64 iPosition,ORIGIN origin) const
+		u64 ResourceDomain::CFileStream::Seek(i64 iPosition,ORIGIN origin)
 		{
 			int seek_origin;
 			switch(origin)
@@ -64,26 +65,51 @@ namespace HAGE {
 				found->second[0]->pCurrentStage = nullptr;
 
 				auto loaders = _loaderMap.equal_range(type);
+				IDataStream* pStream = _OpenDataStream(pName);
 				for(auto it= loaders.first;it!=loaders.second;++it)
 				{
-					IResourceLoader* pLoader = it->second(new CFileStream(pName),nullptr);
+					IResourceLoader* pLoader = it->second(pStream,nullptr);
 					if(!pLoader)
-						continue;
-					const std::pair<std::string,guid>* pDependancies;
-					u32 nDependancies = pLoader->GetDependancies(&pDependancies);
-
-					const IResource** loadedDependancies = new const IResource*[nDependancies];
-					for(int i =0;i<nDependancies;++i)
 					{
-						SStagedResource* resource = _LoadResource(pDependancies[i].first.c_str(),pDependancies[i].second);
-						assert(resource);
-						loadedDependancies[i] = (IResource*)resource->pCurrentStage;
+						pStream->Seek(0,IDataStream::ORIGIN_BEGINNING);
+						continue;
 					}
+					const std::pair<std::string,guid>* pDependancies = nullptr;
+					u32 nDependancies = 0;
+					const IResource** loadedDependancies = nullptr;
+					IResource* pResource = nullptr;
+					do
+					{
+						if(nDependancies)
+						{
+							loadedDependancies = new const IResource*[nDependancies];
+							for(int i =0;i<nDependancies;++i)
+							{
+								SStagedResource* resource = _LoadResource(pDependancies[i].first.c_str(),pDependancies[i].second);
+								assert(resource);
+								loadedDependancies[i] = (IResource*)resource->pCurrentStage;
+							}
+						}
+						else
+						{
+							assert(pDependancies== nullptr);
+							if(loadedDependancies)
+								delete [] loadedDependancies;
+							loadedDependancies = nullptr;
+						}
 
-					found->second[0]->pCurrentStage=(IResource*)pLoader->Finalize(loadedDependancies,nDependancies);
+						pResource = pLoader->Finalize(loadedDependancies,&pDependancies,nDependancies);
+					}
+					while(!pResource);
 
-					delete [] loadedDependancies;
+					if(loadedDependancies)
+						delete [] loadedDependancies;
+					loadedDependancies = nullptr;
 					delete pLoader;
+
+					found->second[0]->pCurrentStage=pResource;
+
+					pStream->Close();
 					break;
 				}
 
@@ -116,10 +142,13 @@ namespace HAGE {
 			}
 		}
 
-		ResourceDomain::ResourceDomain() : _registrationLocked(false)
+		ResourceDomain::ResourceDomain() : _registrationLocked(false),_NullStream("Null")
 		{
+			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IMeshData>::Get(),&CMapDataLoader::Initialize);
 			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IMeshData>::Get(),&CMeshDataLoader::Initialize);
+			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IImageData>::Get(),&CMapDataImageLoader::Initialize);
 			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IImageData>::Get(),&CImageDataLoader::Initialize);
+			HAGE::domain_access<ResourceDomain>::Get()->_RegisterResourceType(guid_of<IRawData>::Get(),&CRawDataLoader::Initialize);
 			printf("Init Resource\n");
 		}
 
@@ -130,6 +159,12 @@ namespace HAGE {
 			for(auto it = _stage0Database.begin();it!=_stage0Database.end();++it)
 			{
 				delete it->second;
+				it->second = nullptr;
+			}
+
+			for(auto it = _archives.begin();it!=_archives.end();++it)
+			{
+				it->second->Close();
 				it->second = nullptr;
 			}
 		}
@@ -173,25 +208,101 @@ namespace HAGE {
 			if(found==_stage0Database.end())
 			{
 				IResourceLoader* pLoader = loader(&_NullStream,nullptr);
-				const std::pair<std::string,guid>* pDependancies;
-				u32 nDependancies = pLoader->GetDependancies(&pDependancies);
-
-				const IResource** loadedDependancies = new const IResource*[nDependancies];
-				for(int i =0;i<nDependancies;++i)
+				if(pLoader)
 				{
-					auto stage0it = _stage0Database.find(pDependancies[i].second);
-					assert(stage0it!= _stage0Database.end());
-					loadedDependancies[i]=stage0it->second;
+					const std::pair<std::string,guid>* pDependancies = nullptr;
+					u32 nDependancies = 0;
+					const IResource** loadedDependancies = nullptr;
+					IResource* pResource = nullptr;
+					do
+					{
+						if(nDependancies)
+						{
+							loadedDependancies = new const IResource*[nDependancies];
+							for(int i =0;i<nDependancies;++i)
+							{
+								auto stage0it = _stage0Database.find(pDependancies[i].second);
+								assert(stage0it!= _stage0Database.end());
+								loadedDependancies[i]=stage0it->second;
+							}
+						}
+						else
+						{
+							assert(pDependancies== nullptr);
+							if(loadedDependancies)
+								delete [] loadedDependancies;
+							loadedDependancies = nullptr;
+						}
+
+						pResource = pLoader->Finalize(loadedDependancies,&pDependancies,nDependancies);
+					}
+					while(!pResource);
+
+					if(loadedDependancies)
+						delete [] loadedDependancies;
+					loadedDependancies = nullptr;
+					delete pLoader;
+
+					_stage0Database.insert(std::pair<guid,IResource*>(resourceId,pResource));
+				
 				}
-
-				_stage0Database.insert(std::pair<guid,IResource*>(resourceId,(IResource*)pLoader->Finalize(loadedDependancies,nDependancies)));
-
-				delete [] loadedDependancies;
-				delete pLoader;
 			}
 			
 			//switch back
 			*p = backup;
+		}
+
+		
+		IDataStream* ResourceDomain::_OpenDataStream(const char* pName)
+		{
+			if(!pName)
+				return &_NullStream;
+
+			IDataStream* pRes=nullptr;
+
+			if(pName[0] == '\@')
+			{
+				// archive file
+				char ArchiveName[256];
+				const char* FirstSlash = strchr(pName,'/');
+				const char* FirstBackslash = strchr(pName,'\\');
+				int ArchiveNameLength;
+				assert(FirstSlash || FirstBackslash);
+
+				if(FirstSlash && FirstBackslash)
+					ArchiveNameLength = std::min(FirstSlash,FirstBackslash)-pName-1;
+				else if(FirstBackslash)
+					ArchiveNameLength = FirstBackslash-pName-1;
+				else
+					ArchiveNameLength = FirstSlash-pName-1;
+
+				memcpy(ArchiveName,&pName[1],ArchiveNameLength);
+				ArchiveName[ArchiveNameLength] = '\0';
+				const char* FileName = &pName[ArchiveNameLength+2];
+
+				auto archive = _archives.find(ArchiveName);
+				if(archive == _archives.end())
+				{
+					std::pair<std::string,IDataArchive*> entry(ArchiveName,new CMPQArchive(ArchiveName));
+					_archives.insert(entry);
+					archive = _archives.find(ArchiveName);
+					assert(archive!=_archives.end());
+				}
+
+				pRes = archive->second->OpenDataStream(FileName,pName);
+			}
+			else
+				pRes= new CFileStream(pName);
+	
+			if(pRes == nullptr)
+				return new CNullStream(pName);
+			else if(!pRes->IsValid())
+			{
+				pRes->Close();
+				return new CNullStream(pName);
+			}
+
+			return pRes;
 		}
 
 }

@@ -20,7 +20,7 @@ class RenderingActor;
 struct ActorInit
 {
 	int				behavior;
-	char			mesh[32];
+	char			mesh[200];
 	float			mass;
 	Vector3<>		location;
 	Vector3<>		scale;
@@ -28,13 +28,13 @@ struct ActorInit
 
 struct ActorGInit
 {
-	char			mesh[32];
+	char			mesh[200];
 	Vector3<>		scale;
 };
 
 struct ActorRInit
 {
-	char			mesh[32];
+	char			mesh[200];
 	Vector3<>		scale;
 };
 

@@ -14,7 +14,7 @@ extern void OSNotifyMessageQueueThreadsShutdown();
 
 namespace HAGE {
 
-	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nHighestStep(0),nShutdownStep(0),
+	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),
 		m_nThreads(boost::thread::hardware_concurrency()),
 		m_initbarrier(m_nThreads),
 		m_shutdownbarrier(m_nThreads+1)
@@ -79,7 +79,7 @@ namespace HAGE {
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
 			assert(!bShutdown);
-			nShutdownStep = nHighestStep +1;
+			nShutdownTime = domain_access<InputDomain>::Get()->_time;
 			bShutdown = true;
 		}
 	}
@@ -149,10 +149,7 @@ namespace HAGE {
 			{
 				jobqueue::iterator first = taskList.begin();
 				TaskManager* result=first->second;
-
-				if(first->first.stage > nHighestStep)
-						nHighestStep = first->first.stage;
-
+				
 				if(!result->GetNextTask(ppTask))
 				{
 					taskList.erase(first);
@@ -181,10 +178,7 @@ namespace HAGE {
 			if(it->first.priority == Priority || Priority == 0)
 			{
 				TaskManager* result=it->second;
-
-				if(it->first.stage > nHighestStep)
-						nHighestStep = it->first.stage;
-
+				
 				if(!result->GetNextTask(ppTask))
 				{
 					taskList.erase(it);
@@ -208,10 +202,7 @@ namespace HAGE {
 
 		{
 			boost::unique_lock<boost::mutex> lock(mutexTask);
-
-			if( nHighestStep < pTaskManager->GetCurrentStep() )
-				nHighestStep = pTaskManager->GetCurrentStep();
-
+			
 			taskList.insert(
 				std::pair<TaskEntry,TaskManager*>(
 					TaskEntry(pTaskManager->GetCurrentPriority(),pTaskManager->GetCurrentStep(),queueCode),

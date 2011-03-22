@@ -151,6 +151,18 @@ static GLenum APIWFormatToOGLFormat(const HAGE::APIWFormat& format)
 	case HAGE::R8G8B8A8_SINT		:
 		return GL_RGBA8I;
 		break;
+	case HAGE::DXTC1_UNORM		:
+		return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+		break;
+	case HAGE::DXTC3_UNORM		:
+		return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+		break;
+	case HAGE::DXTC5_UNORM		:
+		return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+		break;
+	case HAGE::DXTC1_UNORM_SRGB		:
+	case HAGE::DXTC3_UNORM_SRGB		:
+	case HAGE::DXTC5_UNORM_SRGB		:
 	case HAGE::R8G8B8A8_TYPELESS	:
 		assert(!"Not supported");
 		return 0;

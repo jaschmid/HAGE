@@ -433,6 +433,8 @@ namespace HAGE {
 		_viewMatrix = Matrix4<>::Translate(Vector3<>(0.0,0.0,fCameraZ))*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),fCameraX)*Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),fCameraY);
 		_invViewMatrix = Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),-fCameraY)*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),-fCameraX)*Matrix4<>::Translate(Vector3<>(0.0,0.0,-fCameraZ));
 
+		//_Map = Resource->OpenResource<IMeshData>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_40_40.adt");
+
 		printf("Init Rendering\n");
 	}
 
