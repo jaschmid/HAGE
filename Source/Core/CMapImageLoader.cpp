@@ -76,6 +76,7 @@ namespace HAGE
 				forceRead(pData,sizeof(ADT_MVER),&mver);
 				printf("MVer Chunk version: %08x\n",mver.version);
 				bVerRead = true;
+
 				continue;
 			}
 
@@ -109,6 +110,7 @@ namespace HAGE
 					if(!_pTiles)
 						_pTiles = new MapTile[nXTiles*nYTiles];
 					MapTile tile;
+					memset(&tile,0,sizeof(MapTile));
 					//forceRead(pData,sizeof(ADT_MCNK),&tile.mcnk);
 					u32 remaining_size = cheader.size;
 					ChunkHeader sub_header;
@@ -354,12 +356,16 @@ namespace HAGE
 		}
 	}
 
+	const int max_dependancies = 0xffff;
+
 	IResource* CMapDataImageLoader::CMapDataImage::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 	{
 		if(dependanciesIn == nullptr )
 		{
 			assert(_Data == nullptr);
 			// need to load files
+			if(_texNames.size() > max_dependancies)
+				_texNames.resize(max_dependancies);
 			pDependancies = new std::pair<std::string,guid>[_texNames.size()];
 			for(int i = 0;i<_texNames.size();++i)
 			{
@@ -443,6 +449,10 @@ namespace HAGE
 					for(int iLayer = 0;iLayer<_pTiles[iTile].nLayers;++iLayer)
 					{
 						int iTexture = _pTiles[iTile].layers[iLayer].textureId;
+
+						if(iTexture>=max_dependancies)
+							iTexture = max_dependancies-1;
+
 						int iTextureWidth = source_widths[iTexture];
 						int iTextureHeight = source_heights[iTexture];
 						int ixPixel = ix%largest_source_width*iTextureWidth/largest_source_width;

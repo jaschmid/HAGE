@@ -33,6 +33,8 @@ void CMPQArchive::Close()
 IDataStream* CMPQArchive::OpenDataStream(const char* filename,const char* stream_identifier)
 {
 	HANDLE fh;
+	if(!SFileHasFile(mpq_a,filename))
+		return nullptr;
 	if(SFileOpenFileEx( mpq_a, filename, 0, &fh ))
 		return new CMPQFile(fh,stream_identifier);
 	else
@@ -60,8 +62,9 @@ CMPQFile::CMPQFile(void* fh, const char* filename)
 		}
 
 		buffer = new unsigned char[size];
-		SFileReadFile( fh, buffer, size );
-		SFileCloseFile( fh );
+		assert(SFileReadFile( fh, buffer, size ));
+		assert(SFileCloseFile( fh ));
+		fh = nullptr;
 
 		return;
 	}
