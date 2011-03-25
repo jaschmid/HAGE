@@ -190,7 +190,10 @@
     <ClInclude Include="Headers\SDK\CoreFactory.h" />
     <ClInclude Include="Headers\SDK\DomainBase.h" />
     <ClInclude Include="Headers\SDK\DomainMemory.h" />
+    <ClInclude Include="Headers\SDK\EditableMesh.h" />
     <ClInclude Include="Headers\SDK\EffectContainer.h" />
+    <ClInclude Include="Headers\SDK\EMeshConnectionStorage.h" />
+    <ClInclude Include="Headers\SDK\EMeshIndexed.h" />
     <ClInclude Include="Headers\SDK\global_allocator.h" />
     <ClInclude Include="Headers\SDK\HAGE.h" />
     <ClInclude Include="Headers\SDK\hage_math.h" />

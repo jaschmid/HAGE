@@ -19,6 +19,9 @@
     <Filter Include="Source Files\Resources">
       <UniqueIdentifier>{470e4fa0-3581-44e6-9df3-dccf0c70aae4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Hage Math">
+      <UniqueIdentifier>{9fd7f1af-c286-481c-a694-f26e6b997ca6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers\SDK\types.h">
@@ -131,6 +134,15 @@
     </ClInclude>
     <ClInclude Include="Source\Core\CMapLoader.h">
       <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\EMeshIndexed.h">
+      <Filter>Header Files\Hage Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\EditableMesh.h">
+      <Filter>Header Files\Hage Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\EMeshConnectionStorage.h">
+      <Filter>Header Files\Hage Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
