@@ -5,6 +5,6 @@
 
 #include <SDK/HAGE.h>
 
-//#include "guids.h"
+#include "guids.h"
 
 #endif

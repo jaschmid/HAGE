@@ -4,3 +4,5 @@ out/*
 out_lib/*
 HAGE.opensdf
 bin/Windows/HAGE.exe
+HAGE.sdf
+HAGE.suo

@@ -16,7 +16,6 @@ template<> class get_traits<SoundDomain> : public		DomainTraits<SoundDomain,fals
 template<> class get_traits<RenderingDomain> : public	DomainTraits<RenderingDomain,false,GraphicsDomain> {};
 
 /*
-DECLARE_GUID(name,				0xeacb7ad7,0x7380,0x4ffa,0xae97,0x41b616721e97);
 DECLARE_GUID(name,				0x21463224,0x70e7,0x4404,0xb3b2,0xfea93c6212c5);
 DECLARE_GUID(name,				0xa2f2f254,0x60fd,0x49dd,0xbfd2,0x464443d4d0bc);
 DECLARE_GUID(name,				0x33433fa2,0x200c,0x4336,0xab05,0x623a7a69c24e);
