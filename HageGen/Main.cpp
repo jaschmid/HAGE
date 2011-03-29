@@ -15,13 +15,13 @@ class HAGEMain : public IMain
 public:
 	HAGEMain()
 	{
-		m_pLogic	= DomainCreator<GenerationDomain>();
+		m_pGen	= DomainCreator<GenerationDomain>();
 	}
 	~HAGEMain()
 	{
 	}
 private:
-	const GenerationDomain*		m_pLogic;
+	const GenerationDomain*		m_pGen;
 };
 
 extern IMain* HAGECreateMain(void)

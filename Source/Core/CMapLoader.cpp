@@ -260,7 +260,7 @@ namespace HAGE
 		case POSITION:
 			*pDataOut = (const u8*)_positionData.data();
 			pOutStride = sizeof(Vector3<>);
-			return nTileVertices;
+			return nVertices;
 			break;
 		case TEXCOORD0:
 			*pDataOut = (const u8*)_texcoordData.data();
