@@ -389,6 +389,28 @@ static int face_cb(p_ply_argument argument) {
     return 1;
 }
 
+void CMeshDataLoader::CMeshData::GenerateNormals()
+{
+	DefaultVertexFormat* pVertexData = (DefaultVertexFormat*)_pVertexData;
+	u32* pIndexData = (u32*)_pIndexData;
+	for(int i =0;i<_nVertices;++i)
+		pVertexData[i].normal = Vector3<>(0.0f,0.0f,0.0f);
+
+	for(int i=0;i<_nIndices/3;++i)
+	{
+		Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
+		Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
+		Vector3<> face_normal = d1 % d2;
+		face_normal = face_normal / sqrtf(!face_normal);
+		pVertexData[pIndexData[i*3+0]].normal+=face_normal;
+		pVertexData[pIndexData[i*3+1]].normal+=face_normal;
+		pVertexData[pIndexData[i*3+2]].normal+=face_normal;
+	}
+
+	for(int i =0;i<_nVertices;++i)
+		pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
+}
+
 CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(false)
 {
 	_pData = pData;
@@ -432,26 +454,16 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 			_pVertexData=(u8*)pVertexData;
 			u32* pIndexData = new u32[_nIndices];
 			memcpy(pIndexData,&tI[0],sizeof(u32)*_nIndices);
+			_pIndexData=(u8*)pIndexData;
 
-			for(int i=0;i<_nIndices/3;++i)
-			{
-				Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
-				Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
-				Vector3<> face_normal = d1 % d2;
-				face_normal = face_normal / sqrtf(!face_normal);
-				pVertexData[pIndexData[i*3+0]].normal+=face_normal;
-				pVertexData[pIndexData[i*3+1]].normal+=face_normal;
-				pVertexData[pIndexData[i*3+2]].normal+=face_normal;
-			}
-
+			GenerateNormals();
+			
 			Vector3<> avg = (max+min)/2.0f;
 			for(int i =0;i<_nVertices;++i)
 			{
 				pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
 				pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
-				pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
 			}
-			_pIndexData=(u8*)pIndexData;
 			_bValid = true;
 			return;
 		}
@@ -460,6 +472,13 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 		if(TryLoadM2(pData))
 		{
 			_MD2 = true;
+			_bValid = true;
+			return;
+		}
+		
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+		if(TryLoadHGEO(pData))
+		{
 			_bValid = true;
 			return;
 		}
@@ -654,6 +673,40 @@ inline static void forceRead(IDataStream* pData,u64 size,void* pOut)
 inline static Vector3<> fixCoordSystem(Vector3<> v)
 {
         return Vector3<>(v.x, v.z, -v.y);
+}
+
+bool CMeshDataLoader::CMeshData::TryLoadHGEO(IDataStream* pData)
+{
+	char tmp[5] = {0,0,0,0,0};
+
+	if(pData->Read(4,(u8*)tmp) != 4)
+		return false;
+	if(strcmp(tmp,"HGEO") != 0)
+		return false;
+	
+	_vertexSize = sizeof(DefaultVertexFormat);
+
+	forceRead(pData,sizeof(u32),&_nVertices);
+	DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
+	for(int i = 0; i<_nVertices;++i)
+	{
+		forceRead(pData,sizeof(Vector3<>),&pVertexData[i].position);
+		forceRead(pData,sizeof(Vector2<>),&pVertexData[i].texcoord0);
+		pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
+	}
+	forceRead(pData,sizeof(u32),&_nIndices);
+	_nIndices*=3;
+	u32* pIndexData = new u32[_nIndices];
+	forceRead(pData,sizeof(u32)*_nIndices,pIndexData);
+	
+	_pVertexData=(u8*)pVertexData;
+	_pIndexData=(u8*)pIndexData;
+
+	GenerateNormals();
+
+
+	_bValid= true;
+	return true;
 }
 
 bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)

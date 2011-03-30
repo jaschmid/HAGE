@@ -76,7 +76,9 @@ namespace HAGE {
 
 			IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 		private:
-
+			
+			void GenerateNormals();
+			bool TryLoadHGEO(IDataStream* pData);
 			bool TryLoadM2(IDataStream* pData);
 			void FinalizeLoadM2(const IResource** dependanciesIn,u32 nDependanciesIn);
 			bool	_MD2;

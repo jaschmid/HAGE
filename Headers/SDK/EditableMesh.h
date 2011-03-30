@@ -115,9 +115,9 @@ namespace _EditableMeshInternal {
 		template<class _internal,class _data> class _InternalConvert
 		{
 		public:
-			const _data& operator()() const
+			operator const _data&() const
 			{
-				return ((_internal*)(this))->internal_data->data;
+				return ((_internal*)(this))->internal_data->data.contents;
 			}
 		};
 
@@ -148,7 +148,7 @@ namespace _EditableMeshInternal {
 			friend class BaseType;
 		} Edge;
 
-		typedef class _Face : public _InternalConvert<_Face,EdgeType>
+		typedef class _Face : public _InternalConvert<_Face,FaceType>
 		{ 
 		private:
 			_HE_face* internal_data; 
@@ -166,7 +166,7 @@ namespace _EditableMeshInternal {
 			friend class BaseType;
 		} Face;
 	
-		typedef class _Vertex : public _InternalConvert<_Vertex,EdgeType>
+		typedef class _Vertex : public _InternalConvert<_Vertex,VertexType>
 		{ 
 		private:
 			_HE_vert* internal_data; 
@@ -289,7 +289,7 @@ namespace _EditableMeshInternal {
 			return nullEdge;
 		}
 	
-		Face GetFace(IndexType index) const { assert(index < GetNumFaceIndices()); return getExternal(&_faces[(size_t)index]);}
+		Face GetFace(IndexType index) const { assert(index < GetNumFaceIndices()); return getExternal(_faces[(size_t)index]);}
 		IndexType GetIndex(const Face& f) const { return getInternal(f)->index;}
 		Face GetFace(const VertexTriple& _v) const
 		{
@@ -526,6 +526,8 @@ namespace _EditableMeshInternal {
 
 		bool MergeVertex(const VertexPair& vpair)
 		{
+			if(vpair[0] == vpair[2])
+				return false;
 			bool bEdge = false;
 			Edge e = GetEdge(vpair);
 			if(e!=nullEdge)
@@ -706,122 +708,6 @@ namespace _EditableMeshInternal {
 				}
 		}
 
-		/*
-		void MergeVertex(const Vertex& vsource,const Vertex& vdest)
-		{
-			HE_vert* s = getInternal(vsource),*d=getInternal(vdest);
-
-			HE_edge* s_d = nullptr;
-			HE_edge* sd_tri = nullptr;
-			HE_edge* ds_tri_target = nullptr;
-
-			//go though all edges point away from s
-			HE_edge* cur = s->edge;
-			HE_edge* end = cur;
-			do
-			{
-				HE_edge* pair = cur->pair_edge;
-				if(cur->end_vertex == d)
-				{
-					s_d = cur;
-				}
-				else if(cur->next_edge->end_vertex == d)
-				{
-					sd_tri = cur;
-					
-				}
-				else
-					//we point to d instead but connectivity is unchanged
-					cur->pair_edge->end_vertex  = d;
-
-				cur = cur->pair_edge->next_edge;
-			}
-			while(cur != s->edge);
-
-			//go though all edges pointing away from d
-			cur = d->edge;
-			do
-			{
-				HE_edge* pair = cur->pair_edge;
-				if(cur->end_vertex == s)
-				{
-					//obviously not interested in s->d edge, we will be removing that one
-					assert(s_d == cur->pair_edge);
-				}
-				else if(cur->next_edge->end_vertex == s)
-				{
-					ds_tri_target = cur;
-						
-				}
-				cur = cur->pair_edge->next_edge;
-			}
-			while(cur != d->edge);
-
-
-			if(s_d)
-			{
-				//check if d might be referring to the edge we're removing, we have to fix it since we'll keep d			
-				HE_edge* sd_pair = s_d->pair_edge;
-
-				if(d->edge == sd_pair)
-					d->edge = s_d->next_edge;
-
-				HD_edge* prev_sd = getPrevEdge(s_d);
-				HD_edge* prev_sd_pair = getPrevEdge(sd_pair);
-
-				prev_sd->next_edge = s_d->next_edge;
-				prev_sd_pair->next_edge = sd_pair->next_edge;
-
-				if(s_d->face)
-					internalRemove(s_d->face);
-				if(s_d->pair_edge->face)
-					internalRemove(s_d->pair_edge->face);
-
-				internalRemove(s_d);
-			}
-			if(sd_tri)
-			{
-				//triangular link, merge edges, we are keeping the one pointing to d
-				HE_edge* target = sd_tri->next_edge;
-					
-				getPrevEdge(sd_tri->pair_edge)->next_edge = target;
-
-				if(!s_d)
-					getPrevEdge(sd_tri)->next_edge = target->next_edge;
-
-				target->next_edge = sd_tri->pair_edge->next_edge;
-				target->face = sd_tri->pair_edge->face;
-
-				if(sd_tri->end_vertex->edge == sd_tri->pair_edge)
-					sd_tri->end_vertex->edge = target;
-					
-				internalRemove(sd_tri);
-			}
-			if(ds_tri_target)
-			{
-				HE_edge* ds_tri = ds_tri_target->next_edge;
-				HE_edge* target = ds_tri_target;
-				//triangular link, merge edges, we are keeping this one
-					
-				getPrevEdge(ds_tri->pair_edge)->next_edge = target;
-				// getPrevEdge(ds_tri)->next_edge = target->next_edge; always target so useless
-
-				target->next_edge = ds_tri->pair_edge->next_edge;
-				target->face = ds_tri->pair_edge->face;
-					
-				//will be removed anyway
-				
-					
-					
-				if(ds_tri->pair_edge->end_vertex->edge == ds_tri)
-					ds_tri->pair_edge->end_vertex->edge = target->pair_edge;
-
-				internalRemove(ds_tri);
-			}
-
-			internalRemove(s);
-		}*/
-
 		Face InsertFace(const VertexTriple& vertices)
 		{
 			// find if we're re-using any old edges
@@ -943,9 +829,9 @@ namespace _EditableMeshInternal {
 			{
 				reader_type::Primitive result = reader(i,pData);
 				Face f = InsertFace(MakeTriple(
-					GetVertex(result[0]),
-					GetVertex(result[1]),
-					GetVertex(result[2])
+					GetVertex(result[0] + newVerticesBegin),
+					GetVertex(result[1] + newVerticesBegin),
+					GetVertex(result[2] + newVerticesBegin)
 					));
 				// something went wrong
 				assert(f!=nullFace);
