@@ -510,3 +510,4 @@ template<class _T = f32> struct Matrix4
 #endif
 
 #include "EditableMesh.h"
+#include "SpatialTree.h"

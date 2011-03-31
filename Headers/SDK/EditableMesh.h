@@ -11,9 +11,8 @@
 #ifndef __EDITABLE_MESH_H__
 #define __EDITABLE_MESH_H__
 
-#include "EMeshConnectionStorage.h"
-#include "EMeshIndexed.h"
 #include <tuple>
+#include <list>
 #include <vector>
 #include <array>
 
@@ -526,7 +525,7 @@ namespace _EditableMeshInternal {
 
 		bool MergeVertex(const VertexPair& vpair)
 		{
-			if(vpair[0] == vpair[2])
+			if(vpair[0] == vpair[1])
 				return false;
 			bool bEdge = false;
 			Edge e = GetEdge(vpair);

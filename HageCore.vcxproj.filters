@@ -135,13 +135,10 @@
     <ClInclude Include="Source\Core\CMapLoader.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\SDK\EMeshIndexed.h">
-      <Filter>Header Files\Hage Math</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\EditableMesh.h">
       <Filter>Header Files\Hage Math</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\SDK\EMeshConnectionStorage.h">
+    <ClInclude Include="Headers\SDK\SpatialTree.h">
       <Filter>Header Files\Hage Math</Filter>
     </ClInclude>
   </ItemGroup>

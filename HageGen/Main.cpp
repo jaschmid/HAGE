@@ -1,6 +1,7 @@
 #include "header.h"
 
 #include "GenerationDomain.h"
+#include <FreeImage.h>
 
 namespace HAGE {
 
