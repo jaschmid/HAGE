@@ -40,16 +40,75 @@ namespace HAGE {
 			m_pUserInterface = new UserInterface();
 
 			ActorInit boxinit;
-			boxinit.mass = 0.0f;
-			boxinit.behavior = 2;
-			boxinit.location = Vector3<>(0.0f,0.0f,0.0f);
+			boxinit.behavior = 0xfffffff;
+			boxinit.initial_distance = 0.0f;
+			boxinit.bCastShadow = true;
+			boxinit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f);
+			boxinit.rotation_speed = 0.0f;
 			strcpy(boxinit.mesh,"Box");
 			boxinit.scale = Vector3<>(8.0f,8.0f,8.0f);
-			Factory.CreateObject<LogicActor>(boxinit);
+			//Factory.CreateObject<LogicActor>(boxinit);
 
+
+			//create sun
 			ActorInit ainit;
-			ainit.mass = 0.2f;
+			ainit.bCastShadow = false;
+			ainit.behavior = HAGE::ACTOR_BEHAVIOR_SUN;
+			boxinit.initial_distance = 0.0f;
+			ainit.master_object = guidNull;
+			ainit.orbit_axis = Vector3<>(0.0f,1.0f,0.0f);
+			ainit.orbit_speed = 0.0f;
+			ainit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f).normalize();
+			ainit.rotation_speed = 0.2f;
+			strcpy(ainit.mesh,"sphere.ply");
+			strcpy(ainit.texture,"sun.png");
+			ainit.scale = Vector3<>(0.5f,0.5f,0.5f);
 
+			guid guidSun = Factory.CreateObject<LogicActor>(ainit);
+
+			//create planets
+
+			const u32 nPlanets = 5;
+			
+
+			for(int i =0;i<nPlanets;++i)
+			{	
+				strcpy(ainit.mesh,"sphere.ply");
+				strcpy(ainit.texture,"planet.png");
+				ainit.behavior = ACTOR_BEHAVIOR_PLANET;
+				ainit.initial_distance = 0.5f * (i+1);
+				ainit.master_object = guidSun;
+				ainit.bCastShadow = true;
+				ainit.orbit_axis = Vector3<>(0.0f,1.0f ,0.0f).normalize();
+				ainit.orbit_speed = GetRandFloat()*0.5f+0.5f;
+				ainit.rotation_axis = Vector3<>((GetRandFloat()-0.5f),1.0,(GetRandFloat()-0.5f)).normalize();
+				ainit.rotation_speed = GetRandFloat()*0.5f+0.5f;
+				ainit.scale = Vector3<>(.1250f,.1250f,.1250f);
+				//ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
+		
+				guid guidPlanet = Factory.CreateObject<LogicActor>(ainit);
+
+				u32 nMoons = (int)(GetRandFloat()*3.0f);
+					
+				for(int i2 =0;i2<nMoons;++i2)
+				{
+					
+					strcpy(ainit.mesh,"sphere.ply");
+					strcpy(ainit.texture,"moon.png");
+					ainit.behavior = ACTOR_BEHAVIOR_PLANET;
+					ainit.initial_distance = i2*0.5f;
+					ainit.master_object = guidPlanet;
+					ainit.bCastShadow = true;
+					ainit.orbit_axis = Vector3<>(0.0f,1.0f,0.0f).normalize();
+					ainit.orbit_speed = GetRandFloat()*0.5f+0.5f;
+					ainit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f);
+					ainit.rotation_speed = GetRandFloat()*0.5f+0.5f;
+					ainit.scale = Vector3<>(.050f,.050f,.050f);
+					Factory.CreateObject<LogicActor>(ainit);
+				}
+			}
+
+			/*
 			Vector3<> ply_location(settings->getf32Setting("ply_spawn_x"),
 									settings->getf32Setting("ply_spawn_y"),
 									settings->getf32Setting("ply_spawn_z"));
@@ -65,8 +124,8 @@ namespace HAGE {
 				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		
 				Factory.CreateObject<LogicActor>(ainit);
-			}
-
+			}*/
+			/*
 			SheetInit init;
 			//init.Center = Vector3<>(0.0,0.0,50.0f);
 			//init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
@@ -83,18 +142,18 @@ namespace HAGE {
 										settings->getf32Setting("cloth_init_normal_z"));
 
 			Factory.CreateObject<LogicSheet>(init);
-
+			*/
 			LightInit linit;
-			linit.Position = Vector3<>( settings->getf32Setting("light1_x"),
-										settings->getf32Setting("light1_y"),
-										settings->getf32Setting("light1_z"));
+			linit.Position = Vector3<>( 0.0f,
+										0.0f,
+										0.0f);
 			linit.Color = Vector3<>(settings->getf32Setting("light1_r"),
 									settings->getf32Setting("light1_g"),
 									settings->getf32Setting("light1_b"));
 			linit.Range = settings->getf32Setting("light1_range");
-
+			
 			Factory.CreateObject<LogicLight>(linit);
-
+			/*
 			linit.Position = Vector3<>( settings->getf32Setting("light2_x"),
 										settings->getf32Setting("light2_y"),
 										settings->getf32Setting("light2_z"));
@@ -114,7 +173,7 @@ namespace HAGE {
 			linit.Range = settings->getf32Setting("light3_range");
 
 			Factory.CreateObject<LogicLight>(linit);
-		
+			*/
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
 			for(u32 i = 0; i<nObjects2; ++i)
@@ -135,14 +194,14 @@ namespace HAGE {
 		void LogicDomain::DomainStep(t64 time)
 		{
 			//printf("Time %f, Elapsed Time: %f\n",GetTime().toSeconds(),GetElapsedTime().toSeconds());
-
+			
 			guids.resize(Factory.size());
 			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
+			/*
 			for(u32 i = 0; i<nObjects2; ++i)
 			{
 				Factory.DestroyObject(guids[i]);		
 				ActorInit ainit;	
-				ainit.mass = 1.0f;
 				strcpy(ainit.mesh,MeshNames[GetRandInt()%3]);
 				ainit.scale =Vector3<>(settings->getf32Setting("ply_scale_x"),
 									settings->getf32Setting("ply_scale_y"),
@@ -154,7 +213,7 @@ namespace HAGE {
 				ainit.behavior = 0;
 				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 				Factory.CreateObject<LogicActor>(ainit);
-			}
+			}*/
 			auto result = Factory.ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
 			
 			auto result2 = Factory.ForEach<int,LogicLight>( [](LogicLight* o) -> int {return o->Step();} );

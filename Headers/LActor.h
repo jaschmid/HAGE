@@ -12,7 +12,7 @@ class LogicActor : public GenericActor, public ObjectBase<LogicActor>
 public:
 	static LogicActor* CreateInstance(const guid& ObjectId,const ActorInit& init);
 
-	float GetMass() const { return _init.mass;}
+	Matrix4<> GetWorldMatrix() const {return	Output::GetOld().worldMatrix;}
 
 	bool Step(guid& out);
 
@@ -22,10 +22,9 @@ private:
 
 	ActorInit		_init;
 
-	Vector3<>		axis;
-	Vector3<>		position;
-	Vector3<>		speed;
-	Vector3<>		acceleration;
+	Matrix4<>		worldMatrix;
+	float			rotation;
+	float			orbit_rotation;
 };
 
 }

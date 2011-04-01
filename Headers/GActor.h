@@ -18,7 +18,7 @@ private:
 	GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorGInit* pInit);
 	virtual ~GraphicsActor();
 
-	Vector3<>		position;
+	ActorOut data;
 };
 
 

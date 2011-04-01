@@ -420,10 +420,14 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 		if(ply && ply_read_header(ply))
 		{
 			std::vector<float> vX,vY,vZ;
+			std::vector<float> vU,vV;
 			std::vector<u32> tI;
+			bool bTex = false;
 			ply_set_read_cb(ply, "vertex", "x", vertex_cb, &vX, 0);
 			ply_set_read_cb(ply, "vertex", "y", vertex_cb, &vY, 0);
 			ply_set_read_cb(ply, "vertex", "z", vertex_cb, &vZ, 1);
+			if( ply_set_read_cb(ply, "vertex", "s", vertex_cb, &vU, 0) && ply_set_read_cb(ply, "vertex", "t", vertex_cb, &vV, 0))
+				bTex = true;
 			ply_set_read_cb(ply, "face", "vertex_indices", face_cb, &tI, 0);
 			assert(ply_read(ply));
 			ply_close(ply);
@@ -436,7 +440,10 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 			{
 				pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
 				pVertexData[i].normal   = Vector3<>(0,0,0);
-				pVertexData[i].texcoord0 = Vector2<>(0.0f,0.0f);
+				if(bTex)
+					pVertexData[i].texcoord0 = Vector2<>(vU[i],vV[i]);
+				else
+					pVertexData[i].texcoord0 = Vector2<>(0.0f,0.0f);
 				if(pVertexData[i].position.x <= min.x)
 					min.x = pVertexData[i].position.x;
 				if(pVertexData[i].position.y <= min.y)
@@ -461,7 +468,7 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 			Vector3<> avg = (max+min)/2.0f;
 			for(int i =0;i<_nVertices;++i)
 			{
-				pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
+				//pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
 				pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
 			}
 			_bValid = true;

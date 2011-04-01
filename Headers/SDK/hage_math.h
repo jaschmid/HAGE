@@ -253,7 +253,7 @@ public:
 
 	Vector3<_T> normalize() const
 	{
-		return (*this)/(!(*this));
+		return (*this)/(sqrtf(!(*this)));
 	}
 };
 

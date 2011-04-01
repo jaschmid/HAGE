@@ -17,6 +17,8 @@ namespace HAGE {
 	"    float4x4 inverse_modelview;\n"
 	"    float4x4 modelview;\n"
 	"    float4x4 modelview_projection;\n"
+	"    float ambient_factor;\n"
+	"    float diffuse_factor;\n"
 	"H_CONSTANT_BUFFER_END\n"
 	"\n"
 	"H_CONSTANT_BUFFER_BEGIN(LightGlobal)\n"
@@ -62,7 +64,7 @@ namespace HAGE {
 	"  float3 vPosition = mul( Model, float4( VS_IN(position), 1.0f ) ).xyz;\n "
 	"  VS_OUT(world_position) = vPosition;\n "
 	"  VS_OUT(color) = float4(VS_IN(color),1.0f);\n"
-	"  VS_OUT(normal) = VS_IN(normal);\n"
+	"  VS_OUT(normal) = normalize(mul( Model, float4( VS_IN(normal), 1.0f ) ).xyz - mul( Model, float4( 0.0f,0.0f,0.0f, 1.0f ) ).xyz);\n"
 	"  VS_OUT(tex) = VS_IN(texcoord);\n"
 	"\n"
 	"}"
@@ -107,7 +109,7 @@ namespace HAGE {
 	"  for(int i =0;i<nLights;++i)\n"
 	"  {\n"
 	"      float3 normDir = normalize(lDir[i]);\n"
-	"      float light_intensity = saturate(dot(normDir,normal));\n"
+	"      float light_intensity = saturate(dot(normDir,normal))*diffuse_factor + ambient_factor;\n"
 	"      FS_OUT_COLOR.xyz += light_intensity*LightColor(i)*visibility[i];\n"
 	"  }\n"
 	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*H_SAMPLE_2D(DiffuseTexture,FS_IN(tex)).xyz,1.0f));\n"
@@ -132,6 +134,8 @@ namespace HAGE {
 	"    float4x4 inverse_modelview;\n"
 	"    float4x4 modelview;\n"
 	"    float4x4 modelview_projection;\n"
+	"    float ambient_factor;\n"
+	"    float diffuse_factor;\n"
 	"H_CONSTANT_BUFFER_END\n"
 	"\n"
 	"H_CONSTANT_BUFFER_BEGIN(GeometryCubeGlobal)\n"
@@ -293,6 +297,8 @@ namespace HAGE {
 			pc.modelview =				Matrix4<>::One();
 			pc.inverse_modelview =		Matrix4<>::One();
 			pc.modelview_projection =	pc.modelview;
+			pc.ambientFactor = 0.0f;
+			pc.diffuseFactor = 1.0f;
 
 			shadowcube_constants sc;
 			
@@ -329,7 +335,7 @@ namespace HAGE {
 
 			_pShadowcubeConstants->UpdateContent(&sc);
 			
-			auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
+			auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants,true,false);} , guid_of<RenderingActor>::Get() ,true);
 			auto result2 = Factory.ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
 
 			lc.LightPositionArg1[i] = Vector4<>(_light[i].Position,((far+near)/(far-near)));
@@ -356,7 +362,7 @@ namespace HAGE {
 		
 		_pLightConstants->UpdateContent(&lc);
 
-		auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
+		auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
 		auto result2 = Factory.ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
 
 		pWrapper->PresentFrame();
@@ -365,7 +371,8 @@ namespace HAGE {
 	RenderingDomain::RenderingDomain() :
 		fCameraX(settings->getf32Setting("cam_x")),
 		fCameraY(settings->getf32Setting("cam_y")),
-		fCameraZ(settings->getf32Setting("cam_z"))
+		fCameraZ(settings->getf32Setting("cam_z")),
+		bShowOrbit(true)
 	{
 		Factory.RegisterObjectType<RenderingActor>();
 		Factory.RegisterObjectType<RenderingSheet>();
