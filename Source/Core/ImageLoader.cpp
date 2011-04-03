@@ -177,9 +177,20 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 		if(!init)
 		{
 			init = true;
+			
+			TLS_data backup = *TLS::getData();
+			TLS::getData()->domain_ptr = nullptr;
+			TLS::getData()->domain_guid = guidNull;
 			FreeImage_Initialise();
+			*TLS::getData() = backup;
 		}
+
+		TLS_data backup = *TLS::getData();
+		TLS::getData()->domain_ptr = nullptr;
+		TLS::getData()->domain_guid = guidNull;
 		FIBITMAP* fibitmap = FreeImage_LoadFromHandle(FIF_PNG,&ImageLoaderIO,(fi_handle)pData);
+		*TLS::getData() = backup;
+
 		if(fibitmap)
 		{
 			_Width = FreeImage_GetWidth(fibitmap);
@@ -193,7 +204,15 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 					FreeImage_GetPixelColor(fibitmap,ix,iy,&color);
 					((u32*)_Data)[iy*_Width+ix] = ((u32)color.rgbRed << 0) | ((u32)color.rgbGreen << 8) | ((u32)color.rgbBlue << 16) | ((u32)0xff << 24);
 				}
+			
+			TLS_data backup = *TLS::getData();
+			TLS::getData()->domain_ptr = nullptr;
+			TLS::getData()->domain_guid = guidNull;
+	
 			FreeImage_Unload(fibitmap);
+
+			*TLS::getData() = backup;
+
 			_Levels = 1;
 			return;
 		}

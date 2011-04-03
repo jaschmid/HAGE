@@ -50,6 +50,8 @@ public:
 	{
 		//nothing to do
 	}
+
+
 #else
 	static void Init(u32 thread_id)
 	{
