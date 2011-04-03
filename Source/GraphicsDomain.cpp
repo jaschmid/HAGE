@@ -20,9 +20,9 @@ namespace HAGE {
 
 		GraphicsDomain::GraphicsDomain()
 		{
-			Factory.RegisterObjectType<GraphicsActor>();
-			Factory.RegisterObjectType<GraphicsSheet>();
-			Factory.RegisterObjectType<GraphicsLight>();
+			GetFactory().RegisterObjectType<GraphicsActor>();
+			GetFactory().RegisterObjectType<GraphicsSheet>();
+			GetFactory().RegisterObjectType<GraphicsLight>();
 			printf("Init Graphic\n");
 		}
 
@@ -38,9 +38,9 @@ namespace HAGE {
 
 		void GraphicsDomain::DomainStep(t64 time)
 		{
-			auto result = Factory.ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} );
-			auto result2 = Factory.ForEach<int,GraphicsSheet>( [](GraphicsSheet* o) -> int {return o->Step();} );
-			auto result3 = Factory.ForEach<int,GraphicsLight>( [](GraphicsLight* o) -> int {return o->Step();} );
+			auto result = GetFactory().ForEach<int,GraphicsActor>( [](GraphicsActor* o) -> int {return o->Step();} );
+			auto result2 = GetFactory().ForEach<int,GraphicsSheet>( [](GraphicsSheet* o) -> int {return o->Step();} );
+			auto result3 = GetFactory().ForEach<int,GraphicsLight>( [](GraphicsLight* o) -> int {return o->Step();} );
 		}
 
 		GraphicsDomain::~GraphicsDomain()

@@ -17,7 +17,8 @@ namespace HAGE {
 	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),
 		m_nThreads(boost::thread::hardware_concurrency()),
 		m_initbarrier(m_nThreads),
-		m_shutdownbarrier(m_nThreads+1)
+		m_shutdownbarrier(m_nThreads+1),
+		m_iShutdownInitiated(0)
 	{
 		HAGE::TaskManager::pSharedManager= this;
 	}
@@ -223,7 +224,9 @@ namespace HAGE {
 
 	void SharedTaskManager::Shutdown()
 	{
-		
+		if(_InterlockedIncrement(&m_iShutdownInitiated) != 1)
+			return;
+
 		TLS_data* p = TLS::getData();
 		TLS_data backup = *p;
 		p->domain_guid = guidNull;
@@ -282,7 +285,7 @@ namespace HAGE {
 
 	void SharedTaskManager::DestructDomains()
 	{
-		for(auto i = m_DomainsToDestruct.begin();i!=m_DomainsToDestruct.end();++i)
+		for(auto i = m_DomainsToDestruct.rbegin();i!=m_DomainsToDestruct.rend();++i)
 			DestructDomain(*i);
 	}
 

@@ -208,6 +208,7 @@
     <ClInclude Include="Headers\SDK\ResourceFormats.h" />
     <ClInclude Include="Headers\SDK\ResourceManager.h" />
     <ClInclude Include="Headers\SDK\results.h" />
+    <ClInclude Include="Headers\SDK\SparseVirtualTextureFile.h" />
     <ClInclude Include="Headers\SDK\SpatialTree.h" />
     <ClInclude Include="Headers\SDK\TaskManager.h" />
     <ClInclude Include="Headers\SDK\TLS.h" />
@@ -272,6 +273,7 @@
     <ClCompile Include="Source\Core\ResourceManager.cpp" />
     <ClCompile Include="Source\Core\SharedCoreFactory.cpp" />
     <ClCompile Include="Source\Core\SharedTaskManager.cpp" />
+    <ClCompile Include="Source\Core\SparseVirtualTextureFile.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />
     <ClCompile Include="Source\Core\TLS.cpp" />
     <ClCompile Include="Source\Core\WinMain.cpp" />

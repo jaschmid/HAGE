@@ -18,14 +18,14 @@ namespace HAGE {
 
 		CTextureImageLoader(IDataStream* pStream,const IResource* pPrev);
 		~CTextureImageLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 	private:
 
 		class CTextureImage : public ITextureImage
 		{
 		public:
 			virtual ~CTextureImage();
-			CTextureImage(const IImageData* pData);
+			CTextureImage(const TResourceAccess<IImageData>& pData);
 			virtual const APIWTexture* GetTexture() const;
 		private:
 
@@ -45,7 +45,7 @@ namespace HAGE {
 
 		CImageDataLoader(IDataStream* pStream,const IResource* pPrev);
 		~CImageDataLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 	private:
 
 		class CImageData : public IImageData

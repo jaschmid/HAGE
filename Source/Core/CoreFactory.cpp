@@ -8,6 +8,13 @@ namespace HAGE {
 	}
 	CoreFactory::~CoreFactory()
 	{
+		while(flatObjectList.begin() != flatObjectList.end())
+		{
+			assert(!"Objects Remaining in Core Factory when deconstructor called");
+			DestroyObjectInternal(flatObjectList.begin());
+		}
+
+		assert(flatObjectList.empty());
 	}
 
 	void CoreFactory::SeedInternalNumberGenerator(u64 seed)
@@ -388,7 +395,7 @@ namespace HAGE {
 	{
 		for(auto it = flatObjectList.begin();it!=flatObjectList.end();it++)
 		{
-			// assert( it->second.bMaster );
+			assert( it->second.bMaster );
 			it->second.pObject->Destroy();
 			if(m_pout)
 				m_pout->PostMessage(MessageFactoryObjectDestroyed(it->first));

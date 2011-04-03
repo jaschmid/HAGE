@@ -104,7 +104,7 @@ extern HAGE::t64 OSGetTime()
 		QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
 
 	HAGE::t64 ret;
-	ret.time_utc = (current/freq * 1000000000LL) + (current%freq*1000000000LL/freq);
+	ret.time_utc = (current/freq * HAGE::SYSTEM_TIME_TICKS_PER_SECOND) + (current%freq*HAGE::SYSTEM_TIME_TICKS_PER_SECOND/freq);
 	return ret;
 }
 

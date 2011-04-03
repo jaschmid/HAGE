@@ -483,6 +483,9 @@ inline D3D11_TEXTURE_ADDRESS_MODE HAGEAddressModeToD3DAddressMode(const HAGE::AP
 	case HAGE::ADDRESS_MIRROR_ONCE:
 		return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
 		break;
+	default:
+		assert(!"Unknown Addressing Format!");
+		return D3D11_TEXTURE_ADDRESS_WRAP;
 	}
 }
 
@@ -514,6 +517,9 @@ inline D3D11_COMPARISON_FUNC HAGEComparisonFuncToD3DComparisonFunc(const HAGE::A
 		case HAGE::COMPARISON_ALWAYS:
 			return D3D11_COMPARISON_ALWAYS;
 			break;
+		default:
+			assert(!"Unknown Comparison!");
+			return D3D11_COMPARISON_NEVER;
 	}
 }
 

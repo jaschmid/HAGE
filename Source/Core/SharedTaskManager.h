@@ -86,6 +86,7 @@ private:
 	boost::barrier						m_initbarrier;
 	boost::barrier						m_shutdownbarrier;
 	volatile i32						m_userlandShutdownCounter;
+	volatile i32						m_iShutdownInitiated;
 
 	std::vector<SharedDomainBase*>		m_DomainsToDestruct;
 

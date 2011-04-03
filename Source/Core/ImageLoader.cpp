@@ -67,7 +67,7 @@ CTextureImageLoader::~CTextureImageLoader()
 		delete [] _pDependancies;
 }
 
-IResource* CTextureImageLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CTextureImageLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	if(nDependanciesInOut == 0)
 	{
@@ -78,13 +78,12 @@ IResource* CTextureImageLoader::Finalize(const IResource** dependanciesIn,const 
 	else
 	{
 		assert(nDependanciesInOut == 1);
-		return (IResource*)new CTextureImage((const IImageData*)dependanciesIn[0]);
+		return (IResource*)new CTextureImage(TResourceAccess<IImageData>(dependanciesIn[0]));
 	}
 }
 
-CTextureImageLoader::CTextureImage::CTextureImage(const IImageData* pData) : _pTexture(nullptr)
+CTextureImageLoader::CTextureImage::CTextureImage(const TResourceAccess<IImageData>& pData) : _pTexture(nullptr)
 {
-	assert(pData);
 	RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
 	assert(pAlloc);
 	pAlloc->BeginAllocation();
@@ -165,7 +164,7 @@ CImageDataLoader::~CImageDataLoader()
 {
 }
 
-IResource* CImageDataLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CImageDataLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	return (IResource*)_pImageData;
 }
@@ -201,6 +200,26 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
 		if(TryLoadBLP(pData))
 			return;
+		
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+		
+		SparseVirtualTextureFile hsvt;
+		if(hsvt.Open(pData))
+		{
+			_Width = 4096;
+			_Height = 4096;
+			_Format = R8G8B8A8;
+			_Levels = 1;
+			_Data = new u8[_Width*_Height*sizeof(u32)];
+
+			hsvt.ReadImageFromVirtualTexture(0,0,4096,4096,_Data,6);
+
+			return;
+		}
+		
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+
+
 	}
 
 	// loading failed

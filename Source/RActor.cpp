@@ -15,10 +15,11 @@ namespace HAGE {
 		
 		if(strcmp(pInit->mesh,"Box")==0)
 		{
-			_mesh = GetResource()->OpenResource<IDrawableMesh>("landscape.hgeo");
+			_mesh = GetResource()->OpenResource<IDrawableMesh>("t_landscape.hgeo");
 			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40.adt
 			//art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp
-			_texture = GetResource()->OpenResource<ITextureImage>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt");
+			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt
+			_texture = GetResource()->OpenResource<ITextureImage>("t_landscape.hsvt");
 		}
 		else
 		{

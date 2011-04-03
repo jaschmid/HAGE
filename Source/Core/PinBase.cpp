@@ -56,7 +56,7 @@ namespace HAGE {
 		{
 			//printf("All read pins of  %s closed, index result:%i\n",GetDomainName(sourceStamp),count);
 
-			nClosedAccesses=nShutdown;
+			nClosedAccesses=0;
 			for(auto i = m_pvpDestructors[nReadIndex].begin();i!=m_pvpDestructors[nReadIndex].end();++i)
 			{
 				assert(*i <  pMem[nReadIndex].size());

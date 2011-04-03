@@ -39,7 +39,7 @@ namespace HAGE {
 	{
 		public:
 			virtual ~IResourceLoader(){}
-			virtual IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut) = 0;
+			virtual IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut) = 0;
 	};
 
 	class IMeshData : public IResource
@@ -74,8 +74,8 @@ namespace HAGE {
 	{
 	public:
 		virtual ~IRawData(){}
-		virtual u32 GetSize() const = 0;
-		virtual u32 GetData(const u8** pDataOut) const = 0;
+		virtual u64 GetSize() const = 0;
+		virtual u64 GetData(const u8** pDataOut) const = 0;
 	};
 
 	class IImageData : public IResource

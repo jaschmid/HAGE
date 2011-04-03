@@ -7,10 +7,32 @@ namespace HAGE {
 	SharedDomainBase::SharedDomainBase(boost::function<void()> f,boost::function<void(bool)> f2,const guid& id)
 		:staticCallback(f),staticQueue(f2),nInputCallbacks(0),nOutputCallbacks(0),nCallbacksRecieved(0),bInit(false),outputPin(nullptr),
 		guidDomain(id),bShutdown(false),
-		nDelayedInputCallbacks(0),Factory((PinBase*&)outputPin,&Tasks)
+		nDelayedInputCallbacks(0)
 	{
+		if(id != guid_of<ResourceDomain>::Get())
+			Resource = new CResourceManager();
+		else
+			Resource = nullptr;
+		
+		Tasks = new TaskManager();
+
+		Factory = new CoreFactory((PinBase*&)outputPin,Tasks);
+		
 	}
-	SharedDomainBase::~SharedDomainBase(){}
+	SharedDomainBase::~SharedDomainBase()
+	{
+		assert(bShutdown);
+
+		if(Factory)
+			delete Factory;
+		
+		if(Tasks)
+			delete Tasks;
+
+		if(Resource)
+			delete Resource;
+
+	}
 
 	void SharedDomainBase::Callback()
 	{
@@ -115,11 +137,11 @@ namespace HAGE {
 	{
 		if( IsMessageType(pMessage->GetMessageCode(),MESSAGE_FACTORY_UNKNOWN) )
 		{
-			return Factory.MessageProc((const MessageFactoryUnknown*)pMessage);
+			return GetFactory().MessageProc((const MessageFactoryUnknown*)pMessage);
 		}
 		else if(  IsMessageType(pMessage->GetMessageCode(),MESSAGE_OBJECT_UNKNOWN) )
 		{
-			return Factory.DispatchMessage((const MessageObjectUnknown*)pMessage);
+			return GetFactory().DispatchMessage((const MessageObjectUnknown*)pMessage);
 		}
 		if(pMessage->GetMessageCode() == MESSAGE_RESERVED_INIT_TIME)
 			return true;
@@ -141,6 +163,7 @@ namespace HAGE {
 		// find time messages
 		
 		//printf("%s Base Init\n",GetDomainName(guidDomain));
+		assert(!bShutdown);
 		const Message* m=nullptr;
 		u64 rand_seed = 0;
 		for(u32 i = 0;i < inputPins.size();++i)
@@ -154,12 +177,10 @@ namespace HAGE {
 					}
 		_time.time_utc = 0;
 		_timeLast = _time;
+		_timeLastGC = _timeLast;
 		for(auto i = inputPins.begin();i!=inputPins.end();++i)
 		{
-			const void* values[3];
 			t64 this_time = ((const timeData*)(((PinBase*)i->pPin)->GetReadMem(i->hTimeHandle,sizeof(timeData))))->time;
-			((const timeData*)(((PinBase*)i->pPin)->GetAll(i->hTimeHandle,values)));
-			t64 times[3] = {*(const t64*)values[0],*(const t64*)values[1],*(const t64*)values[2]};
 			if(this_time > _time)
 				_time = this_time;
 			assert(_time.time_utc == 0);
@@ -168,8 +189,8 @@ namespace HAGE {
 		if(rand_seed == 0)
 			rand_seed = OSGetTime().time_utc;
 
-		Tasks.InitHighPrecisionGenerator(rand_seed^guidDomain.ll[0]);
-		Factory.SeedInternalNumberGenerator(rand_seed^guidDomain.ll[0]);
+		GetTask().InitHighPrecisionGenerator(rand_seed^guidDomain.ll[0]);
+		GetFactory().SeedInternalNumberGenerator(rand_seed^guidDomain.ll[0]);
 
 		if(inputPins.size() == 0)
 			_timeBegin = OSGetTime();
@@ -183,7 +204,7 @@ namespace HAGE {
 			outputPin->PostMessage(MessageReservedInitTime(_timeHandle,rand_seed));
 		}
 		//something wrong here
-		Factory.Step(_time);
+		GetFactory().Step(_time);
 		ProcessMessages();
 	}
 
@@ -194,6 +215,7 @@ namespace HAGE {
 			printf("Step Rendering\n");
 		}*/
 		//printf("%s Base Step\n",GetDomainName(guidDomain));
+		assert(!bShutdown);
 		_timeLast = _time;
 		_time.time_utc = 0;
 		for(auto i = inputPins.begin();i!=inputPins.end();++i)
@@ -214,14 +236,23 @@ namespace HAGE {
 			//printf("%s wrote %I64x to %I64x\n",GetDomainName(guidDomain),_time.time_utc,mem);
 		}
 
-		Factory.Step(_time);
+		GetFactory().Step(_time);
 		ProcessMessages();
 
 		DomainStep(_time);
+
+		if( (_time - _timeLastGC).time_utc > 1000000000LL)
+		{
+			_timeLastGC = _time;
+			if(Resource)
+				Resource->RunGarbageCollection();
+		}
+
 	}
 
 	void SharedDomainBase::Shutdown()
 	{
+		assert(!bShutdown);
 		_timeLast = _time;
 		_time.time_utc = 0;
 		for(auto i = inputPins.begin();i!=inputPins.end();++i)
@@ -235,16 +266,22 @@ namespace HAGE {
 		if(outputPin)
 			((timeData*)(((PinBase*)outputPin)->GetWriteMem(_timeHandle,sizeof(timeData))))->time = _time;
 
-		Factory.Step(_time);
+		GetFactory().Step(_time);
 		ProcessMessages();
 
-		Factory.Shutdown();
+		GetFactory().Shutdown();
 
 		bShutdown = true;
 		if(outputPin)
+		{
+			outputPin->CloseWritePin();
 			outputPin->Shutdown();
+		}
 		for(u32 i = 0;i < inputPins.size();++i)
+		{
+			inputPins[i].pPin->CloseReadPin();
 			inputPins[i].pPin->Shutdown();
+		}
 	}
 
 	void SharedDomainBase::ProcessMessages()

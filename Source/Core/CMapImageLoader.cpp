@@ -31,7 +31,7 @@ namespace HAGE
 	{
 	}
 
-	IResource* CMapDataImageLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+	IResource* CMapDataImageLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 	{
 		return _pMapData->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 	}
@@ -49,6 +49,8 @@ namespace HAGE
 		
 	CMapDataImageLoader::CMapDataImage::~CMapDataImage()
 	{
+		if(_Data)
+			delete [] _Data;
 	}
 	
 	CMapDataImageLoader::CMapDataImage::CMapDataImage(IDataStream* pData) 
@@ -85,6 +87,17 @@ namespace HAGE
 			//don't know what this does
 			case ADT_MAMPMagic:
 				pData->Seek(cheader.size,IDataStream::ORIGIN_CURRENT);
+				break;
+			case ADT_MTXFMagic:
+				{
+					u32* temp = new u32[cheader.size/4];
+					forceRead(pData,cheader.size,temp);
+					for(int i = 0 ; i< _texNames.size();++i)
+						if(temp[i])
+							_texNames[i] = "Null";
+					delete [] temp;
+				}
+				//pData->Seek(cheader.size,IDataStream::ORIGIN_CURRENT);
 				break;
 			case ADT_MTEXMagic:
 				{
@@ -358,7 +371,7 @@ namespace HAGE
 
 	const int max_dependancies = 0xffff;
 
-	IResource* CMapDataImageLoader::CMapDataImage::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+	IResource* CMapDataImageLoader::CMapDataImage::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 	{
 		if(dependanciesIn == nullptr )
 		{
@@ -391,8 +404,9 @@ namespace HAGE
 
 			for(int i =0;i<nDependanciesInOut;++i)
 			{
-				u32 w=((IImageData*)dependanciesIn[i])->GetImageWidth();
-				u32 h=((IImageData*)dependanciesIn[i])->GetImageHeight();
+				TResourceAccess<IImageData> dep = dependanciesIn[i];
+				u32 w=dep->GetImageWidth();
+				u32 h=dep->GetImageHeight();
 				if(w>largest_source_width);
 					largest_source_width = w;
 				if(h>largest_source_height);
@@ -400,16 +414,19 @@ namespace HAGE
 				source_widths[i] = w;
 				source_heights[i] = h;
 				source_images[i] = new u32[w*h];
-				if(((IImageData*)dependanciesIn[i])->GetImageFormat() == IImageData::DXTC1)
+				if(dep->GetImageFormat() == IImageData::DXTC1)
 				{
-					BlockDecompressImageDXT1(w,h,(u8*)((IImageData*)dependanciesIn[i])->GetImageData(),source_images[i]);
+					BlockDecompressImageDXT1(w,h,(u8*)dep->GetImageData(),source_images[i]);
 				}
-				else if(((IImageData*)dependanciesIn[i])->GetImageFormat() == IImageData::R8G8B8A8)
+				else if(dep->GetImageFormat() == IImageData::R8G8B8A8)
 				{
-					memcpy(source_images[i],((IImageData*)dependanciesIn[i])->GetImageData(),w*h*sizeof(u32));
+					memcpy(source_images[i],dep->GetImageData(),w*h*sizeof(u32));
 				}
 				else
-					assert(!"Unknown Format for source image");
+				{
+					printf("Unknown Format for source image %s",_texNames[i].c_str());
+					memset(source_images[i],0xff,w*h*sizeof(u32));
+				}
 			}
 
 			_Width = largest_source_width*nXTiles;

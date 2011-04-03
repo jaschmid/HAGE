@@ -64,31 +64,36 @@ public:
 
 	virtual void DomainStep(t64 time){};
 
-	void GenerateShutdownMessage(){Tasks.Shutdown();}
+	void GenerateShutdownMessage(){GetTask().Shutdown();}
 
 	inline t64 GetTime() const{return _time;}
 	inline t64 GetElapsedTime() const{return _time - _timeLast;}
 protected:
 
-	u32 GetRandInt() {return Tasks.GetRandInt();}
-	f32 GetRandFloat() {return Tasks.GetRandFloat();}
+	u32 GetRandInt() {return GetTask().GetRandInt();}
+	f32 GetRandFloat() {return GetTask().GetRandFloat();}
 
 	virtual bool MessageProc(const Message* pMessage);
 
 	void QueueItem(bool bInit)
 	{
 		if(bInit)
-			Tasks.QueueDomainInit();
+			GetTask().QueueDomainInit();
 		else
-			Tasks.QueueDomainStep();
+			GetTask().QueueDomainStep();
 	}
 
-	DomainMemory*	Memory;
-	TaskManager		Tasks;
-	CoreFactory		Factory;
-	CResourceManager* Resource;
+	DomainMemory& GetMemory(){return *Memory;}
+	TaskManager& GetTask(){return *Tasks;}
+	CoreFactory& GetFactory(){return *Factory;}
+	CResourceManager& GetResource(){return *Resource;}
 
 private:
+
+	DomainMemory*	Memory;
+	TaskManager*	Tasks;
+	CoreFactory*	Factory;
+	CResourceManager* Resource;
 
 	void Init();
 	void Step();
@@ -121,6 +126,7 @@ private:
 	t64				_timeBegin;
 	t64				_time;
 	t64				_timeLast;
+	t64				_timeLastGC;
 
 	u32				nInputCallbacks;
 	u32				nDelayedInputCallbacks;
@@ -390,12 +396,8 @@ protected:
 		Input1(),Input2(),Output()
 
 	{
-		Tasks.SetDomain((Domain*)this);
-		Factory.SetDomain((Domain*)this);
-		if(guid_of<Domain>::Get() != guid_of<ResourceDomain>::Get())
-			Resource = new CResourceManager();
-		else
-			Resource = nullptr;
+		GetTask().SetDomain((Domain*)this);
+		GetFactory().SetDomain((Domain*)this);
 	
 		if(!outputPin && inputPins.size() == 0)
 		{
@@ -405,8 +407,6 @@ protected:
 	}
 	virtual ~DomainBase()
 	{
-		if(Resource)
-			delete Resource;
 	}
 
 

@@ -226,7 +226,7 @@ static HAGE::u32 APIWFormatPixelSize(const HAGE::APIWFormat& format)
 	case HAGE::DXTC5_UNORM:
 	case HAGE::DXTC5_UNORM_SRGB:
 		assert(!"Compressed Texture does not have pixel Size!");
-		break;
+		return 0;
 	default:
 		assert(!"Unknown Format!");
 		return 0;

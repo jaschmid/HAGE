@@ -31,7 +31,7 @@ namespace HAGE
 	{
 	}
 
-	IResource* CMapDataLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+	IResource* CMapDataLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 	{
 		return _pMapData->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 	}
@@ -240,10 +240,9 @@ namespace HAGE
 
 	CMapDataLoader::CMapData::~CMapData()
 	{
-	
 	}
 
-	IResource* CMapDataLoader::CMapData::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+	IResource* CMapDataLoader::CMapData::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 	{
 		return (IResource*)this;
 	}

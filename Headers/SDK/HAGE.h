@@ -30,7 +30,10 @@
 #include "PinHelpers.h"
 #include "RenderingAPIWrapper.h"
 #include "EffectContainer.h"
+
 #include "ResourceFormats.h"
+
+#include "SparseVirtualTextureFile.h"
 
 namespace HAGE
 {

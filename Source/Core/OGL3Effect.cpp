@@ -217,6 +217,9 @@ static GLint OGLTextureWrapFromHAGEAddressMode(HAGE::APIWAddressModes mode)
 	case HAGE::ADDRESS_MIRROR_ONCE:
 		return GL_MIRROR_CLAMP_TO_EDGE_ATI;
 		break;
+	default:
+		assert(!"Unknown Mode!");
+		return 0;
 	}
 }
 
@@ -248,6 +251,9 @@ inline GLint HAGEComparisonFuncToOGLComparisonFunc(const HAGE::APIWComparison co
 		case HAGE::COMPARISON_ALWAYS:
 			return GL_ALWAYS;
 			break;
+		default:
+			assert(!"Unknown Comparison!");
+			return 0;
 	}
 }
 

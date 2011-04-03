@@ -184,7 +184,7 @@ CDrawableMeshLoader::~CDrawableMeshLoader()
 		delete [] _pDependancies;
 }
 
-IResource* CDrawableMeshLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CDrawableMeshLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	if(_pDrawableMesh == nullptr&&nDependanciesInOut == 0)
 	{
@@ -195,7 +195,7 @@ IResource* CDrawableMeshLoader::Finalize(const IResource** dependanciesIn,const 
 	else if(_pDrawableMesh == nullptr)
 	{
 		assert(nDependanciesInOut == 1);
-		_pDrawableMesh = new CDrawableMesh((const IMeshData*)dependanciesIn[0]);
+		_pDrawableMesh = new CDrawableMesh(TResourceAccess<IMeshData>(dependanciesIn[0]));
 		delete [] _pDependancies;
 		_pDependancies = nullptr;
 	}
@@ -203,9 +203,8 @@ IResource* CDrawableMeshLoader::Finalize(const IResource** dependanciesIn,const 
 	return _pDrawableMesh->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 }
 
-CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVertexBuffer(nullptr),_pEffect(nullptr)
+CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const TResourceAccess<IMeshData>& pData) : _pVertexBuffer(nullptr),_pEffect(nullptr)
 {
-	assert(pData);
 	RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
 	assert(pAlloc);
 	pAlloc->BeginAllocation();
@@ -233,7 +232,7 @@ CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVe
 	pData->GetVertexData(&pColor,iColorStride,IMeshData::COLOR);
 
 	DefaultVertexFormat* pWriteOut = (DefaultVertexFormat*)pVertexData;
-	for(int i = 0;i <nVertices;++i)
+	for(u32 i = 0;i <nVertices;++i)
 	{
 		pWriteOut[i].position = *((Vector3<>*)&pPosition[iPositionStride*i]) ;
 		if(pTexcoord)
@@ -253,7 +252,6 @@ CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVe
 	_pEffect = pAlloc->CreateEffect(program);
 	_pConstants = pAlloc->CreateConstantBuffer(sizeof(testConstants));
 	_nTextures = 0;
-	_ppTextures = nullptr;
 
 	pAlloc->EndAllocation();
 
@@ -276,7 +274,7 @@ CDrawableMeshLoader::CDrawableMesh::CDrawableMesh(const IMeshData* pData) : _pVe
 	delete [] pIndexData;
 }
 
-IResource* CDrawableMeshLoader::CDrawableMesh::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CDrawableMeshLoader::CDrawableMesh::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	if(_nTextures == 0)
 		return (IResource*)this;
@@ -290,9 +288,9 @@ IResource* CDrawableMeshLoader::CDrawableMesh::Finalize(const IResource** depend
 
 	assert(nDependanciesInOut == _nTextures);
 
-	_ppTextures = new const APIWTexture*[_nTextures];
-	for(int i = 0;i<_nTextures;++i)
-		_ppTextures[i] = ((const ITextureImage**)dependanciesIn)[i]->GetTexture();
+	_Textures.resize(_nTextures);
+	for(u32 i = 0;i<_nTextures;++i)
+		_Textures[i] = dependanciesIn[i];
 
 	delete [] _pTextureNames;
 	_pTextureNames = nullptr;
@@ -301,12 +299,6 @@ IResource* CDrawableMeshLoader::CDrawableMesh::Finalize(const IResource** depend
 
 CDrawableMeshLoader::CDrawableMesh::~CDrawableMesh()
 {
-	if(_ppTextures)
-	{
-		for(int i = 0;i<_nTextures;++i)
-			delete _ppTextures[i];
-		delete [] _ppTextures;
-	}
 	if(_pVertexBuffer)delete _pVertexBuffer;
 	if(_pVertexArray)delete _pVertexArray;
 	if(_pEffect)delete _pEffect;
@@ -352,7 +344,7 @@ CMeshDataLoader::~CMeshDataLoader()
 {
 }
 
-IResource* CMeshDataLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CMeshDataLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	return _pMeshData->Finalize(dependanciesIn,pDependanciesOut,nDependanciesInOut);
 }
@@ -374,10 +366,10 @@ static int face_cb(p_ply_argument argument) {
 	switch (value_index) {
         case 0:
         case 1: 
-			indices[value_index] = ply_get_argument_value(argument);
+			indices[value_index] = (int)ply_get_argument_value(argument);
             break;
         case 2:
-			indices[value_index] = ply_get_argument_value(argument);
+			indices[value_index] = (int)ply_get_argument_value(argument);
 			pV->push_back((u32)indices[0]);
 			pV->push_back((u32)indices[1]);
 			pV->push_back((u32)indices[2]);
@@ -393,10 +385,10 @@ void CMeshDataLoader::CMeshData::GenerateNormals()
 {
 	DefaultVertexFormat* pVertexData = (DefaultVertexFormat*)_pVertexData;
 	u32* pIndexData = (u32*)_pIndexData;
-	for(int i =0;i<_nVertices;++i)
+	for(u32 i =0;i<_nVertices;++i)
 		pVertexData[i].normal = Vector3<>(0.0f,0.0f,0.0f);
 
-	for(int i=0;i<_nIndices/3;++i)
+	for(u32 i=0;i<_nIndices/3;++i)
 	{
 		Vector3<> d1	= pVertexData[pIndexData[i*3+1]].position-pVertexData[pIndexData[i*3+0]].position;
 		Vector3<> d2	= pVertexData[pIndexData[i*3+2]].position-pVertexData[pIndexData[i*3+0]].position;
@@ -407,7 +399,7 @@ void CMeshDataLoader::CMeshData::GenerateNormals()
 		pVertexData[pIndexData[i*3+2]].normal+=face_normal;
 	}
 
-	for(int i =0;i<_nVertices;++i)
+	for(u32 i =0;i<_nVertices;++i)
 		pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
 }
 
@@ -428,11 +420,11 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 			assert(ply_read(ply));
 			ply_close(ply);
 		
-			_nIndices = tI.size();
-			_nVertices = vX.size();
+			_nIndices = (u32)tI.size();
+			_nVertices = (u32)vX.size();
 			DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
 			Vector3<> min(0.0f,0.0f,0.0f),max(0.0f,0.0f,0.0f);
-			for(int i =0;i<_nVertices;++i)
+			for(u32 i =0;i<_nVertices;++i)
 			{
 				pVertexData[i].position = Vector3<>(vX[i],vY[i],vZ[i]);
 				pVertexData[i].normal   = Vector3<>(0,0,0);
@@ -459,7 +451,7 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 			GenerateNormals();
 			
 			Vector3<> avg = (max+min)/2.0f;
-			for(int i =0;i<_nVertices;++i)
+			for(u32 i =0;i<_nVertices;++i)
 			{
 				pVertexData[i].position = (pVertexData[i].position-avg) | (max-avg);
 				pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
@@ -688,7 +680,7 @@ bool CMeshDataLoader::CMeshData::TryLoadHGEO(IDataStream* pData)
 
 	forceRead(pData,sizeof(u32),&_nVertices);
 	DefaultVertexFormat* pVertexData = new DefaultVertexFormat[_nVertices];
-	for(int i = 0; i<_nVertices;++i)
+	for(u32 i = 0; i<_nVertices;++i)
 	{
 		forceRead(pData,sizeof(Vector3<>),&pVertexData[i].position);
 		forceRead(pData,sizeof(Vector2<>),&pVertexData[i].texcoord0);
@@ -726,7 +718,7 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 
 	DefaultVertexFormat* pVertices = new DefaultVertexFormat[header.nVertices];
 
-	for(int i = 0;i<_nVertices;++i)
+	for(u32 i = 0;i<_nVertices;++i)
 	{
 		pVertices[i].color = Vector3<>(1.0f,1.0f,1.0f);
 		pVertices[i].normal = fixCoordSystem(origVertices[i].normal.normalize());
@@ -742,7 +734,7 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 
 	std::string skin_filename = pData->GetIdentifierString();
 
-	u32 last = skin_filename.find_last_of('.');
+	u32 last = (u32)skin_filename.find_last_of('.');
 	skin_filename = skin_filename.substr(0,last);
 	skin_filename.append("00.skin");
 
@@ -753,7 +745,7 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 	assert(header.nTextures < 32);
 	forceRead(pData,header.nTextures*sizeof(ModelTextureDef),def);
 	char tmp[1025];
-	for(int i = 0;i<header.nTextures;++i)
+	for(u32 i = 0;i<header.nTextures;++i)
 		if(def[i].type == 0 && def[i].nameLen > 1)
 		{
 			pData->Seek(def[i].nameOfs,IDataStream::ORIGIN_BEGINNING);
@@ -764,13 +756,13 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 	return true;
 }
 
-void CMeshDataLoader::CMeshData::FinalizeLoadM2(const IResource** dependanciesIn,u32 nDependanciesIn)
+void CMeshDataLoader::CMeshData::FinalizeLoadM2(const ResourceAccess* dependanciesIn,u32 nDependanciesIn)
 {
 	assert(nDependanciesIn == _depencancies.size());
-	IRawData* pSkinData = (IRawData*)dependanciesIn[0];
+	TResourceAccess<IRawData> pSkinData = dependanciesIn[0];
 	assert(pSkinData->GetSize() >= sizeof(ModelView));
 	const u8* p;
-	u32 size = pSkinData->GetData(&p);
+	u64 size = pSkinData->GetData(&p);
 	const ModelView* view=(const ModelView*)p;
 
 	static const char skinMagic[4] = {'S','K','I','N'};
@@ -780,14 +772,14 @@ void CMeshDataLoader::CMeshData::FinalizeLoadM2(const IResource** dependanciesIn
 	const u16* triangles = (const u16*)(p + view->ofsTris);
 	_nIndices = view->nTris;
 	u32* indices = new u32[_nIndices];
-	for(int i =0;i<_nIndices;++i)
+	for(u32 i =0;i<_nIndices;++i)
 		indices[i] = indexLookup[triangles[i]];
 
 	_pIndexData = (u8*)indices;
 }
 
 
-IResource* CMeshDataLoader::CMeshData::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CMeshDataLoader::CMeshData::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	if(nDependanciesInOut == 0 && _depencancies.size())
 	{		
@@ -798,7 +790,7 @@ IResource* CMeshDataLoader::CMeshData::Finalize(const IResource** dependanciesIn
 			else
 				*pDependanciesOut = nullptr;
 		}
-		nDependanciesInOut = _depencancies.size();
+		nDependanciesInOut = (u32)_depencancies.size();
 		return nullptr;
 	}
 	else
@@ -844,6 +836,8 @@ u32 CMeshDataLoader::CMeshData::GetVertexData(const u8** pDataOut,u32& pOutStrid
 	}
 
 	pOutStride = sizeof(DefaultVertexFormat);
+
+	return _nVertices;
 }
 u32	CMeshDataLoader::CMeshData::GetNumIndices() const
 {

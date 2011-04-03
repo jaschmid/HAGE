@@ -271,7 +271,7 @@ namespace HAGE {
 
 		const int max_lights = 3;
 		
-		auto result3 = Factory.ForEach<GLightOut,RenderingLight>( [this](RenderingLight* o) -> GLightOut {return o->Step(this);} , guid_of<RenderingLight>::Get() ,true);
+		auto result3 = GetFactory().ForEach<GLightOut,RenderingLight>( [this](RenderingLight* o) -> GLightOut {return o->Step(this);} , guid_of<RenderingLight>::Get() ,true);
 		int nLights = std::min<u32>(result3.second,max_lights);
 		light_constants lc;
 		int i = 0;
@@ -329,8 +329,8 @@ namespace HAGE {
 
 			_pShadowcubeConstants->UpdateContent(&sc);
 			
-			auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
-			auto result2 = Factory.ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
+			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pShadowmapEffect,pc,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
 
 			lc.LightPositionArg1[i] = Vector4<>(_light[i].Position,((far+near)/(far-near)));
 			lc.LightColorArg2[i] = Vector4<>(_light[i].Color,((-2.0f*far*near)/(far-near)));
@@ -356,8 +356,8 @@ namespace HAGE {
 		
 		_pLightConstants->UpdateContent(&lc);
 
-		auto result = Factory.ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
-		auto result2 = Factory.ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+		auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingActor>::Get() ,true);
+		auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
 
 		pWrapper->PresentFrame();
 	}
@@ -367,9 +367,9 @@ namespace HAGE {
 		fCameraY(settings->getf32Setting("cam_y")),
 		fCameraZ(settings->getf32Setting("cam_z"))
 	{
-		Factory.RegisterObjectType<RenderingActor>();
-		Factory.RegisterObjectType<RenderingSheet>();
-		Factory.RegisterObjectType<RenderingLight>();
+		GetFactory().RegisterObjectType<RenderingActor>();
+		GetFactory().RegisterObjectType<RenderingSheet>();
+		GetFactory().RegisterObjectType<RenderingLight>();
 
 		std::string api = settings->getstringSetting("rendering_api");
 		APIWRendererType type;

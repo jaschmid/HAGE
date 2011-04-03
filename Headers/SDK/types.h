@@ -160,8 +160,14 @@ template<class _C> class guid_of
 
 DECLARE_CLASS_GUID_EX(Null,0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000,void);
 
-const int THREAD_MODE_ST = 0x00000001;
-const int THREAD_MODE_MT = 0x00000002;
+//constants
+
+static const int THREAD_MODE_ST = 0x00000001;
+static const int THREAD_MODE_MT = 0x00000002;
+
+
+static const u64 SYSTEM_TIME_TICKS_PER_SECOND = 1000000000LL;
+static const u64 RESOURCE_DOMAIN_MAX_TIME_SLICE	= SYSTEM_TIME_TICKS_PER_SECOND / 2;
 
 class MemHandle
 {

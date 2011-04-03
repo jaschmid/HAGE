@@ -34,9 +34,9 @@ namespace HAGE {
 		{
 			printf("Init Logic\n");
 			initSettings();
-			Factory.RegisterObjectType<LogicActor>();
-			Factory.RegisterObjectType<LogicSheet>();
-			Factory.RegisterObjectType<LogicLight>();
+			GetFactory().RegisterObjectType<LogicActor>();
+			GetFactory().RegisterObjectType<LogicSheet>();
+			GetFactory().RegisterObjectType<LogicLight>();
 			m_pUserInterface = new UserInterface();
 
 			ActorInit boxinit;
@@ -45,7 +45,7 @@ namespace HAGE {
 			boxinit.location = Vector3<>(0.0f,0.0f,0.0f);
 			strcpy(boxinit.mesh,"Box");
 			boxinit.scale = Vector3<>(8.0f,8.0f,8.0f);
-			Factory.CreateObject<LogicActor>(boxinit);
+			GetFactory().CreateObject<LogicActor>(boxinit);
 
 			ActorInit ainit;
 			ainit.mass = 0.2f;
@@ -64,7 +64,7 @@ namespace HAGE {
 				ainit.behavior = GetRandInt()%3;
 				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		
-				Factory.CreateObject<LogicActor>(ainit);
+				GetFactory().CreateObject<LogicActor>(ainit);
 			}
 
 			SheetInit init;
@@ -82,7 +82,7 @@ namespace HAGE {
 										settings->getf32Setting("cloth_init_normal_y"),
 										settings->getf32Setting("cloth_init_normal_z"));
 
-			Factory.CreateObject<LogicSheet>(init);
+			GetFactory().CreateObject<LogicSheet>(init);
 
 			LightInit linit;
 			linit.Position = Vector3<>( settings->getf32Setting("light1_x"),
@@ -93,7 +93,7 @@ namespace HAGE {
 									settings->getf32Setting("light1_b"));
 			linit.Range = settings->getf32Setting("light1_range");
 
-			Factory.CreateObject<LogicLight>(linit);
+			GetFactory().CreateObject<LogicLight>(linit);
 
 			linit.Position = Vector3<>( settings->getf32Setting("light2_x"),
 										settings->getf32Setting("light2_y"),
@@ -103,7 +103,7 @@ namespace HAGE {
 									settings->getf32Setting("light2_b"));
 			linit.Range = settings->getf32Setting("light2_range");
 
-			Factory.CreateObject<LogicLight>(linit);
+			GetFactory().CreateObject<LogicLight>(linit);
 
 			linit.Position = Vector3<>( settings->getf32Setting("light3_x"),
 										settings->getf32Setting("light3_y"),
@@ -113,16 +113,16 @@ namespace HAGE {
 									settings->getf32Setting("light3_b"));
 			linit.Range = settings->getf32Setting("light3_range");
 
-			Factory.CreateObject<LogicLight>(linit);
+			GetFactory().CreateObject<LogicLight>(linit);
 		
-			guids.resize(Factory.size());
-			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
+			guids.resize(GetFactory().size());
+			u32 nObjects2 = GetFactory().ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],(u32)guids.size());
 			for(u32 i = 0; i<nObjects2; ++i)
 			{
-				Factory.DestroyObject(guids[i]);
-				Factory.CreateObject<LogicActor>(ainit);
+				GetFactory().DestroyObject(guids[i]);
+				GetFactory().CreateObject<LogicActor>(ainit);
 			}
-			auto result = Factory.ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
+			auto result = GetFactory().ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
 		}
 
 		bool LogicDomain::MessageProc(const Message* m)
@@ -136,11 +136,11 @@ namespace HAGE {
 		{
 			//printf("Time %f, Elapsed Time: %f\n",GetTime().toSeconds(),GetElapsedTime().toSeconds());
 
-			guids.resize(Factory.size());
-			u32 nObjects2 = Factory.ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
+			guids.resize(GetFactory().size());
+			u32 nObjects2 = GetFactory().ForEachGetSome<guid,LogicActor>( [](LogicActor* o,guid& g) -> bool {return o->Step(g);} , &guids[0],guids.size());
 			for(u32 i = 0; i<nObjects2; ++i)
 			{
-				Factory.DestroyObject(guids[i]);		
+				GetFactory().DestroyObject(guids[i]);		
 				ActorInit ainit;	
 				ainit.mass = 1.0f;
 				strcpy(ainit.mesh,MeshNames[GetRandInt()%3]);
@@ -153,11 +153,11 @@ namespace HAGE {
 				float ply_range = settings->getf32Setting("ply_spawn_range");
 				ainit.behavior = 0;
 				ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
-				Factory.CreateObject<LogicActor>(ainit);
+				GetFactory().CreateObject<LogicActor>(ainit);
 			}
-			auto result = Factory.ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
+			auto result = GetFactory().ForEach<int,LogicSheet>( [](LogicSheet* o) -> int {return o->Step();} );
 			
-			auto result2 = Factory.ForEach<int,LogicLight>( [](LogicLight* o) -> int {return o->Step();} );
+			auto result2 = GetFactory().ForEach<int,LogicLight>( [](LogicLight* o) -> int {return o->Step();} );
 		}
 
 		LogicDomain::~LogicDomain()

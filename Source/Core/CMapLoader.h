@@ -334,6 +334,7 @@ namespace HAGE {
 	static const u32 ADT_MHDRMagic = ADT_FourCC<'M','H','D','R'>::value;
 	static const u32 ADT_MAMPMagic = ADT_FourCC<'M','A','M','P'>::value;
 	static const u32 ADT_MFBOMagic = ADT_FourCC<'M','F','B','O'>::value;
+	static const u32 ADT_MTXFMagic = ADT_FourCC<'M','T','X','F'>::value;
 	static const u32 ADT_MCINMagic = ADT_FourCC<'M','C','I','N'>::value;
 	static const u32 ADT_MTEXMagic = ADT_FourCC<'M','T','E','X'>::value;
 	static const u32 ADT_MMDXMagic = ADT_FourCC<'M','M','D','X'>::value;
@@ -369,7 +370,7 @@ namespace HAGE {
 
 		CMapDataLoader(IDataStream* pStream,const IResource* pPrev);
 		~CMapDataLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 
 		bool IsValid(){return _pMapData?true:false;}
 		
@@ -388,7 +389,7 @@ namespace HAGE {
 			virtual const void* GetExtendedData(EXTENDED_DATA_TYPE type) const;
 			virtual const char* GetTextureName(u32 index) const;
 			
-			IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+			IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 			bool IsValid(){return isValid;}
 		private:
 			static const u32 nCellTriangles = 4;
@@ -432,7 +433,7 @@ namespace HAGE {
 
 		CMapDataImageLoader(IDataStream* pStream,const IResource* pPrev);
 		~CMapDataImageLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 
 		bool IsValid(){return _pMapData?true:false;}
 		
@@ -451,7 +452,7 @@ namespace HAGE {
 			virtual u32 GetImageLevels() const;
 			virtual const void*	GetImageData() const;
 			
-			IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+			IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 			bool IsValid(){return isValid;}
 		private:
 			struct MapTile

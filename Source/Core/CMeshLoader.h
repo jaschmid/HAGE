@@ -18,7 +18,7 @@ namespace HAGE {
 
 		CDrawableMeshLoader(IDataStream* pStream,const IResource* pPrev);
 		~CDrawableMeshLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 	private:
 
 		class CDrawableMesh : public IDrawableMesh
@@ -26,11 +26,11 @@ namespace HAGE {
 		public:
 			void Draw(const Vector3<>& position, const Matrix4<>& view,const Matrix4<>& inv_view, const Matrix4<>& proj,const Vector3<>& lPosition, const Vector3<>& lColor)  const;
 			const APIWVertexArray* GetVertexArray() const{return _pVertexArray;}
-			const APIWTexture* GetTexture(u32 index) const{return (index<_nTextures)?_ppTextures[index]:nullptr;}
+			const APIWTexture* GetTexture(u32 index) const{return (index<_nTextures)?_Textures[index]->GetTexture():nullptr;}
 			virtual ~CDrawableMesh();
-			CDrawableMesh(const IMeshData* pData);
+			CDrawableMesh(const TResourceAccess<IMeshData>& pData);
 
-			IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+			IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 		private:
 
 			APIWVertexBuffer*							_pVertexBuffer;
@@ -38,7 +38,7 @@ namespace HAGE {
 			APIWConstantBuffer*							_pConstants;
 			APIWEffect*									_pEffect;
 			u32											_nTextures;
-			const APIWTexture**							_ppTextures;
+			std::vector<TResourceAccess<ITextureImage>>	_Textures;
 			std::pair<std::string,guid>*				_pTextureNames;
 		};
 
@@ -54,7 +54,7 @@ namespace HAGE {
 
 		CMeshDataLoader(IDataStream* pStream,const IResource* pPrev);
 		~CMeshDataLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 
 		bool IsValid(){return _pMeshData?true:false;}
 	private:
@@ -74,13 +74,13 @@ namespace HAGE {
 
 			bool IsValid(){return _bValid;}
 
-			IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+			IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 		private:
 			
 			void GenerateNormals();
 			bool TryLoadHGEO(IDataStream* pData);
 			bool TryLoadM2(IDataStream* pData);
-			void FinalizeLoadM2(const IResource** dependanciesIn,u32 nDependanciesIn);
+			void FinalizeLoadM2(const ResourceAccess* dependanciesIn,u32 nDependanciesIn);
 			bool	_MD2;
 			IDataStream* _pData;
 
@@ -106,18 +106,18 @@ namespace HAGE {
 
 		CRawDataLoader(IDataStream* pStream,const IResource* pPrev);
 		~CRawDataLoader();
-		IResource* Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
+		IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 	private:
 
 		class CRawData : public IRawData
 		{
 		public:		
-			virtual u32 GetSize() const;
-			virtual u32 GetData(const u8** pDataOut) const;
+			virtual u64 GetSize() const;
+			virtual u64 GetData(const u8** pDataOut) const;
 			virtual ~CRawData();
 			CRawData(IDataStream* pData);
 		private:
-			u32		_Size;
+			u64		_Size;
 			void*	_Data;
 		};
 

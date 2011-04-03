@@ -17,7 +17,7 @@ CRawDataLoader::~CRawDataLoader()
 {
 }
 
-IResource* CRawDataLoader::Finalize(const IResource** dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
+IResource* CRawDataLoader::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
 	return (IResource*)_pRawData;
 }
@@ -42,12 +42,12 @@ CRawDataLoader::CRawData::~CRawData()
 	delete [] _Data;
 }
 
-u32 CRawDataLoader::CRawData::GetSize() const
+u64 CRawDataLoader::CRawData::GetSize() const
 {
 	return _Size;
 }
 
-u32 CRawDataLoader::CRawData::GetData(const u8** pDataOut) const
+u64 CRawDataLoader::CRawData::GetData(const u8** pDataOut) const
 {
 	if(pDataOut)
 		*pDataOut = (u8*)_Data;

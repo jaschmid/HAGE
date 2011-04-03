@@ -141,6 +141,9 @@
     <ClInclude Include="Headers\SDK\SpatialTree.h">
       <Filter>Header Files\Hage Math</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\SDK\SparseVirtualTextureFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">
@@ -256,6 +259,9 @@
     </ClCompile>
     <ClCompile Include="Source\Core\CMapImageLoader.cpp">
       <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\SparseVirtualTextureFile.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

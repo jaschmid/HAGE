@@ -127,7 +127,7 @@ private:
 	// internal high precision random generator funcions
 	u32 GetRandInt() {return (u32)(_randomGenerator()&0xffffffff);}
 	f32 GetRandFloat() {return (f32)(((f64)_randomGenerator()-(f64)_randomGenerator.min())/((f64)_randomGenerator.max()-(f64)_randomGenerator.min()));}
-	void InitHighPrecisionGenerator(u64 seed){_randomGenerator.seed(seed);}
+	void InitHighPrecisionGenerator(u64 seed){_randomGenerator.seed((u32)seed);}
 
 	// functions for SharedTaskMannager
 	void _InternalRunTask(genericTask* pTask);

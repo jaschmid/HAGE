@@ -26,6 +26,8 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 
 	private:
 		
+		u32 RunGarbageCollection();
+
 		class CNullStream : public IDataStream
 		{
 		public:
@@ -63,25 +65,27 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			CResourceManager::QueueOutType* outQueue;
 		};
 
-		SStagedResource* _LoadResource(const char* pName,const guid& type);
+		SStagedResourceMaster* _LoadResource(const char* pName,const guid& type);
 		IDataStream* _OpenDataStream(const char* pName);
 
-		const std::unordered_map<guid,IResource*,guid_hasher>& RegisterResourceManager(CResourceManager::QueueInType& in_queue,CResourceManager::QueueOutType& out_queue);
+		const std::unordered_map<guid,SStagedResourceMaster,guid_hasher>& RegisterResourceManager(CResourceManager::QueueInType& in_queue,CResourceManager::QueueOutType& out_queue);
 
 		void _RegisterResourceType(const guid& resourceId,const loaderFunction& stage0Loader);
 
-		std::unordered_map<guid,IResource*,guid_hasher>							_stage0Database;
+		std::unordered_map<guid,SStagedResourceMaster,guid_hasher>				_stage0Database;
 		CNullStream																_NullStream;
 		bool																	_registrationLocked;
 
 		std::unordered_multimap<guid,loaderFunction,guid_hasher>							_loaderMap;
-		typedef	std::unordered_map<tResourceKey,std::vector<SStagedResource*>,key_hasher> tResourceMap;
+		typedef	std::unordered_map<tResourceKey,std::vector<SStagedResourceMaster*>,key_hasher> tResourceMap;
 		tResourceMap			_centralResourceMap;
 
 		typedef std::unordered_map<std::string,IDataArchive*>					archiveMap;
 		archiveMap																_archives;
 
 		std::vector<RegisteredResourceManager>									_clients;
+
+		t64																		_timeLastGC;
 
 		friend class CResourceManager;
 		friend class RenderingAPIWrapper;

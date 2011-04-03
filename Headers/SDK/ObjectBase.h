@@ -51,17 +51,17 @@ protected:
 
 	static inline CoreFactory* GetFactory()
 	{
-		return &(domain_access<_Domain>::Get()->Factory);
+		return &(domain_access<_Domain>::Get()->GetFactory());
 	}
 
 	static inline CResourceManager* GetResource()
 	{
-		return (domain_access<_Domain>::Get()->Resource);
+		return &(domain_access<_Domain>::Get()->GetResource());
 	}
 
 	static inline TaskManager* GetTasks()
 	{
-		return &(domain_access<_Domain>::Get()->Tasks);
+		return &(domain_access<_Domain>::Get()->GetTask());
 	}
 
 	static inline u32 GetRandInt() 
@@ -209,7 +209,7 @@ protected:
 	{
 		__out_handle=pin.AllocateMemBlock(sizeof(Type));
 		assert(__out_handle.isValid());
-		domain_access<Domain>::Get()->Factory.RegisterObjectOut(objectId,__out_handle,sizeof(Type),_GetInitOut(),_GetInitOutSize());
+		domain_access<Domain>::Get()->GetFactory().RegisterObjectOut(objectId,__out_handle,sizeof(Type),_GetInitOut(),_GetInitOutSize());
 	}
 	~_ObjectBaseOutput()
 	{
