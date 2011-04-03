@@ -10,6 +10,7 @@ namespace HAGE {
 
 	bool LogicActor::Step(guid& out)
 	{
+		/*
 		if(_init.behavior == 1)
 		{
 			float fd2 = !position;
@@ -58,21 +59,79 @@ namespace HAGE {
 			return true;
 		if(position.z>=5.0)
 			return true;
+		*/
+		
+		ActorOut outputData;
+
+		outputData.orbitWorldMatrix = Matrix4<>::One();
+		//generate Matrix for rotation
+		Vector3<> up = Vector3<>(0.0f,1.0f,0.0f);
+		Matrix4<> adj = Matrix4<>::One();
+
+		Vector3<> rotation_axis = _init.rotation_axis.normalize();
+		if(!(up-rotation_axis) > 0.01f)
+		{
+			Vector3<> rot = (rotation_axis % up).normalize();
+			float angle = acosf(rotation_axis*up);
+			adj = Matrix4<>::AngleRotation(rot,-angle);
+		}
+		
+		rotation += _init.rotation_speed * GetElapsedTime().toSeconds();
+		worldMatrix = Matrix4<>::AngleRotation(rotation_axis,rotation) * adj ;
+
+
+		if(_init.behavior == ACTOR_BEHAVIOR_PLANET)
+		{
+			LogicActor* l=(LogicActor*)GetFactory()->QueryObject(_init.master_object);
+			
+			orbit_rotation += _init.orbit_speed * GetElapsedTime().toSeconds();
+
+			
+			Vector3<> up = Vector3<>(0.0f,1.0f,0.0f);
+			Matrix4<> adj = Matrix4<>::One();
+			if(!(up-_init.orbit_axis) > 0.01f)
+			{
+				Vector3<> rot = (_init.orbit_axis % up).normalize();
+				float angle = acosf(_init.orbit_axis*up);
+				adj = Matrix4<>::AngleRotation(rot,angle);
+			}
+
+			outputData.orbitWorldMatrix = l->GetWorldMatrix();
+
+			Matrix4<> local_rotation = Matrix4<>::AngleRotation(_init.orbit_axis,-orbit_rotation);
+
+			Matrix4<> parentTransform = Matrix4<>::AngleRotation(_init.orbit_axis,orbit_rotation) * ( Matrix4<>::Translate(Vector3<>(_init.initial_distance,0.0f,0.0f))*local_rotation); 
+
+			parentTransform = adj * parentTransform;
+			worldMatrix = outputData.orbitWorldMatrix * (parentTransform * worldMatrix);
+		}
+		else
+		{
+			//sun does nothing
+		}
+		
+		Vector3<> pos = (worldMatrix*Vector4<>(0.0f,0.0f,0.0f,1.0f)).xyz();
+
+		outputData.worldMatrix = worldMatrix;
+		Output::Set(outputData);
 
 		return false;
 	}
 
 	LogicActor::LogicActor(guid ObjectId,const ActorInit& init) : GenericActor(),ObjectBase<LogicActor>(ObjectId),_init(init)
 	{
-		position=_init.location;
-		speed=Vector3<>(GetRandFloat()-0.5f,GetRandFloat()-0.5f,GetRandFloat()-0.5f)/10.0f;
-		acceleration=Vector3<>(0.0f,0.0f,0.0f);
-		axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
-		Output::Set(position);
+		worldMatrix = Matrix4<>::Translate(Vector3<>(_init.initial_distance,0.0f,0.0f));
+		rotation= 0.0f;
+		orbit_rotation = 0.0f;
+		//speed=Vector3<>(GetRandFloat()-0.5f,GetRandFloat()-0.5f,GetRandFloat()-0.5f)/10.0f;
+		//acceleration=Vector3<>(0.0f,0.0f,0.0f);
+		//axis = (position % Vector3<>(0.0,1.0,0.0))/sqrtf(!position);
+		ActorOut outputData;
+		outputData.worldMatrix = worldMatrix;
+		Output::Set(outputData);
 
 		ActorGInit& ginit = Output::InitOut;
-		strcpy(ginit.mesh,_init.mesh);
-		ginit.scale = _init.scale;
+		ginit = init;
 	}
 
 	LogicActor::~LogicActor()

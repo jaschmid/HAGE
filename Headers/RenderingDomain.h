@@ -14,6 +14,9 @@ struct position_constants
 	Matrix4<>	inverse_modelview;
 	Matrix4<>	modelview;
 	Matrix4<>	modelview_projection;
+	float		ambientFactor;
+	float		diffuseFactor;
+	u32			padding[2];
 };
 
 class RenderingDomain : public DomainBase<RenderingDomain>
@@ -33,6 +36,8 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		virtual bool MessageProc(const Message* pMessage);
 
 		float										fCameraX,fCameraY,fCameraZ;
+
+		bool										bShowOrbit;
 		
 		RenderingAPIWrapper*						pWrapper;
 

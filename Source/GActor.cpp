@@ -10,20 +10,19 @@ namespace HAGE {
 
 	int GraphicsActor::Step()
 	{
-		position = Input1::Get();
-		Output::Set(position);
+		data = Input1::Get();
+		Output::Set(data);
 		return 1;
 	}
 
 	GraphicsActor::GraphicsActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorGInit* pInit) :
 		ObjectBase<GraphicsActor>(ObjectId,h,source)
 	{
-		position = Input1::Get();
-		Output::Set(position);
+		data = Input1::Get();
+		Output::Set(data);
 		
 		ActorRInit& rinit = Output::InitOut;
-		strcpy(rinit.mesh,pInit->mesh);
-		rinit.scale = pInit->scale;
+		rinit = *pInit;
 	}
 
 	GraphicsActor::~GraphicsActor()
