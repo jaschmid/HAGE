@@ -85,11 +85,12 @@ static const char* preproc =
 	"#endif\n";
 static const int preproc_size = strlen(preproc);
 
-D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState,D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers) :
+D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState, ID3D11DepthStencilState* pDepthState,D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers) :
 	m_pWrapper(pWrapper),
 	m_pCompiledShader(nullptr),
 	m_pRasterizerState(pRasterizerState),
-	m_pBlendState(pBlendState)
+	m_pBlendState(pBlendState),
+	m_pDepthState(pDepthState)
 {
 	char* tBuffer = new char[strlen(pProgram)+preproc_size+1];
 	memcpy(tBuffer,preproc,preproc_size);
@@ -135,6 +136,7 @@ D3D11Effect::~D3D11Effect()
 {
 	m_pRasterizerState->Release();
 	m_pBlendState->Release();
+	m_pDepthState->Release();
 
 	for(auto i=m_ArrayLayoutList.begin();i!=m_ArrayLayoutList.end();++i)
 		i->second->Release();
@@ -416,6 +418,7 @@ void D3D11Effect::Draw(HAGE::APIWVertexArray* pVertexArray)
 		m_pWrapper->GetContext()->RSSetState(m_pRasterizerState);
 		float blend_factor[4] = {1.0f,1.0f,1.0f,1.0f};
 		m_pWrapper->GetContext()->OMSetBlendState(m_pBlendState,blend_factor,0xffffffff);
+		m_pWrapper->GetContext()->OMSetDepthStencilState(m_pDepthState,0);
 
 		m_pWrapper->GetContext()->VSSetShader( m_pVertexShader, NULL, 0 );
 

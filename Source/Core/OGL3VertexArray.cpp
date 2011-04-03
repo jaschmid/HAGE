@@ -15,56 +15,9 @@ _CRTIMP int __cdecl __MINGW_NOTHROW	stricmp (const char*, const char*);
 
 #ifndef NO_OGL
 
-/*
-POSITION, ATTR0 Input Vertex, Generic Attribute 0
-
-BLENDWEIGHT, ATTR1 Input vertex weight, Generic Attribute 1
-
-NORMAL, ATTR2 Input normal, Generic Attribute 2
-
-DIFFUSE, COLOR0, ATTR3 Input primary color, Generic Attribute 3
-
-SPECULAR, COLOR1, ATTR4 Input secondary color, Generic Attribute 4
-
-TESSFACTOR, FOGCOORD, ATTR5 Input fog coordinate, Generic Attribute 5
-
-PSIZE, ATTR6 Input point size, Generic Attribute 6
-
-BLENDINDICES, ATTR7 Generic Attribute 7
-
-TEXCOORD0-TEXCOORD7, Input texture coordinates (texcoord0-texcoord7)
-ATTR8-ATTR15 Generic Attributes 8-15
-
-TANGENT, ATTR14 Generic Attribute 14
-
-BINORMAL, ATTR15 Generic Attribute 15
-*/
-
-// LOL HACKY SHIT
-const char* vertex_slot_names[] =
-{
-	"POSITION",
-	//"BLENDWEIGHT",
-	"NORMAL",
-	"COLOR",
-	"TEXCOORD",
-	"FOGCOORD",
-	"PSIZE",
-	"BLENDINDICES",
-	"TEXCOORD",
-	"TEXCOORD1",
-	"TEXCOORD2",
-	"TEXCOORD3",
-	"TEXCOORD4",
-	"TEXCOORD5",
-	"TEXCOORD6",
-	"TEXCOORD7",
-	"TANGENT",
-	"BINORMAL"
-};
 
 OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitives,HAGE::APIWPrimitiveType PrimitiveType,HAGE::APIWVertexBuffer** pBuffers,HAGE::u32 nBuffers, const HAGE::u32* pIndexBufferData)
-	: m_pWrapper(pWrapper),m_pBuffers(new OGL3VertexBuffer*[nBuffers]),m_nBuffers(nBuffers),m_PrimitiveType(PrimitiveType),m_nPrimitives(nPrimitives),_bInit(false)
+	: m_pWrapper(pWrapper),m_pBuffers(new OGL3VertexBuffer*[nBuffers]),m_nBuffers(nBuffers),m_PrimitiveType(PrimitiveType),m_nPrimitives(nPrimitives)
 {
 
 	for(HAGE::u32 i = 0;i<nBuffers;++i)
@@ -104,16 +57,19 @@ OGL3VertexArray::OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 	glError();
 }
 
-void OGL3VertexArray::Init()
+unsigned int OGL3VertexArray::GetVA(GLuint program)
 {
-	if(!_bInit)
+	auto it = m_vaoID.find(program);
+	if(it!=m_vaoID.end())
+		return it->second;
+	else
 	{
-		_bInit=true;
-		glGenVertexArrays(1, &m_vaoID);
+		unsigned int id;
+		glGenVertexArrays(1, &id);
 		glError();
 
 		// VAO setup
-		glBindVertexArray(m_vaoID);
+		glBindVertexArray(id);
 		glError();
 
 		for(HAGE::u32 i = 0;i<m_nBuffers;++i)
@@ -152,21 +108,40 @@ void OGL3VertexArray::Init()
 					break;
 				}
 				int nProperty = -1;
-				for(int k=0;k<16;++k)
-					if(stricmp(pFormat->pOriginalDescription[j].pName,vertex_slot_names[k])==0)
-					{
-						nProperty = k;
-						break;
-					}
-				assert(nProperty!=-1);
-				glVertexAttribPointer((GLuint)nProperty, nAttributes, Type, GL_FALSE, pFormat->uVertexSize, (const GLvoid*)nOffset);
-				glEnableVertexAttribArray(nProperty);
+
+				int nAttribs;
+				int nAttribsLength;
+				
+				glGetProgramiv(program,GL_ACTIVE_ATTRIBUTES,&nAttribs);
+				glGetProgramiv(program,GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,&nAttribsLength);
+				char* cAttribName = new char[nAttribsLength];
+				for(int i =0;i<nAttribs;++i)
+				{
+					int len;
+					int size;
+					GLenum type;
+					glGetActiveAttrib(program,i,nAttribsLength,&len,&size,&type,cAttribName);
+					if(stricmp(pFormat->pOriginalDescription[j].pName,&cAttribName[1])==0)
+						nProperty = glGetAttribLocation(program,cAttribName);
+				}
+
+				delete [] cAttribName;
+
+				if(nProperty!=-1);
+				{
+					glVertexAttribPointer((GLuint)nProperty, nAttributes, Type, GL_FALSE, pFormat->uVertexSize, (const GLvoid*)nOffset);
+					glEnableVertexAttribArray(nProperty);
+				}
 				nOffset += size;
 			}
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+			m_vaoID.insert(std::pair<GLuint,unsigned int>(program,id));
 		}
 
 		glBindVertexArray(0);
+
+		return id;
 	}
 
 

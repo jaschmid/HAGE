@@ -38,7 +38,17 @@ extern const APIWSamplerState DefaultSamplerState = {
 	-1000.0f, 
 	1000.0f
 };
+
+extern const APIWViewport NullViewport = {
+	0,0,
+	0,0,
+	0.0f,1.0f
+};
+
 RenderingAPIAllocator* RenderingAPIAllocator::_pAllocator = nullptr;
+
+APIWTexture* const RENDER_TARGET_DEFAULT		= reinterpret_cast<APIWTexture*>(0x1LL);
+APIWTexture* const RENDER_TARGET_NONE			= reinterpret_cast<APIWTexture*>(0x0LL);
 
 RenderingAPIWrapper* RenderingAPIWrapper::CreateRenderingWrapper(APIWRendererType type,const APIWDisplaySettings* pSettings)
 {

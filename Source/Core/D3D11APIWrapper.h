@@ -36,7 +36,8 @@ public:
 	D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings);
 	~D3D11APIWrapper();
 
-	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
+	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil,const HAGE::APIWViewport& viewport);
+	void GetCurrentViewport(HAGE::APIWViewport& vpOut){vpOut=_currentViewport;}
 	void UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings);
 	void BeginFrame();
 	void PresentFrame();
@@ -61,6 +62,14 @@ public:
 	HAGE::Matrix4<> GenerateRenderTargetProjection(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
 	{
 		return GenerateProjectionMatrix(_near,_far,fovX,fovY);
+	}
+	HAGE::Matrix4<> GenerateProjectionMatrixBase()
+	{
+		return HAGE::Matrix4<>::One();
+	}
+	HAGE::Matrix4<> GenerateRenderTargetProjectionBase()
+	{
+		return HAGE::Matrix4<>::One();
 	}
 
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
@@ -112,6 +121,7 @@ public:
 	inline ID3D11SamplerState*	GetDefaultSampler(){_defaultSampler->AddRef();return _defaultSampler;}
 	inline D3D11Effect* GetCurrentEffect(){return _currentEffect;}
 	inline void SetCurrentEffect(D3D11Effect* pNew){_currentEffect=pNew;}
+	inline void	SetViewport(const HAGE::APIWViewport& vp){_currentViewport = vp;}
 private:
 
 	typedef std::basic_string<char,std::char_traits<char>,HAGE::global_allocator<char>> global_string;
@@ -161,6 +171,8 @@ private:
 	ID3D11DepthStencilView *    m_pDepthStencilView;
 	ID3D11SamplerState*			_defaultSampler;
 	D3D11Effect*				_currentEffect;
+	HAGE::APIWViewport				_currentViewport;
+	HAGE::APIWViewport				_backBufferViewport;
     D3D11_VIEWPORT				_vp;
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
@@ -186,7 +198,6 @@ private:
 	ID3D11RenderTargetView*				_renderTargetView;
 	ID3D11DepthStencilView*				_depthStencilView;
 	D3D11APIWrapper*					_pWrapper;
-    D3D11_VIEWPORT				_vp;
 
 	friend class D3D11APIWrapper;
 	friend class D3D11Effect;
@@ -243,10 +254,11 @@ private:
 	friend class D3D11Effect;
 };
 
+
 class D3D11Effect : public HAGE::APIWEffect, public boost::intrusive::list_base_hook<>
 {
 public:
-	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState, D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers);
+	D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11RasterizerState* pRasterizerState, ID3D11BlendState* pBlendState, ID3D11DepthStencilState* pDepthState, D3D11APIWrapper::D3DSampler* pSamplers,HAGE::u32 nSamplers);
 	~D3D11Effect();
 	
 	virtual void SetConstant(const char* pName,const HAGE::APIWConstantBuffer* constant);
@@ -264,6 +276,7 @@ private:
 	ID3D11GeometryShader*       m_pGeometryShader;
     ID3D10Blob*					m_pCompiledShader;
 	ID3D11RasterizerState*		m_pRasterizerState;
+	ID3D11DepthStencilState*	m_pDepthState;
 	ID3D11BlendState*			m_pBlendState;
 	typedef D3D11APIWrapper::global_string global_string;
 	typedef std::unordered_map<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*,D3D11APIWrapper::VertexFormatHash,std::equal_to<D3D11APIWrapper::VertexFormatKey>,HAGE::global_allocator<std::pair<D3D11APIWrapper::VertexFormatKey,ID3D11InputLayout*>>> ArrayLayoutListType;

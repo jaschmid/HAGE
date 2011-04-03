@@ -299,6 +299,18 @@ static HAGE::u32 APIWFormatImagePhysicalPitch(const HAGE::APIWFormat& format,u32
 	}
 }
 
+typedef struct _APIWViewport
+{
+	f32 XMin,XSize;
+	f32 YMin,YSize;
+	f32 ZMin,ZMax;
+} APIWViewport;
+
+extern const APIWViewport NullViewport;
+
+extern APIWTexture * const RENDER_TARGET_DEFAULT;
+extern APIWTexture * const RENDER_TARGET_NONE;
+
 class RenderingAPIAllocator
 {
 public:
@@ -322,6 +334,8 @@ public:
 
 	virtual HAGE::Matrix4<> GenerateProjectionMatrix(f32 near,f32 far,f32 fovX,f32 fovY)	= 0;
 	virtual	HAGE::Matrix4<> GenerateRenderTargetProjection(f32 near,f32 far,f32 fovX,f32 fovY) = 0;
+	virtual HAGE::Matrix4<> GenerateProjectionMatrixBase()	= 0;
+	virtual	HAGE::Matrix4<> GenerateRenderTargetProjectionBase() = 0;
 
 	static RenderingAPIAllocator* QueryAPIAllocator(){return _pAllocator;}
 protected:
@@ -338,7 +352,8 @@ public:
 	virtual void BeginFrame() = 0;
 	virtual void PresentFrame() = 0;
 
-	virtual void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil) = 0;
+	virtual void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil,const HAGE::APIWViewport& viewport = NullViewport) = 0;
+	virtual void GetCurrentViewport(HAGE::APIWViewport& vpOut) = 0;
 	virtual void UpdateDisplaySettings(const APIWDisplaySettings* pSettings) = 0;
 };
 

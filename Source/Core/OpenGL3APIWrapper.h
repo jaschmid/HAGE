@@ -181,7 +181,8 @@ public:
 	OpenGL3APIWrapper(const HAGE::APIWDisplaySettings* displaySettings);
 	~OpenGL3APIWrapper();
 
-	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil);
+	void SetRenderTarget(HAGE::APIWTexture* pTextureRenderTarget,HAGE::APIWTexture* pTextureDepthStencil,const HAGE::APIWViewport& viewport);
+	void GetCurrentViewport(HAGE::APIWViewport& vpOut){vpOut=_currentViewport;}
 	void UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings);
 	void BeginFrame();
 	void PresentFrame();
@@ -193,7 +194,7 @@ public:
 	
 	static HAGE::RenderingAPIWrapper* CreateOGL3Wrapper(const HAGE::APIWDisplaySettings* displaySettings);
 
-	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	HAGE::Matrix4<> _GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
 	{
 		HAGE::f32 h,w,Q;
 		w = 1.0f/tan(fovX*0.5f);
@@ -206,9 +207,32 @@ public:
 			HAGE::Vector4<>(0.0f,		0.0f,	1,				0.0f)
 		);
 	}
+	
+	HAGE::Matrix4<> GenerateProjectionMatrix(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
+	{
+		if(_bForceCullFlip)
+			return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*_GenerateProjectionMatrix(_near,_far,fovX,fovY);
+		else
+			return _GenerateProjectionMatrix(_near,_far,fovX,fovY);
+	}
 	HAGE::Matrix4<> GenerateRenderTargetProjection(HAGE::f32 _near,HAGE::f32 _far,HAGE::f32 fovX,HAGE::f32 fovY)
 	{
-		return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*GenerateProjectionMatrix(_near,_far,fovX,fovY);
+		return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*_GenerateProjectionMatrix(_near,_far,fovX,fovY);
+	}
+	HAGE::Matrix4<> _GenerateProjectionMatrixBase()
+	{
+		return HAGE::Matrix4<>::One();
+	}
+	HAGE::Matrix4<> GenerateProjectionMatrixBase()
+	{
+		if(_bForceCullFlip)
+			return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*_GenerateProjectionMatrixBase();
+		else
+			return _GenerateProjectionMatrixBase();
+	}
+	HAGE::Matrix4<> GenerateRenderTargetProjectionBase()
+	{
+		return HAGE::Matrix4<>::Scale(HAGE::Vector3<>(1.0f,-1.0f,1.0f))*_GenerateProjectionMatrixBase();
 	}
 
 	void RegisterVertexFormat(const char* szName,const HAGE::VertexDescriptionEntry* pDescription,HAGE::u32 nNumEntries);
@@ -242,6 +266,8 @@ public:
 
 	HAGE::u16					GetBlendStateCode(const HAGE::APIWBlendState* pState,HAGE::u32 nBlendStates,bool bAlphaToCoverage);
 	void						SetBlendState(HAGE::u16 code);
+
+	void						SetViewport(const HAGE::APIWViewport& vp){_currentViewport = vp;}
 
 private:
 	
@@ -280,6 +306,9 @@ private:
 
 	HAGE::APIWDisplaySettings	_currentDisplaySettings;
 	const OGL3Effect*			_currentEffect;
+
+	HAGE::APIWViewport				_currentViewport;
+	HAGE::APIWViewport				_backBufferViewport;
 
 #ifdef TARGET_WINDOWS
 	HINSTANCE                   m_hInst;
@@ -349,16 +378,15 @@ public:
 	OGL3VertexArray(OpenGL3APIWrapper* pWrapper,HAGE::u32 nPrimitives,HAGE::APIWPrimitiveType PrimitiveType,HAGE::APIWVertexBuffer** pBuffers,HAGE::u32 nBuffers, const HAGE::u32* pIndexBufferData);
 	~OGL3VertexArray();
 
-	void Init();
+	unsigned int GetVA(GLuint program);
 
 private:
-	unsigned int				m_vaoID;
+	std::map<GLuint,unsigned int, std::less<GLuint>,HAGE::global_allocator<std::pair<GLuint,unsigned int> > >				m_vaoID;
 	unsigned int				m_vboIndexID;
 	OGL3VertexBuffer**			m_pBuffers;
 	HAGE::u32					m_nBuffers;
 	HAGE::u32					m_nPrimitives;
 	HAGE::APIWPrimitiveType		m_PrimitiveType;
-	bool						_bInit;
 	OpenGL3APIWrapper*			m_pWrapper;
 	friend class OGL3Effect;
 };

@@ -107,6 +107,7 @@ namespace HAGE {
 		}
 		else
 		{
+			worldMatrix = outputData.orbitWorldMatrix * (Matrix4<>::Translate(_init.initial_position) * worldMatrix);
 			//sun does nothing
 		}
 		

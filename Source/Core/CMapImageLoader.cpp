@@ -407,9 +407,9 @@ namespace HAGE
 				TResourceAccess<IImageData> dep = dependanciesIn[i];
 				u32 w=dep->GetImageWidth();
 				u32 h=dep->GetImageHeight();
-				if(w>largest_source_width);
+				if(w>largest_source_width)
 					largest_source_width = w;
-				if(h>largest_source_height);
+				if(h>largest_source_height)
 					largest_source_height = h;
 				source_widths[i] = w;
 				source_heights[i] = h;

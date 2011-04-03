@@ -29,6 +29,7 @@
     <ClCompile Include="Source\LogicDomain.cpp" />
     <ClCompile Include="Source\LSheet.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\PostprocessFilter.cpp" />
     <ClCompile Include="Source\prec.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -59,6 +60,7 @@
     <ClInclude Include="Headers\LLight.h" />
     <ClInclude Include="Headers\LogicDomain.h" />
     <ClInclude Include="Headers\LSheet.h" />
+    <ClInclude Include="Headers\PostprocessFilter.h" />
     <ClInclude Include="Headers\RActor.h" />
     <ClInclude Include="Headers\RenderingDomain.h" />
     <ClInclude Include="Headers\RLight.h" />

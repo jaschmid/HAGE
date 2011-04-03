@@ -289,7 +289,7 @@ namespace HAGE {
 			
 			_lightCubeDepth[i]->Clear(true,1.0f);
 
-			pWrapper->SetRenderTarget(nullptr,_lightCubeDepth[i]);
+			pWrapper->SetRenderTarget(RENDER_TARGET_NONE,_lightCubeDepth[i]);
 
 			
 			position_constants pc;
@@ -347,8 +347,12 @@ namespace HAGE {
 			lc.LightColorArg2[i] = Vector4<>(0.0f,0.0f,0.0f,0.0f);
 		}
 		
-		pWrapper->SetRenderTarget(nullptr,nullptr);
+		pWrapper->SetRenderTarget(RENDER_TARGET_DEFAULT,RENDER_TARGET_DEFAULT);
 		
+		_pPostprocessFilter->BeginSceneRendering();
+		
+		_projectionMatrix = pWrapper->GenerateProjectionMatrix(0.1f,200000.0f,1.3f,3.0f/4.0f*1.3f);
+
 		position_constants c;
 		c.model	=					Matrix4<>::One();
 		c.modelview =				GetViewMatrix().Transpose();
@@ -364,6 +368,8 @@ namespace HAGE {
 
 		auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
 		auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+
+		_pPostprocessFilter->EndSceneRendering();
 
 		pWrapper->PresentFrame();
 	}
@@ -430,6 +436,8 @@ namespace HAGE {
 		_pEffect->SetTexture("ShadowCube3",_lightCubeDepth[2]);
 
 		
+		_pPostprocessFilter = new PostprocessFilter(pWrapper);
+
 		_pShadowmapEffect = new EffectContainer(pWrapper,shadowmap_program);
 		_pShadowmapEffect->SetConstant("TransformGlobal",_pConstants);
 		_pShadowmapEffect->SetConstant("GeometryCubeGlobal",_pShadowcubeConstants);
@@ -442,18 +450,21 @@ namespace HAGE {
 
 		//_Map = Resource->OpenResource<IMeshData>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_40_40.adt");
 
+
 		printf("Init Rendering\n");
 	}
 
 	RenderingDomain::~RenderingDomain()
 	{
 		printf("Destroy Rendering\n");
+		if(_pPostprocessFilter)delete _pPostprocessFilter;
 		if(_pShadowmapEffect)delete _pShadowmapEffect;
 		if(_pEffect)delete _pEffect;
 		if(_pConstants)delete _pConstants;
 		if(_pLightConstants)delete _pLightConstants;
 		if(_pShadowcubeConstants)delete _pShadowcubeConstants;
 		if(pInterface)delete pInterface;
+
 		if(pWrapper)delete pWrapper;
 	}
 }

@@ -33,6 +33,7 @@ struct ActorInit
 	float			rotation_speed;
 	Vector3<>		orbit_axis;
 	Vector3<>		rotation_axis;
+	Vector3<>		initial_position;
 	float			initial_distance;
 	guid			master_object;
 	Vector3<>		scale;

@@ -46,7 +46,8 @@ namespace HAGE {
 			boxinit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f);
 			boxinit.rotation_speed = 0.0f;
 			strcpy(boxinit.mesh,"Box");
-			boxinit.scale = Vector3<>(8.0f,8.0f,8.0f);
+			boxinit.initial_position = Vector3<>(0.0f,19.0f,0.0f);
+			boxinit.scale = Vector3<>(20.0f,20.0f,20.0f);
 			GetFactory().CreateObject<LogicActor>(boxinit);
 
 
@@ -60,6 +61,7 @@ namespace HAGE {
 			ainit.orbit_speed = 0.0f;
 			ainit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f).normalize();
 			ainit.rotation_speed = 0.2f;
+			ainit.initial_position = Vector3<>(0.0f,0.0f,0.0f);
 			strcpy(ainit.mesh,"sphere.ply");
 			strcpy(ainit.texture,"sun.png");
 			ainit.scale = Vector3<>(0.5f,0.5f,0.5f);
@@ -76,7 +78,7 @@ namespace HAGE {
 				strcpy(ainit.mesh,"sphere.ply");
 				strcpy(ainit.texture,"planet.png");
 				ainit.behavior = ACTOR_BEHAVIOR_PLANET;
-				ainit.initial_distance = 0.5f * (i+1);
+				ainit.initial_distance = 0.5f * (i+2);
 				ainit.master_object = guidSun;
 				ainit.bCastShadow = true;
 				ainit.orbit_axis = Vector3<>(0.0f,1.0f ,0.0f).normalize();

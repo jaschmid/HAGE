@@ -183,12 +183,6 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		hres = pWrapper->GetDevice()->CreateRenderTargetView( _texture, &renderDesc, &_renderTargetView );
 		assert(SUCCEEDED(hres));	
 	}
-	_vp.Width = (FLOAT)(_xSize);
-    _vp.Height = (FLOAT)(_ySize);
-    _vp.MinDepth = 0.0f;
-    _vp.MaxDepth = 1.0f;
-    _vp.TopLeftX = 0;
-    _vp.TopLeftY = 0;
 }
 
 void D3D11Texture::Clear(bool bDepth,float fDepth,bool bStencil,HAGE::u32 uStencil)

@@ -79,6 +79,13 @@ OpenGL3APIWrapper::OpenGL3APIWrapper(const HAGE::APIWDisplaySettings* pSettings)
 	_currentDisplaySettings(*pSettings),
 	_currentEffect(nullptr)
 {
+	_backBufferViewport.XMin = 0.0f;
+	_backBufferViewport.XSize = (HAGE::f32)_currentDisplaySettings.xRes;
+	_backBufferViewport.YMin = 0.0f;
+	_backBufferViewport.YSize = (HAGE::f32)_currentDisplaySettings.yRes;
+	_backBufferViewport.ZMin = 0.0f;
+	_backBufferViewport.ZMax = 1.0f;
+	_currentViewport = _backBufferViewport;
 
 #ifdef TARGET_WINDOWS
 	PIXELFORMATDESCRIPTOR pfd;
@@ -402,16 +409,182 @@ void OpenGL3APIWrapper::BeginFrame()
 void OpenGL3APIWrapper::UpdateDisplaySettings(const HAGE::APIWDisplaySettings* pSettings)
 {
 	_currentDisplaySettings = *pSettings;
+	_backBufferViewport.XMin = 0.0f;
+	_backBufferViewport.XSize = (HAGE::f32)_currentDisplaySettings.xRes;
+	_backBufferViewport.YMin = 0.0f;
+	_backBufferViewport.YSize = (HAGE::f32)_currentDisplaySettings.yRes;
+	_backBufferViewport.ZMin = 0.0f;
+	_backBufferViewport.ZMax = 1.0f;
+	_currentViewport = _backBufferViewport;
 }
-
-void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget,HAGE::APIWTexture* _pTextureDepthStencil)
+/*
+	if(_pTextureDepthStencil == HAGE::RENDER_TARGET_DEFAULT)
+	{
+		pDS = m_pDepthStencilView;
+		if(!bViewportSet)
+		{
+			vp = _vp;
+			_currentViewport = _backBufferViewport;
+			bViewportSet = true;
+		}
+	}
+	else if(_pTextureDepthStencil == HAGE::RENDER_TARGET_NONE)
+	{
+		pDS = nullptr;
+	}
+	else
+	{
+		assert(pTextureDepthStencil->_depthStencilView);
+		pDS= pTextureDepthStencil->_depthStencilView;
+		if(!bViewportSet)
+		{
+			vp.Width = (FLOAT)(pTextureDepthStencil->_xSize);
+			vp.Height = (FLOAT)(pTextureDepthStencil->_ySize);
+			vp.MinDepth = 0.0f;
+			vp.MaxDepth = 1.0f;
+			vp.TopLeftX = 0;
+			vp.TopLeftY = 0;
+			_currentViewport.XMin = 0.0f;
+			_currentViewport.XSize = pTextureDepthStencil->_xSize;
+			_currentViewport.YMin = 0.0f;
+			_currentViewport.YSize = pTextureDepthStencil->_ySize;
+			_currentViewport.ZMin = 0.0f;
+			_currentViewport.ZMax = 1.0f;
+			bViewportSet = true;
+		}
+	}*/
+void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget,HAGE::APIWTexture* _pTextureDepthStencil,const HAGE::APIWViewport& viewport)
 {
+	/*
 	glError();
 
 	OGL3Texture* pTextureRenderTarget=(OGL3Texture*)_pTextureRenderTarget;
 	OGL3Texture* pTextureDepthStencil=(OGL3Texture*)_pTextureDepthStencil;
 
-	if(pTextureRenderTarget == nullptr && pTextureDepthStencil == nullptr)
+	HAGE::APIWViewport vp;
+	bool bViewportSet = false;
+
+	if(viewport.XSize != 0)
+	{
+		bViewportSet = true;
+		vp = viewport;
+	}
+
+	if(_pTextureRenderTarget == HAGE::RENDER_TARGET_DEFAULT)
+	{
+		if(!bViewportSet)
+		{
+			bViewportSet = true;
+			vp = _backBufferViewport;
+		}
+		assert(_pTextureDepthStencil == HAGE::RENDER_TARGET_DEFAULT);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_BACK);
+		_bForceDepthDisable=false;
+		_bForceCullFlip=false;
+		return;
+	}
+	else
+	{
+		_bForceCullFlip=true;
+		glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
+		glError();
+
+		 if(_pTextureRenderTarget != HAGE::RENDER_TARGET_NONE)
+		 {
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pTextureRenderTarget->_tbo, 0);
+			glDrawBuffer(GL_BACK);
+			glError();
+
+			
+			if(!bViewportSet)
+			{
+				bViewportSet = true;
+				vp.XMin = 0.0f;
+				vp.XSize = pTextureRenderTarget->_xSize;
+				vp.YMin = 0.0f;
+				vp.YSize = pTextureRenderTarget->_ySize;
+				vp.ZMin = 0.0f;
+				vp.ZMax = 1.0f;
+			}
+		 }
+		 else
+		 {
+			glDrawBuffer(GL_NONE);
+			glError();
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, 0, 0);
+			glError();
+		 }
+
+		 if(_pTextureDepthStencil != HAGE::RENDER_TARGET_NONE)
+		 {
+			_bForceDepthDisable=false;
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pTextureDepthStencil->_tbo, 0);
+			glError();
+
+			
+			if(!bViewportSet)
+			{
+				bViewportSet = true;
+				vp.XMin = 0.0f;
+				vp.XSize = pTextureDepthStencil->_xSize;
+				vp.YMin = 0.0f;
+				vp.YSize = pTextureDepthStencil->_ySize;
+				vp.ZMin = 0.0f;
+				vp.ZMax = 1.0f;
+			}
+		 }
+		 else
+		 {
+			_bForceDepthDisable=true;
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
+			glError();
+		 }
+		 
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+		if(pTextureRenderTarget)
+		{
+			if(pTextureRenderTarget->_bClearColor)
+				glClear(GL_COLOR_BUFFER_BIT);
+			glError();
+		}
+		if(pTextureDepthStencil)
+		{
+			if(pTextureDepthStencil->_bClearDepth)
+				glClear(GL_DEPTH_BUFFER_BIT);
+			if(pTextureDepthStencil->_bClearStencil)
+				glClear(GL_STENCIL_BUFFER_BIT);
+			glError();
+		}
+	}
+
+	_currentViewport = vp;
+	glViewport(vp.XMin,vp.YMin,vp.XSize,vp.YSize);
+	glDepthRange(vp.ZMin,vp.ZMax);
+		
+	if(m_RasterizerStates.GetItem(m_CurrentRS).bDepthClipEnable && !_bForceDepthDisable)
+		glEnable (GL_DEPTH_TEST);
+	else
+		glDisable (GL_DEPTH_TEST);
+		
+	switch(m_RasterizerStates.GetItem(m_CurrentRS).CullMode)
+	{
+		case HAGE::CULL_NONE:	glDisable(GL_CULL_FACE);					break;
+		case HAGE::CULL_CCW:	glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CCW:GL_CW);	break;
+		case HAGE::CULL_CW:		glEnable(GL_CULL_FACE);glFrontFace(_bForceCullFlip?GL_CW:GL_CCW);	break;
+	}
+
+	glError();*/
+
+	glError();
+
+	OGL3Texture* pTextureRenderTarget=(OGL3Texture*)_pTextureRenderTarget;
+	OGL3Texture* pTextureDepthStencil=(OGL3Texture*)_pTextureDepthStencil;
+
+	if(pTextureRenderTarget == HAGE::RENDER_TARGET_DEFAULT && pTextureDepthStencil == HAGE::RENDER_TARGET_DEFAULT)
 	{
 		glViewport(0,0,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -421,22 +594,30 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 	}
 	else
 	{
-		_bForceCullFlip=true;
+		assert(_pTextureRenderTarget != HAGE::RENDER_TARGET_DEFAULT );
+		assert(_pTextureDepthStencil != HAGE::RENDER_TARGET_DEFAULT );
+		
 		glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
 		glError();
+
+		_bForceCullFlip=true;
+
 		if(pTextureRenderTarget)
 		{
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pTextureRenderTarget->_tbo, 0);
-			glDrawBuffer(GL_BACK);
+			glError();
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			glError();
 		}
 		else
 		{
+			
 			glDrawBuffer(GL_NONE);
 			glError();
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, 0, 0);
 			glError();
 		}
+
 		if(pTextureDepthStencil)
 		{
 			_bForceDepthDisable=false;
@@ -449,8 +630,10 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
 			glError();
 		}
+
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		assert(status == GL_FRAMEBUFFER_COMPLETE);
+
 		if(pTextureRenderTarget)
 		{
 			if(pTextureRenderTarget->_bClearColor)

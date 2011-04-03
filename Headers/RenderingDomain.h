@@ -3,6 +3,7 @@
 
 #include "header.h"
 #include "GenericLight.h"
+#include "PostprocessFilter.h"
 
 namespace HAGE {
 
@@ -42,17 +43,18 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		RenderingAPIWrapper*						pWrapper;
 
 		UserInterfaceRendering*						pInterface;
-		Matrix4<>		_invViewMatrix;
-		Matrix4<>		_viewMatrix;
-		Matrix4<>		_projectionMatrix;
-		GLightOut		_light[3];
-		APIWTexture*	_lightCubeDepth[3];
+		Matrix4<>									_invViewMatrix;
+		Matrix4<>									_viewMatrix;
+		Matrix4<>									_projectionMatrix;
+		GLightOut									_light[3];
+		APIWTexture*								_lightCubeDepth[3];
 
 		APIWConstantBuffer*							_pConstants;
 		APIWConstantBuffer*							_pShadowcubeConstants;
 		APIWConstantBuffer*							_pLightConstants;
 		EffectContainer*							_pEffect;
 		EffectContainer*							_pShadowmapEffect;
+		PostprocessFilter*							_pPostprocessFilter;
 
 		TResourceAccess<IMeshData>					_Map;
 };

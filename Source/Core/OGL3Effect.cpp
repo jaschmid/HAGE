@@ -531,8 +531,7 @@ void OGL3Effect::Draw(HAGE::APIWVertexArray* pArrayPre)
 		m_pWrapper->SetCurrentEffect(this);
 	}
 
-	pArray->Init();
-	glBindVertexArray(pArray->m_vaoID);	
+	glBindVertexArray(pArray->GetVA(_glProgram));	
 	glError();
 
 	HAGE::u32 nItems;
