@@ -75,7 +75,7 @@ namespace HAGE {
 				if(result==FRAME_BUFFER_COUNT-1)
 				{
 #ifdef FRAMESKIP_ENABLED
-					if(FRAME_BUFFER_COUNT >= 3)
+					if(FRAME_BUFFER_COUNT >= 3 && nShutdown == 0)
 					{
 						//skip frames
 						i32 nNewReadIndex = (nWriteIndex+FRAME_BUFFER_COUNT-1) % FRAME_BUFFER_COUNT;

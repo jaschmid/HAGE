@@ -5,9 +5,12 @@ namespace HAGE {
 
 const char* PostprocessFilterEffect =
 "H_CONSTANT_BUFFER_BEGIN(PostprocessConstants)\n"
-"	 float4 const_color;\n"
-"    float4x4 position_matrix;\n"
-"    float4x4 texture_matrix;\n"
+"	 float4		const_color;\n"
+"    float4x4	position_matrix;\n"
+"    float4x4	texture_matrix;\n"
+"    float4		tex_offsets_x;\n"
+"    float4		tex_offsets_y;\n"
+"    float4		kernel[4];\n"
 "H_CONSTANT_BUFFER_END\n"
 "H_TEXTURE_2D(InputSurface);\n"
 "\n"
@@ -38,7 +41,14 @@ const char* PostprocessFilterEffect =
 "\n"
 "FRAGMENT_SHADER\n"
 "{\n"
-"  FS_OUT_COLOR = H_SAMPLE_2D(InputSurface,FS_IN(tex));\n"
+"	float4 accum = float4(0.0f,0.0f,0.0f,0.0f);\n"
+"	for(int x=0;x<4;++x)\n"
+"		for(int y=0;y<4;++y)\n"
+"		{\n"
+"			int index = y*4+x;\n"
+"			accum += H_SAMPLE_2D(InputSurface,float2(FS_IN(tex).x + tex_offsets_x[x],FS_IN(tex).y + tex_offsets_y[y]))*kernel[index/4][index%4];\n"
+"		}\n"
+"	FS_OUT_COLOR = accum;\n"
 "}\n";
 
 struct PreprocEffectConstants
@@ -46,6 +56,11 @@ struct PreprocEffectConstants
 	Vector4<>	color;
 	Matrix4<>	position_matrix;
 	Matrix4<>	texture_matrix;
+
+	f32			tex_offsets_x[4];
+	f32			tex_offsets_y[4];
+
+	f32			kernel[16];
 };
 
 extern const char szPreprocFormat[] = "PreprocVertexFormat";
@@ -64,7 +79,7 @@ VertexDescriptionEntry PreprocVertexFormatDescriptor[] = {
 };
 
 
-PostprocessFilter::PostprocessFilter(RenderingAPIWrapper* pWrapper) : _pWrapper(pWrapper)
+PostprocessFilter::PostprocessFilter(RenderingAPIWrapper* pWrapper) : _pWrapper(pWrapper),_nPasses(0),_currentFilter(0)
 {
 	PreprocVertexFormat vertices[] =
 	{
@@ -114,24 +129,92 @@ PostprocessFilter::~PostprocessFilter()
 
 void PostprocessFilter::BeginSceneRendering()
 {
-	_pPostprocessBuffer[0]->Clear(Vector4<>(0.0f,1.0f,0.0f,0.0f));
-	_pPostprocessDepthBuffer->Clear(true,1.0f);
-	_pWrapper->SetRenderTarget(_pPostprocessBuffer[0],_pPostprocessDepthBuffer);
+	if(_nPasses)
+	{
+		_pPostprocessBuffer[0]->Clear(Vector4<>(0.0f,1.0f,0.0f,0.0f));
+		_pPostprocessDepthBuffer->Clear(true,1.0f);
+		_pWrapper->SetRenderTarget(_pPostprocessBuffer[0],_pPostprocessDepthBuffer);
+	}
 }
+
+const f32 kernel[3][16] = {
+{
+	1.0f/16.0f,		2.0f/16.0f,		1.0f/16.0f,		0.0f,
+	2.0f/16.0f,		4.0f/16.0f,		2.0f/16.0f,		0.0f,
+	1.0f/16.0f,		2.0f/16.0f,		1.0f/16.0f,		0.0f,
+	0.0f,			0.0f,			0.0f,			0.0f
+},
+{
+	0.0f,		1.0f,		0.0f,		0.0f,
+	1.0f,		-4.0f,		1.0f,		0.0f,
+	0.0f,		1.0f,		0.0f,		0.0f,
+	0.0f,		0.0f,		0.0f,		0.0f
+},
+{
+	1.0f/64.0f,		3.0f/64.0f,		3.0f/64.0f,		1.0f/64.0f,
+	3.0f/64.0f,		9.0f/64.0f,		9.0f/64.0f,		3.0f/64.0f,
+	3.0f/64.0f,		9.0f/64.0f,		9.0f/64.0f,		3.0f/64.0f,
+	1.0f/64.0f,		3.0f/64.0f,		3.0f/64.0f,		1.0f/64.0f
+},
+};
+
+const f32 xOffsets[3][4] = {
+	{ -1.0f,	0.0f,	1.0f,	0.0f },
+	{ -1.0f,	0.0f,	1.0f,	0.0f },
+	{ -1.5f,	-0.5f,	0.5f,	1.5f }
+};
+const f32 yOffsets[3][4] = {
+	{ -1.0f,	0.0f,	1.0f,	0.0f },
+	{ -1.0f,	0.0f,	1.0f,	0.0f },
+	{ -1.5f,	-0.5f,	0.5f,	1.5f }
+};
 
 void PostprocessFilter::EndSceneRendering()
 {
-
-	_pWrapper->SetRenderTarget(RENDER_TARGET_DEFAULT,RENDER_TARGET_DEFAULT);
 	
-	PreprocEffectConstants constants;
-	constants.texture_matrix = Matrix4<>::One();
-	constants.position_matrix = _pWrapper->GenerateProjectionMatrixBase()*Matrix4<>::Scale(Vector3<>(1.0f,1.0f,1.0f));
+	if(_nPasses)
+	{
 
-	_pPostprocessConstants->UpdateContent(&constants);
-	_pPostprocessEffect->SetConstant("PostprocessConstants",_pPostprocessConstants);
-	_pPostprocessEffect->SetTexture("InputSurface", _pPostprocessBuffer[0]);
-	_pPostprocessEffect->Draw(_pPostprocessQuadArray);
+		APIWViewport vp;
+		_pWrapper->GetCurrentViewport(vp);
+
+		PreprocEffectConstants constants;
+		constants.texture_matrix = Matrix4<>::One();
+		constants.position_matrix = _pWrapper->GenerateRenderTargetProjectionBase()*Matrix4<>::Scale(Vector3<>(1.0f,1.0f,1.0f));
+		memcpy(constants.tex_offsets_x,xOffsets[_currentFilter],4*sizeof(f32));
+		memcpy(constants.tex_offsets_y,yOffsets[_currentFilter],4*sizeof(f32));
+		for(int i = 0; i < 4;++i)
+		{
+			constants.tex_offsets_x[i]/=vp.XSize;
+			constants.tex_offsets_y[i]/=vp.YSize;
+		}
+		memcpy(constants.kernel,kernel[_currentFilter],16*sizeof(f32));
+
+
+
+		_pPostprocessConstants->UpdateContent(&constants);
+		_pPostprocessEffect->SetConstant("PostprocessConstants",_pPostprocessConstants);
+		
+		u32 currentSource = 0;
+		for(u32 pass = 0; pass < _nPasses-1; ++pass)
+		{
+			_pWrapper->SetRenderTarget(_pPostprocessBuffer[(currentSource+1)%2],RENDER_TARGET_NONE);
+	
+			_pPostprocessEffect->SetTexture("InputSurface", _pPostprocessBuffer[currentSource]);
+			_pPostprocessEffect->Draw(_pPostprocessQuadArray);
+
+			currentSource= (currentSource+1)%2;
+		}
+
+		_pWrapper->SetRenderTarget(RENDER_TARGET_DEFAULT,RENDER_TARGET_DEFAULT);
+	
+		constants.texture_matrix = Matrix4<>::One();
+		constants.position_matrix = _pWrapper->GenerateProjectionMatrixBase()*Matrix4<>::Scale(Vector3<>(1.0f,1.0f,1.0f));
+		_pPostprocessConstants->UpdateContent(&constants);
+
+		_pPostprocessEffect->SetTexture("InputSurface", _pPostprocessBuffer[currentSource]);
+		_pPostprocessEffect->Draw(_pPostprocessQuadArray);
+	}
 }
 
 };

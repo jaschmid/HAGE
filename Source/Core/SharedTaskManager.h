@@ -69,7 +69,8 @@ private:
 	void DestructDomain(SharedDomainBase* p);
 
 	typedef std::multimap<TaskEntry,TaskManager*,std::less<TaskEntry>,global_allocator<TaskEntry> > jobqueue;
-
+	
+	volatile int						nWorkingThreads;
 	volatile int						nSleepingThreads;
 	boost::thread_group 				workerThreads;
 	boost::condition_variable 			condTask;

@@ -43,7 +43,7 @@ namespace HAGE {
 					}
 				}
 			}
-			return true;
+			return false;
 		case MESSAGE_INPUT_KEYUP:
 			{
 				MessageInputKeyup* m = (MessageInputKeyup*)pMessage;
@@ -64,7 +64,7 @@ namespace HAGE {
 					}
 				}
 			}
-			return true;
+			return false;
 		case MESSAGE_INPUT_AXIS_RELATIVE:
 			{
 				MessageInputAxisRelative* m = (MessageInputAxisRelative*)pMessage;
@@ -88,7 +88,7 @@ namespace HAGE {
 						break;
 					}
 			}
-			return true;
+			return false;
 		case MESSAGE_INPUT_AXIS_ABSOLUTE:
 			{
 				MessageInputAxisAbsolute* m = (MessageInputAxisAbsolute*)pMessage;
@@ -99,7 +99,7 @@ namespace HAGE {
 				*i=0;
 			for(auto i = m_bMouseState.begin();i!=m_bMouseState.end();++i)
 				*i=0;
-			return true;
+			return false;
 		}
 		return false;
 	}

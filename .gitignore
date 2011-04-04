@@ -6,3 +6,6 @@ HAGE.opensdf
 bin/Windows/HAGE.exe
 HAGE.sdf
 HAGE.suo
+*.MPQ
+*.hsvt
+*.hgeo

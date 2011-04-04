@@ -38,6 +38,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 
 		float										fCameraX,fCameraY,fCameraZ;
 
+		bool										bToonShading;
 		bool										bShowOrbit;
 		
 		RenderingAPIWrapper*						pWrapper;
@@ -53,6 +54,7 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		APIWConstantBuffer*							_pShadowcubeConstants;
 		APIWConstantBuffer*							_pLightConstants;
 		EffectContainer*							_pEffect;
+		EffectContainer*							_pCelEffect;
 		EffectContainer*							_pShadowmapEffect;
 		PostprocessFilter*							_pPostprocessFilter;
 

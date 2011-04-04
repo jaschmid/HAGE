@@ -227,7 +227,7 @@ private:
 					for(int ic=0;ic<FormatInfo::nDestChannels;ic++)
 					{
 						if(ic < FormatInfo::nSrcChannels)
-							((FormatInfo::DestChannelType*)tData)[(iy*width+ix)*FormatInfo::nDestChannels + ic] = (FormatInfo::DestChannelType)(  ((FormatInfo::SrcChannelType*)pData)[((height-1-iy)*width+ix)*FormatInfo::nSrcChannels + ic] );
+							((FormatInfo::DestChannelType*)tData)[(iy*width+ix)*FormatInfo::nDestChannels + ic] = (FormatInfo::DestChannelType)(  ((FormatInfo::SrcChannelType*)pData)[((iy)*width+ix)*FormatInfo::nSrcChannels + ic] );
 						else
 							((FormatInfo::DestChannelType*)tData)[(iy*width+ix)*FormatInfo::nDestChannels + ic] = (FormatInfo::DestChannelType)0;
 					}

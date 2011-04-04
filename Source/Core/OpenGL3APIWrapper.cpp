@@ -596,8 +596,9 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 	{
 		assert(_pTextureRenderTarget != HAGE::RENDER_TARGET_DEFAULT );
 		assert(_pTextureDepthStencil != HAGE::RENDER_TARGET_DEFAULT );
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
+		glError();
+		if(!_bForceCullFlip)
+			glBindFramebuffer(GL_FRAMEBUFFER, m_fboId);
 		glError();
 
 		_bForceCullFlip=true;
@@ -611,7 +612,6 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 		}
 		else
 		{
-			
 			glDrawBuffer(GL_NONE);
 			glError();
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, 0, 0);
@@ -620,14 +620,14 @@ void OpenGL3APIWrapper::SetRenderTarget(HAGE::APIWTexture* _pTextureRenderTarget
 
 		if(pTextureDepthStencil)
 		{
-			_bForceDepthDisable=false;
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pTextureDepthStencil->_tbo, 0);
+			_bForceDepthDisable=false;
 			glError();
 		}
 		else
 		{
-			_bForceDepthDisable=true;
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
+			_bForceDepthDisable=true;
 			glError();
 		}
 

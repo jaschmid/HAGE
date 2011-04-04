@@ -274,13 +274,12 @@ namespace HAGE {
 		bShutdown = true;
 		if(outputPin)
 		{
-			outputPin->CloseWritePin();
 			outputPin->Shutdown();
+			outputPin->CloseWritePin();
 		}
 		for(u32 i = 0;i < inputPins.size();++i)
 		{
 			inputPins[i].pPin->CloseReadPin();
-			inputPins[i].pPin->Shutdown();
 		}
 	}
 

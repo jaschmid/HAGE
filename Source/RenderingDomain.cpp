@@ -115,6 +115,114 @@ namespace HAGE {
 	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*H_SAMPLE_2D(DiffuseTexture,FS_IN(tex)).xyz,1.0f));\n"
 	"}\n";
 
+	static const char* cel_program =
+	"#define nLights				 3\n"
+	"H_CONSTANT_BUFFER_BEGIN(TransformGlobal)\n"
+	"    float4x4 model;\n"
+	"    float4x4 inverse_modelview;\n"
+	"    float4x4 modelview;\n"
+	"    float4x4 modelview_projection;\n"
+	"    float ambient_factor;\n"
+	"    float diffuse_factor;\n"
+	"H_CONSTANT_BUFFER_END\n"
+	"\n"
+	"H_CONSTANT_BUFFER_BEGIN(LightGlobal)\n"
+	"	 float4 light_position_arg1[nLights];\n"
+	"	 float4 light_color_arg2[nLights];\n"
+	"H_CONSTANT_BUFFER_END\n"
+	"\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube1);\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube2);\n"
+	"H_TEXTURE_CUBE_CMP(ShadowCube3);\n"
+	"H_TEXTURE_2D(DiffuseTexture);\n"
+	"\n"
+	"// cbuffer Transform : register(b0)\n"
+	"#define Model					 model\n"
+	"#define Modelview               modelview\n"
+	"#define InverseModelview        inverse_modelview\n"
+	"#define ModelviewProjection     modelview_projection\n"
+	"#define LightPosition(x)		  (light_position_arg1[x].xyz)\n"
+	"#define LightColor(x)		      (light_color_arg2[x].xyz)\n"
+	"#define Arg1(x)				 (light_position_arg1[x].w)\n"
+	"#define Arg2(x)		         (light_color_arg2[x].w)\n"
+	"\n"
+	"static const float BIAS = 0.98f;\n"
+	"\n"
+	"VS_IN_BEGIN\n"
+	"  DECL_VS_IN(float3,position);\n"
+	"  DECL_VS_IN(float3,normal);\n"
+	"  DECL_VS_IN(float3,color);\n"
+	"  DECL_VS_IN(float2,texcoord);\n"
+	"VS_IN_END\n"
+	"VS_OUT_BEGIN\n"
+	"  DECL_VS_OUT(float4,color);\n"
+	"  DECL_VS_OUT(float3,world_position);\n"
+	"  DECL_VS_OUT(float3,normal);\n"
+	"  DECL_VS_OUT(float2,tex);\n"
+	"  DECL_VS_POSITION;\n"
+	"VS_OUT_END\n"
+	"\n"
+	"VERTEX_SHADER\n"
+	"{	\n"
+	"\n"
+	"  VS_OUT_POSITION = mul( ModelviewProjection, float4( VS_IN(position), 1.0f ) );\n "
+	"  float3 vPosition = mul( Model, float4( VS_IN(position), 1.0f ) ).xyz;\n "
+	"  VS_OUT(world_position) = vPosition;\n "
+	"  VS_OUT(color) = float4(VS_IN(color),1.0f);\n"
+	"  VS_OUT(normal) = normalize(mul( Model, float4( VS_IN(normal), 1.0f ) ).xyz - mul( Model, float4( 0.0f,0.0f,0.0f, 1.0f ) ).xyz);\n"
+	"  VS_OUT(tex) = VS_IN(texcoord);\n"
+	"\n"
+	"}"
+	"FS_IN_BEGIN\n"
+	"  DECL_FS_IN(float4,color);\n"
+	"  DECL_FS_IN(float3,world_position);\n"
+	"  DECL_FS_IN(float3,normal);\n"
+	"  DECL_FS_IN(float2,tex);\n"
+	"FS_IN_END\n"
+	"FS_OUT_BEGIN\n"
+	"  DECL_FS_COLOR;\n"
+	"FS_OUT_END\n"
+	"\n"
+	"FRAGMENT_SHADER\n"
+	"{\n"
+	"  //float Sdist = texCUBE(ShadowCube,float3(VS_OUT.lDir.xyz)).r;\n"
+	"  //if(Sdist <= VS_OUT.lDir.w) PS_OUT.color = float4(0.0f,0.0f,0.0,1.0f);\n"
+	"  //else PS_OUT.color = VS_OUT.color;\n"
+	"  float3 normal = normalize(FS_IN(normal).xyz);\n"
+	"  FS_OUT_COLOR = float4(0.0f,0.0f,0.0f,1.0f);\n"
+	"  float3 lDir[nLights];\n"
+	"  for(int i =0;i<nLights;++i)\n"
+	"  {\n"
+	"    lDir[i] = LightPosition(i)-FS_IN(world_position).xyz;\n "
+	"  }\n"
+	"  \n"
+	"  float3 cOdist = float3(\n"
+	"    max(max(abs(lDir[0].x),abs(lDir[0].y)),abs(lDir[0].z)),\n"
+	"    max(max(abs(lDir[1].x),abs(lDir[1].y)),abs(lDir[1].z)),\n"
+	"    max(max(abs(lDir[2].x),abs(lDir[2].y)),abs(lDir[2].z))\n"
+	"  )*BIAS;\n"
+	"  float3 arg1 = float3(Arg1(0),Arg1(1),Arg1(2));//((far+near)/(far-near))\n"
+	"  float3 arg2 = float3(Arg2(0),Arg2(1),Arg2(2));//((float3(-2.0,-2.0f,-2.0f)*far*near)/(far-near))\n"
+	"  cOdist = (arg1 + (float3(1.0,1.0f,1.0f)/cOdist)*arg2+1.0)/2.0;\n"
+	"  float Odist[3]; Odist[0]=cOdist.x;Odist[1]=cOdist.y;Odist[2]=cOdist.z;\n"
+	"  \n"
+	"  float visibility[nLights];\n"
+	"  visibility[0] =  H_SAMPLE_CUBE_CMP(ShadowCube1,float3(-lDir[0].xyz),Odist[0]);\n"
+	"  visibility[1] =  H_SAMPLE_CUBE_CMP(ShadowCube2,float3(-lDir[1].xyz),Odist[1]);\n"
+	"  visibility[2] =  H_SAMPLE_CUBE_CMP(ShadowCube3,float3(-lDir[2].xyz),Odist[2]);\n"
+	"  \n"
+	"  for(int i =0;i<nLights;++i)\n"
+	"  {\n"
+	"      float3 normDir = normalize(lDir[i]);\n"
+	"      float light_intensity = saturate(dot(normDir,normal))*diffuse_factor + ambient_factor;\n"
+	"	   if(light_intensity < 0.2f) light_intensity = 0.0f;\n"
+	"	   else if(light_intensity < 0.5f) light_intensity = 0.4f;\n"
+	"	   else if(light_intensity < 0.8f) light_intensity = 0.8f;\n"
+	"	   else light_intensity = 1.5f;\n"
+	"      FS_OUT_COLOR.xyz += light_intensity*LightColor(i)*visibility[i];\n"
+	"  }\n"
+	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*H_SAMPLE_2D(DiffuseTexture,FS_IN(tex)).xyz,1.0f));\n"
+	"}\n";
 
 	struct light_constants
 	{
@@ -224,7 +332,7 @@ namespace HAGE {
 
 	bool RenderingDomain::MessageProc(const Message* m)
 	{
-		if(IsMessageType(m->GetMessageCode(),MESSAGE_UI_UNKNOWN))
+		if(IsMessageType(m->GetMessageCode(),MESSAGE_UI_UNKNOWN) || IsMessageType(m->GetMessageCode(),MESSAGE_INPUT_UNKNOWN))
 		{
 			switch(m->GetMessageCode())
 			{
@@ -238,6 +346,31 @@ namespace HAGE {
 					_invViewMatrix = Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),-fCameraY)*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),-fCameraX)*Matrix4<>::Translate(Vector3<>(0.0,0.0,-fCameraZ));
 				}
 				return true;
+			case MESSAGE_INPUT_KEYDOWN:
+				{
+					MessageInputKeydown* pMessage=(MessageInputKeydown*)m;
+					switch(pMessage->GetKey())
+					{
+					case KEY_CODE_O:
+						bShowOrbit = !bShowOrbit;
+						return true;
+					case KEY_CODE_F:
+						_pPostprocessFilter->NextFilter();
+						return true;
+					case KEY_CODE_T:
+						bToonShading = !bToonShading;
+						return true;
+					case KEY_CODE_HYPHEN:
+						_pPostprocessFilter->SetPasses(_pPostprocessFilter->GetPasses()+1);
+						return true;
+					case KEY_CODE_MINUS:
+						_pPostprocessFilter->SetPasses(_pPostprocessFilter->GetPasses()-1);
+						return true;
+					default:
+						return false;
+					}
+				}
+				break;
 			}
 			return pInterface->ProcessUserInterfaceMessage(m);
 		}
@@ -366,8 +499,16 @@ namespace HAGE {
 		
 		_pLightConstants->UpdateContent(&lc);
 
-		auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
-		auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+		if(bToonShading)
+		{
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pCelEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
+			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pCelEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+		}
+		else
+		{
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
+			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+		}
 
 		_pPostprocessFilter->EndSceneRendering();
 
@@ -378,7 +519,7 @@ namespace HAGE {
 		fCameraX(settings->getf32Setting("cam_x")),
 		fCameraY(settings->getf32Setting("cam_y")),
 		fCameraZ(settings->getf32Setting("cam_z")),
-		bShowOrbit(true)
+		bShowOrbit(true),bToonShading(false)
 	{
 		GetFactory().RegisterObjectType<RenderingActor>();
 		GetFactory().RegisterObjectType<RenderingSheet>();
@@ -426,14 +567,22 @@ namespace HAGE {
 		Samplers[2].State = (Samplers[1].State = Samplers[0].State);
 
 		_pEffect = new EffectContainer(pWrapper,default_program,&DefaultRasterizerState,&DefaultBlendState,1,false,Samplers,3);
+		_pCelEffect = new EffectContainer(pWrapper,cel_program,&DefaultRasterizerState,&DefaultBlendState,1,false,Samplers,3);
 		_pConstants = pWrapper->CreateConstantBuffer(sizeof(position_constants));
 		_pLightConstants = pWrapper->CreateConstantBuffer(sizeof(light_constants));
 		_pShadowcubeConstants = pWrapper->CreateConstantBuffer(sizeof(shadowcube_constants));
+
 		_pEffect->SetConstant("TransformGlobal",_pConstants);
 		_pEffect->SetConstant("LightGlobal",_pLightConstants);
 		_pEffect->SetTexture("ShadowCube1",_lightCubeDepth[0]);
 		_pEffect->SetTexture("ShadowCube2",_lightCubeDepth[1]);
 		_pEffect->SetTexture("ShadowCube3",_lightCubeDepth[2]);
+
+		_pCelEffect->SetConstant("TransformGlobal",_pConstants);
+		_pCelEffect->SetConstant("LightGlobal",_pLightConstants);
+		_pCelEffect->SetTexture("ShadowCube1",_lightCubeDepth[0]);
+		_pCelEffect->SetTexture("ShadowCube2",_lightCubeDepth[1]);
+		_pCelEffect->SetTexture("ShadowCube3",_lightCubeDepth[2]);
 
 		
 		_pPostprocessFilter = new PostprocessFilter(pWrapper);

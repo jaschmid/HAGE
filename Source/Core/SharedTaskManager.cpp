@@ -14,7 +14,7 @@ extern void OSNotifyMessageQueueThreadsShutdown();
 
 namespace HAGE {
 
-	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),
+	SharedTaskManager::SharedTaskManager() :bShutdown(false),nSleepingThreads(0),nWorkingThreads(0),
 		m_nThreads(boost::thread::hardware_concurrency()),
 		m_initbarrier(m_nThreads),
 		m_shutdownbarrier(m_nThreads+1),
@@ -144,7 +144,8 @@ namespace HAGE {
 	TaskManager* SharedTaskManager::getNextTask(TaskManager::genericTask** ppTask)
 	{
 		boost::unique_lock<boost::mutex> lock(mutexTask);
-		while(!( taskList.size() == 0 && bShutdown ))
+		++nSleepingThreads;
+		while(!( taskList.size() == 0 && bShutdown  && nSleepingThreads == m_nThreads))
 		{
 			while(taskList.size() > 0 )
 			{
@@ -157,16 +158,18 @@ namespace HAGE {
 				}
 
 				if(*ppTask && result)
+				{
+					--nSleepingThreads;
 					return result;
+				}
 			}
 
-			if( taskList.size() == 0 && !bShutdown)
+			if( !taskList.size())
 			{
-				++nSleepingThreads;
 				condTask.wait(lock);
-				--nSleepingThreads;
 			}
 		}
+		condTask.notify_all();
 		return nullptr;
 	}
 
