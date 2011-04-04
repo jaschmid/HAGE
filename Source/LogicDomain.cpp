@@ -84,7 +84,7 @@ namespace HAGE {
 				ainit.orbit_axis = Vector3<>(0.0f,1.0f ,0.0f).normalize();
 				ainit.orbit_speed = GetRandFloat()*0.5f+0.5f;
 				ainit.rotation_axis = Vector3<>((GetRandFloat()-0.5f),1.0,(GetRandFloat()-0.5f)).normalize();
-				ainit.rotation_speed = GetRandFloat()*0.5f+0.5f;
+				ainit.rotation_speed = GetRandFloat()*0.5f+10.5f;
 				ainit.scale = Vector3<>(.1250f,.1250f,.1250f);
 				//ainit.location = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		

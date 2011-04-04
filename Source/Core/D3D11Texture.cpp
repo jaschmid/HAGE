@@ -202,3 +202,7 @@ void D3D11Texture::Clear(HAGE::Vector4<> vColor)
 D3D11Texture::~D3D11Texture()
 {
 }
+
+void D3D11Texture::GenerateMips()
+{
+}

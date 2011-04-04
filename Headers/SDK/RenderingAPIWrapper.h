@@ -326,7 +326,7 @@ public:
 		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, 
 		const APIWBlendState* pBlendState = &DefaultBlendState,const u32 nBlendStates = 1, bool AlphaToCoverage = false,
 		const APIWSampler* pSamplers= nullptr,u32 nSamplers = 0) = 0;
-	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData) = 0;
+	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData,u32 nDataSize) = 0;
 	//virtual APIWSampler* CreateSampler(APIWSamplerState* pSamplerState) = 0;
 
 	virtual void BeginAllocation() = 0;
@@ -375,6 +375,7 @@ class APIWTexture
 public:
 	virtual void Clear(Vector4<> Color) = 0;
 	virtual void Clear(bool bDepth,float depth,bool bStencil = false,u32 stencil = 0) = 0;
+	virtual void GenerateMips() = 0;
 	virtual ~APIWTexture(){}
 };
 

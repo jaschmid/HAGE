@@ -367,3 +367,16 @@ void OGL3Texture::Clear(bool bDepth,float depth,bool bStencil,HAGE::u32 stencil 
 OGL3Texture::~OGL3Texture()
 {
 }
+
+void OGL3Texture::GenerateMips()
+{
+	
+	GLenum target= GL_TEXTURE_2D;
+	if(_miscFlags & HAGE::TEXTURE_CUBE)
+		target = GL_TEXTURE_CUBE_MAP;
+	glBindTexture(target,_tbo);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glBindTexture(target,_tbo);
+}

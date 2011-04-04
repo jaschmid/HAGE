@@ -749,9 +749,9 @@ HAGE::APIWEffect* OpenGL3APIWrapper::CreateEffect(const char* pProgram,
 	return new OGL3Effect(this,pProgram,GetRasterizerStateCode(pRasterizerState),GetBlendStateCode(pBlendState,nBlendStates,AlphaToCoverage),pSamplers,nSamplers);
 }
 
-HAGE::APIWTexture*  OpenGL3APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)
+HAGE::APIWTexture*  OpenGL3APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
 {
-	return new OGL3Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData);
+	return new OGL3Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData,nDataSize);
 }
 
 HAGE::APIWVertexArray* OpenGL3APIWrapper::CreateVertexArray(HAGE::u32 nPrimitives,
