@@ -21,11 +21,11 @@ namespace HAGE {
 	public:
 		_dest& operator()(_source& s) const
 		{
-			return (_dest&)s;
+			return (_dest)s;
 		}
 		const _dest& operator()(const _source& s) const
 		{
-			return (const _dest&)s;
+			return (const _dest)s;
 		}
 	};
 		
@@ -81,7 +81,7 @@ namespace HAGE {
 						
 		bool operator()(const _element& inserted,const std::vector<_element>& elements,size_t depth)
 		{
-			if(elements.size() > max_elements)
+			if(elements.size() > max_elements && std::min(std::min(xMax-xMin,yMax-yMin),zMax-zMin) > 0.01f)
 			{
 					
 				split_location = Vector3<>((xMin+xMax)/2.0f,(yMin+yMax)/2.0f,(zMin+zMax)/2.0f);

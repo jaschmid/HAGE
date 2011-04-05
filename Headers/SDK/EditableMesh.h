@@ -119,6 +119,11 @@ namespace _EditableMeshInternal {
 				return ((_internal*)(this))->internal_data->data.contents;
 			}
 
+			template<class _target> operator const _target&() const
+			{
+				return (const _target)((_internal*)(this))->internal_data->data.contents;
+			}
+
 			_data* operator ->()  const
 			{
 				return &((_internal*)(this))->internal_data->data.contents;
@@ -247,6 +252,18 @@ namespace _EditableMeshInternal {
 
 		Vertex GetVertex(IndexType index) const { if(index >= GetNumVertexIndices()) return nullVertex; else return getExternal(_vertices[(size_t)index]);}
 		IndexType GetIndex(const Vertex& v) const { return getInternal(v)->index;}
+		Vertex GetVertex(const Vertex& _v, const Edge& _e) const
+		{
+			const HE_vert* v = getInternal(_v);
+			const HE_edge* e = getInternal(_e);
+
+			if(e->end_vertex == v)
+				return getExternal(e->pair_edge->end_vertex);
+			else if(e->pair_edge->end_vertex == v)
+				return getExternal(e->end_vertex);
+			else
+				return nullVertex;
+		}
 	
 		Edge GetEdge(IndexType index) const { if(index >= GetNumEdgeIndices()) return nullEdge; else return getExternal(_edges[(size_t)index*2]);}
 		IndexType GetIndex(const Edge& e) const { return getInternal(e)->index;}

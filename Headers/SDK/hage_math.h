@@ -255,6 +255,16 @@ public:
 	{
 		return (*this)/(sqrtf(!(*this)));
 	}
+
+	float length() const
+	{
+		return sqrtf(!(*this));
+	}
+
+	float sqLength() const
+	{
+		return !(*this);
+	}
 };
 
 template<typename _T = f32> struct Vector4
