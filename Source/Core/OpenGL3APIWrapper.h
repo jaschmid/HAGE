@@ -248,7 +248,7 @@ public:
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
-	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
 	
 	struct VertexFormatEntry
 	{
@@ -349,9 +349,10 @@ private:
 class OGL3Texture : public HAGE::APIWTexture
 {
 public:
-	OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
 	void Clear(HAGE::Vector4<> Color);
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
+	void GenerateMips();
 	virtual ~OGL3Texture();
 private:
 	HAGE::u32			_xSize;

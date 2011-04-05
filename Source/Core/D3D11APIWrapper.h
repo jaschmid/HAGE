@@ -85,7 +85,7 @@ public:
 		const HAGE::APIWRasterizerState* pRasterizerState, const HAGE::APIWBlendState* pBlendState,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
-	virtual HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	virtual HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
 	ID3D11DeviceContext*		GetContext(){return m_pContext;}
@@ -183,9 +183,10 @@ private:
 class D3D11Texture : public HAGE::APIWTexture
 {
 public:
-	D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData);
+	D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
 	void Clear(HAGE::Vector4<> Color);
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
+	void GenerateMips();
 	virtual ~D3D11Texture();
 private:
 	HAGE::u32			_xSize;

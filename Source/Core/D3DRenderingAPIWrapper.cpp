@@ -375,9 +375,9 @@ HAGE::APIWConstantBuffer* D3D11APIWrapper::CreateConstantBuffer(HAGE::u32 nSize)
 	return new D3D11ConstantBuffer(this,nSize);
 }
 
-HAGE::APIWTexture* D3D11APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)
+HAGE::APIWTexture* D3D11APIWrapper::CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
 {
-	return new D3D11Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData);
+	return new D3D11Texture(this,xSize,ySize,mipLevels,format, miscFlags,pData,nDataSize);
 }
 
 inline D3D11_RASTERIZER_DESC HAGERasterizerToD3DRasterizerState(const HAGE::APIWRasterizerState* pRasterizerState)

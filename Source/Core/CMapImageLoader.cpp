@@ -90,6 +90,7 @@ namespace HAGE
 				break;
 			case ADT_MTXFMagic:
 				{
+					printf("MTXF Chunk\n");
 					u32* temp = new u32[cheader.size/4];
 					forceRead(pData,cheader.size,temp);
 					for(int i = 0 ; i< _texNames.size();++i)
@@ -101,6 +102,7 @@ namespace HAGE
 				break;
 			case ADT_MTEXMagic:
 				{
+					printf("MTEX Chunk\n");
 					char* pFilenames=nullptr;
 					pFilenames = new char[cheader.size];
 					forceRead(pData,cheader.size,pFilenames);
@@ -120,6 +122,7 @@ namespace HAGE
 				break;
 			case ADT_MCNKMagic:
 				{
+					//printf("MCNK Chunk\n");
 					if(!_pTiles)
 						_pTiles = new MapTile[nXTiles*nYTiles];
 					MapTile tile;
@@ -134,6 +137,7 @@ namespace HAGE
 						switch(sub_header.fourcc_code)
 						{
 						case ADT_MCLYMagic:
+							//printf("\tMCLY Chunk\n");
 							{
 								assert(sub_header.size <= sizeof(ADT_MCLY)*4);
 								tile.nLayers = sub_header.size / sizeof(ADT_MCLY);
@@ -141,18 +145,33 @@ namespace HAGE
 							}
 							break;
 						case ADT_MCALMagic:
+							//printf("\tMCAL Chunk\n");
 							{
 								forceRead(pData,sub_header.size,tile.AlphaMap);
 								tile.AlphaBytes = sub_header.size;
+								//printf("size: %i\n",sub_header.size);
+								/*
+								for(int i = 0; i< 64; ++i)
+								{
+									char temp[4];
+									forceRead(pData,4,temp);
+									printf("\t\t%c%c%c%c next\n",temp[0],temp[1],temp[2],temp[3]);
+								}
+								
+									pData->Seek(-4*64,IDataStream::ORIGIN_CURRENT);*/
+
 							}
 							break;
 						case ADT_MCSHMagic:
+							//printf("\tMCSH Chunk\n");
 							{
+								assert(sub_header.size == (nTileXCells*8)*(nTileYCells*8)/8);
 								forceRead(pData,(nTileXCells*8)*(nTileYCells*8)/8,tile.ShadowMap);
 							}
 							break;
 						case ADT_MCMTMagic:
 							// skip this chunk unknown
+							//printf("\tMCMT Chunk\n");
 							pData->Seek(sub_header.size,IDataStream::ORIGIN_CURRENT);
 							break;
 						default:

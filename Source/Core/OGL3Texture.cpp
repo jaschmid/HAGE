@@ -237,7 +237,7 @@ private:
 
 };
 
-OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData)
+OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
 {
 	glError();
 	_xSize = xSize;
@@ -366,4 +366,17 @@ void OGL3Texture::Clear(bool bDepth,float depth,bool bStencil,HAGE::u32 stencil 
 
 OGL3Texture::~OGL3Texture()
 {
+}
+
+void OGL3Texture::GenerateMips()
+{
+	
+	GLenum target= GL_TEXTURE_2D;
+	if(_miscFlags & HAGE::TEXTURE_CUBE)
+		target = GL_TEXTURE_CUBE_MAP;
+	glBindTexture(target,_tbo);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glBindTexture(target,_tbo);
 }
