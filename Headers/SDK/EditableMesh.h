@@ -118,6 +118,11 @@ namespace _EditableMeshInternal {
 			{
 				return ((_internal*)(this))->internal_data->data.contents;
 			}
+
+			_data* operator ->()  const
+			{
+				return &((_internal*)(this))->internal_data->data.contents;
+			}
 		};
 
 		template<class _internal> class _InternalConvert<_internal,void>
@@ -442,9 +447,10 @@ namespace _EditableMeshInternal {
 			const HE_face* f = getInternal(previous_face);
 			
 			if(!isValid(v))
-				return nullEdge;
+				return nullFace;
+
 			//depending if inside or outside
-			const HE_face* first_face = (v->edge->face) ? (v->edge->face) : (v->edge->next_edge->face);
+			const HE_face* first_face = (v->edge->face) ? (v->edge->face) : (v->edge->pair_edge->face);
 
 			if(!isValid(f))
 				return getExternal(first_face);
@@ -452,8 +458,11 @@ namespace _EditableMeshInternal {
 			// find edge with v as end
 			HE_edge* e = f->edge;
 			for(int i = 0; i<3;i++)
+			{
 				if(e->end_vertex == v)
 					break;
+				e = e->next_edge;
+			}
 			//end vertex has to be v now or previous_face was not a face around v
 			assert(e->end_vertex ==v);
 

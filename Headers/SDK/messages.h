@@ -62,15 +62,15 @@ public:
 };
 
 
-template<class _C,class _C2 = Message> class MessageHelper : public _C2
+template<class _Final,class _Parent = Message> class MessageHelper : public _Parent
 {
 public:
-	MessageHelper(const u32 code) : _C2(code,sizeof(_C)) { }
-	MessageHelper(const MessageHelper<_C,_C2>& c) : _C2(c) {}
+	MessageHelper(const u32 code) : _Parent(code,sizeof(_Final)) { }
+	MessageHelper(const MessageHelper<_Final,_Parent>& c) : _Parent(c) {}
 
 	virtual Message* CopyTo(void* pTarget) const
 	{
-		return new (pTarget) _C(*(_C*)this);
+		return new (pTarget) _Final(*(_Final*)this);
 	}
 };
 
@@ -410,7 +410,7 @@ private:
 	const guid target;
 };
 
-template<class _C,class _C2=MessageObjectUnknown> class MessageObjectHelper : public MessageObjectUnknown
+template<class _C,class _Parent=MessageObjectUnknown> class MessageObjectHelper : public MessageObjectUnknown
 {
 public:
 	MessageObjectHelper(const u32 id,const guid& target) : MessageObjectUnknown(id,sizeof(_C),target) { }
