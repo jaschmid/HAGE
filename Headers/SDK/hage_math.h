@@ -175,6 +175,13 @@ public:
 
 	Vector3(){};
 
+	//comparison
+
+	bool operator ==(const Vector3<_T>& v2)
+	{
+		return (x==v2.x) && (y==v2.y) && (z==v2.z);
+	}
+
 	// math operations
 	// scalar
 

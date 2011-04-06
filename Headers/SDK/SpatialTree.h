@@ -19,11 +19,11 @@ namespace HAGE {
 	template<class _source,class _dest> class ConversionFunctor
 	{
 	public:
-		_dest& operator()(_source& s) const
+		_dest&& operator()(_source& s) const
 		{
 			return (_dest)s;
 		}
-		const _dest& operator()(const _source& s) const
+		const _dest&& operator()(const _source& s) const
 		{
 			return (const _dest)s;
 		}
