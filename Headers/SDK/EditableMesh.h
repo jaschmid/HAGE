@@ -735,7 +735,7 @@ namespace _EditableMeshInternal {
 				v[i] = getInternal(vertices[i]);
 
 			for(int i = 0; i<PolySize; ++i)
-				e[i] = getEdge(vertices[i],vertices[(i+1)%PolySize);
+				e[i] = getEdge(v[i],v[(i+1)%PolySize]);
 
 			for(int i = 0; i<PolySize; ++i)
 			{
@@ -743,20 +743,20 @@ namespace _EditableMeshInternal {
 				{
 					if(e[(i+1)%PolySize])
 					{
-						if(!twistEdgeConnect(e[i],e[(i+1)%PolySize]))
+						if(e[i]->next_edge != e[(i+1)%PolySize] && !twistEdgeConnect(e[i],e[(i+1)%PolySize]))
 							return false;
 						adj_data[i].v1_next = e[(i+1)%PolySize];
-						adj_data[i]_v1.prev = getPrevEdge(e[i]->pair_edge);
+						adj_data[i].v1_prev = getPrevEdge(e[i]->pair_edge);
 						adj_data[(i+1)%PolySize].v0_next = e[(i+1)%PolySize]->pair_edge->next_edge;
 					}
 					else
 					{
-						adj_data[i].v1_next = e[i]->next_edge;
+						adj_data[i].v1_next = nullptr;
 						adj_data[i].v1_prev = getPrevEdge(e[i]->pair_edge);
-						adj_data[(i+1)%PolySize].v0_next = e[(i+1)%PolySize]->next_edge;
+						adj_data[(i+1)%PolySize].v0_next = e[i]->next_edge;
 					}
 					
-					adj_data[(i+1)%PolySize].v0_prev = e[(i+1)%PolySize];
+					adj_data[(i+1)%PolySize].v0_prev = e[i];
 					adj_data[i].edge = e[i];
 				}
 				else
@@ -765,55 +765,70 @@ namespace _EditableMeshInternal {
 					{
 						adj_data[i].v1_next = e[(i+1)%PolySize];
 						adj_data[i].v1_prev = getPrevEdge(e[(i+1)%PolySize]);
+						adj_data[(i+1)%PolySize].v0_next = e[(i+1)%PolySize]->pair_edge->next_edge;
+						adj_data[(i+1)%PolySize].v0_prev =  nullptr;
 					}
 					else
 					{
-						adj_data[i].v1_prev = getNextFreeInner(v[(i+1)%PolySize]->edge->pair_edge);
-						if(adj_data[i].v1_prev== nullptr)
-							return false;
-						adj_data[i].v1_next = adj_data[i].v1_prev->next_edge;
-						adj_data[(i+1)%PolySize].v0_next = nullptr;
+						if(v[(i+1)%PolySize]->edge)
+						{
+							adj_data[i].v1_prev = getNextFreeInner(v[(i+1)%PolySize]->edge->pair_edge);
+							if(adj_data[i].v1_prev== nullptr)
+								return false;
+							adj_data[i].v1_next = nullptr;
+							adj_data[(i+1)%PolySize].v0_next = adj_data[i].v1_prev->next_edge;
+							adj_data[(i+1)%PolySize].v0_prev = nullptr;
+						}
+						else
+						{	
+							adj_data[i].v1_prev = nullptr;
+							adj_data[i].v1_next = nullptr;
+							adj_data[(i+1)%PolySize].v0_next = nullptr;
+							adj_data[(i+1)%PolySize].v0_prev = nullptr;
+						}
 					}
 					
-					//will be newly inserted edge
-					adj_data[(i+1)%PolySize].v0_prev = nullptr;
 					adj_data[i].edge = nullptr;
 				}
 			}
 			
-			for(int i = 0; i<PolySize; ++i)
+			//assuming everything is good now, create edges
 			
+			for(int i = 0; i<PolySize; ++i)
+				if(!adj_data[i].edge)
+				{
+					HE_edge* e_new = internalAllocEdge();
+					e[i] = e_new;
+					adj_data[i].edge = e_new;
 
-			for(int i = 0 ; i < PolySize; ++i)
+					if(!v[i]->edge)
+						v[i]->edge = e[i];
+
+					e[i]->end_vertex = v[(i+1)%PolySize];
+					e[i]->face = nullptr;
+
+					e[i]->pair_edge->face = nullptr;
+					e[i]->pair_edge->end_vertex = v[i];
+
+					if(!adj_data[(i-1+PolySize)%PolySize].v1_next)
+						adj_data[(i-1+PolySize)%PolySize].v1_next = e[i];
+					if(!adj_data[(i-1+PolySize)%PolySize].v1_prev)
+						adj_data[(i-1+PolySize)%PolySize].v1_prev = e[i]->pair_edge;
+					
+					if(!adj_data[(i+1)%PolySize].v0_next)
+						adj_data[(i+1)%PolySize].v0_next = e[i]->pair_edge;
+					if(!adj_data[(i+1)%PolySize].v0_prev)
+						adj_data[(i+1)%PolySize].v0_prev = e[i];
+				}
+			
+			for(int i = 0; i<PolySize; ++i)
 			{
-				_edgeAdjectencyData& data = adj_data[i];
-				if(i != 0 )
-				{
-					data.v0_prev = e[i-1];
-					data.v0_next = e[i-1]->next_edge;
-				}
-				if(i==2)
-				{
-					data.v1_prev = getPrevEdge(e[0]);
-					data.v1_next = e[0];
-				}
-				if(!checkDegenerateEdge(v[i],v[(i+1)%PolySize],data))
-				{
-					//clean up
-					for(int i2 = i-1; i2 >= 0; --i2)
-						removeDegenerateEdge(e[i2]);
-					return nullFace;
-				}
-				if(i != 0 )
-				{
-					assert(data.v0_prev == e[i-1])
-				}
-				e[i] = insertDegenerateEdge(v[i],v[(i+1)%PolySize],data);
 
-				if(i != 0 )
-				{
-					assert(e[i-1]->next_edge == e[i]);
-				}
+				adj_data[i].v0_prev->next_edge = e[i];
+				e[i]->next_edge = adj_data[i].v1_next;
+
+				adj_data[i].v1_prev->next_edge = e[i]->pair_edge;
+				e[i]->pair_edge->next_edge = adj_data[i].v0_next;
 			}
 			
 			
@@ -821,13 +836,17 @@ namespace _EditableMeshInternal {
 			f->edge = e[0];
 			for(int i = 0 ; i < PolySize; ++i)
 			{
-				assert(e[i]->face == nullptr);
+				//assert(e[i]->face == nullptr);
 				e[i]->face = f;
+				/*
 				assert(e[i]->next_edge == e[(i+1)%PolySize]);
+
+				assert(adj_data[i].v0_prev->next_edge == adj_data[i].edge);
+				assert(adj_data[i].edge->next_edge == adj_data[i].v1_next);
+				assert(adj_data[i].v1_prev->next_edge == adj_data[i].edge->pair_edge);
+				assert(adj_data[i].edge->pair_edge->next_edge == adj_data[i].v0_next);*/
 			}
 
-
-	
 			return getExternal(f);
 		}
 
@@ -1426,6 +1445,9 @@ namespace _EditableMeshInternal {
 		HE_edge* getEdge(HE_vert* v1,HE_vert* v2)
 		{			
 			HE_edge* candidate = v1->edge;
+
+			if(!candidate)
+				return nullptr;
 
 			//search ccw
 			do
