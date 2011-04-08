@@ -12,8 +12,37 @@
 #define HAGE_MATH_H_INCLUDED
 
 #include "types.h"
+#include <limits>
+#include <cmath>
 
 namespace HAGE {
+
+template<typename _T> const _T Zero()
+{
+	return (_T)0.0;
+}
+template<typename _T> const _T One()
+{
+	return (_T)1.0;
+}
+template<typename _T> const _T NaN()
+{
+	return (_T)std::numeric_limits<_T>::quiet_NaN();
+}
+
+template<typename _T> bool IsZero(const _T& v)
+{
+	return v == Zero<_T>();
+}
+template<typename _T> bool IsOne(const _T& v)
+{
+	return v == One<_T>();
+}
+template<typename _T> bool IsNaN(const _T& v)
+{
+	return v != v;
+}
+
 
 template<typename _T = f32> struct Vector2
 {
@@ -240,7 +269,7 @@ public:
 
 	template<class _T2> _T operator *(const Vector3<_T2>& v) const
 	{
-		return _T(c[0] * (_T)v[0] + c[1] * (_T)v[1] + c[2] * (_T)v[2]);
+		return (_T)(c[0] * (_T)v[0] + c[1] * (_T)v[1] + c[2] * (_T)v[2]);
 	}
 
 	template<class _T2> Vector3<_T> operator %(const Vector3<_T2>& v) const
@@ -431,8 +460,31 @@ template<class _T = f32> struct Matrix4
 			Vector4<_T>(0.0f,0.0f,0.0f,0.0f)
 		);
 	}
+	
 
-	static const Matrix4<_T> Translate(const Vector3<>& v)
+	static const Matrix4<_T> NaN()
+	{
+		_T nan = HAGE::NaN<_T>();
+		return Matrix4(
+			Vector4<_T>(nan,nan,nan,nan),
+			Vector4<_T>(nan,nan,nan,nan),
+			Vector4<_T>(nan,nan,nan,nan),
+			Vector4<_T>(nan,nan,nan,nan)
+		);
+	}
+
+	static const Matrix4<_T> OuterProduct(const Vector4<_T>& v1,const Vector4<_T>& v2)
+	{
+		Matrix4<_T> result;
+
+		for(int ir = 0; ir < 4; ir ++)
+			for(int ic = 0; ic < 4; ic ++)
+				result.v[ir*4+ic] = v1.c[ir] * v2.c[ic];
+
+		return result;
+	}
+
+	static const Matrix4<_T> Translate(const Vector3<_T>& v)
 	{
 		return Matrix4(
 			Vector4<_T>(1.0f,0.0f,0.0f,v.x),
@@ -442,7 +494,7 @@ template<class _T = f32> struct Matrix4
 		);
 	}
 
-	static const Matrix4<_T> LookAt(const Vector3<>& eye,const Vector3<>& at,const Vector3<>& up)
+	static const Matrix4<_T> LookAt(const Vector3<_T>& eye,const Vector3<_T>& at,const Vector3<_T>& up)
 	{
 		Vector3<> zaxis = (at - eye).normalize();
 		Vector3<> xaxis = (up % zaxis).normalize();
@@ -455,7 +507,7 @@ template<class _T = f32> struct Matrix4
 		);
 	}
 
-	static const Matrix4<_T> Scale(const Vector3<>& v)
+	static const Matrix4<_T> Scale(const Vector3<_T>& v)
 	{
 		return Matrix4(
 			Vector4<_T>(v.x ,0.0f,0.0f,0.0f),
@@ -488,12 +540,71 @@ template<class _T = f32> struct Matrix4
 		return res;
 	}
 
+	
+	template<class _T2> Matrix4<_T>& operator *=(const Matrix4<_T2>& other)
+	{
+		Matrix4<_T> copy = *this;
+		for(int ir =0;ir<4;++ir)
+			for(int ic =0;ic<4;++ic)
+				v[ir*4+ic]=copy.Row(ir)*other.Column(ic);
+		return *this;
+	}
+
+	const Matrix4<_T> operator *(const _T& other) const
+	{
+		Matrix4<_T> res;
+		for(int ir =0;ir<4;++ir)
+			for(int ic =0;ic<4;++ic)
+				res.v[ir*4+ic]=v[ir*4+ic]*other;
+		return res;
+	}
+
+	
+	Matrix4<_T>& operator *=(const _T& other)
+	{
+		Matrix4<_T> copy = *this;
+		for(int ir =0;ir<4;++ir)
+			for(int ic =0;ic<4;++ic)
+				v[ir*4+ic]*=other;
+		return *this;
+	}
+	
+	template<class _T2> const Matrix4<_T> operator +(const Matrix4<_T2>& other) const
+	{
+		Matrix4<_T> res;
+		for(int ir =0;ir<4;++ir)
+			for(int ic =0;ic<4;++ic)
+				res.v[ir*4+ic]=v[ir*4+ic] + other.v[ir*4+ic];
+		return res;
+	}
+
+	
+	template<class _T2> Matrix4<_T>& operator +=(const Matrix4<_T2>& other)
+	{
+		for(int ir =0;ir<4;++ir)
+			for(int ic =0;ic<4;++ic)
+				v[ir*4+ic]+=other.v[ir*4+ic];
+		return *this;
+	}
+
 	template<class _T2> const Vector4<_T> operator *(const Vector4<_T2>& other) const
 	{
 		Vector4<_T> res;
 		for(int ir =0;ir<4;++ir)
 			res[ir]=Row(ir)*other;
 		return res;
+	}
+
+	//status operators
+
+	bool IsNaN() const
+	{
+		return HAGE::IsNaN(v[0]);
+	}
+
+	operator bool() const
+	{
+		return IsNaN();
 	}
 
 	// access operators
@@ -520,6 +631,182 @@ template<class _T = f32> struct Matrix4
 		);
 	}
 
+	// advanced operations
+
+	//Invert code from Intel paper Streaming SIMD Extensions - Inverse of 4x4 Matrix (Ref AP-928)
+	const Matrix4<_T> Invert() const
+	{
+		_T tmp[12];
+		_T det;
+		Matrix4<_T> result;
+		const Matrix4<_T> transpose = Transpose();
+
+		const _T* src = transpose.v;
+		_T* dst = result.v;
+
+		/* calculate pairs for first 8 elements (cofactors) */
+		tmp[0]  = src[10] * src[15];
+		tmp[1]  = src[11] * src[14];
+		tmp[2]  = src[9]  * src[15];
+		tmp[3]  = src[11] * src[13];
+		tmp[4]  = src[9]  * src[14];
+		tmp[5]  = src[10] * src[13];
+		tmp[6]  = src[8]  * src[15];
+		tmp[7]  = src[11] * src[12];
+		tmp[8]  = src[8]  * src[14];
+		tmp[9]  = src[10] * src[12];
+		tmp[10] = src[8]  * src[13];
+		tmp[11] = src[9]  * src[12];
+
+		/* calculate first 8 elements (cofactors) */
+		dst[0]  = tmp[0]*src[5] + tmp[3]*src[6] + tmp[4]*src[7];
+		dst[0] -= tmp[1]*src[5] + tmp[2]*src[6] + tmp[5]*src[7];
+		dst[1]  = tmp[1]*src[4] + tmp[6]*src[6] + tmp[9]*src[7];
+		dst[1] -= tmp[0]*src[4] + tmp[7]*src[6] + tmp[8]*src[7];
+		dst[2]  = tmp[2]*src[4] + tmp[7]*src[5] + tmp[10]*src[7];
+		dst[2] -= tmp[3]*src[4] + tmp[6]*src[5] + tmp[11]*src[7];
+		dst[3]  = tmp[5]*src[4] + tmp[8]*src[5] + tmp[11]*src[6];
+		dst[3] -= tmp[4]*src[4] + tmp[9]*src[5] + tmp[10]*src[6];
+
+		
+		/* calculate determinant */
+		det=src[0]*dst[0]+src[1]*dst[1]+src[2]*dst[2]+src[3]*dst[3];
+
+		//return nan if determinant is zero
+		if(IsZero<_T>(det))
+			return Matrix4<_T>::NaN();
+
+		det = 1/det;
+
+		dst[4]  = tmp[1]*src[1] + tmp[2]*src[2] + tmp[5]*src[3];
+		dst[4] -= tmp[0]*src[1] + tmp[3]*src[2] + tmp[4]*src[3];
+		dst[5]  = tmp[0]*src[0] + tmp[7]*src[2] + tmp[8]*src[3];
+		dst[5] -= tmp[1]*src[0] + tmp[6]*src[2] + tmp[9]*src[3];
+		dst[6]  = tmp[3]*src[0] + tmp[6]*src[1] + tmp[11]*src[3];
+		dst[6] -= tmp[2]*src[0] + tmp[7]*src[1] + tmp[10]*src[3];
+		dst[7]  = tmp[4]*src[0] + tmp[9]*src[1] + tmp[10]*src[2];
+		dst[7] -= tmp[5]*src[0] + tmp[8]*src[1] + tmp[11]*src[2];
+
+		 /* calculate pairs for second 8 elements (cofactors) */
+		tmp[0]  = src[2]*src[7];
+		tmp[1]  = src[3]*src[6];
+		tmp[2]  = src[1]*src[7];
+		tmp[3]  = src[3]*src[5];
+		tmp[4]  = src[1]*src[6];
+		tmp[5]  = src[2]*src[5];
+		tmp[6]  = src[0]*src[7];
+		tmp[7]  = src[3]*src[4];
+		tmp[8]  = src[0]*src[6];
+		tmp[9]  = src[2]*src[4];
+		tmp[10] = src[0]*src[5];
+		tmp[11] = src[1]*src[4];
+
+		/* calculate second 8 elements (cofactors) */
+		dst[8]  = tmp[0]*src[13] + tmp[3]*src[14] + tmp[4]*src[15];
+		dst[8] -= tmp[1]*src[13] + tmp[2]*src[14] + tmp[5]*src[15];
+		dst[9]  = tmp[1]*src[12] + tmp[6]*src[14] + tmp[9]*src[15];
+		dst[9] -= tmp[0]*src[12] + tmp[7]*src[14] + tmp[8]*src[15];
+		dst[10] = tmp[2]*src[12] + tmp[7]*src[13] + tmp[10]*src[15];
+		dst[10]-= tmp[3]*src[12] + tmp[6]*src[13] + tmp[11]*src[15];
+		dst[11] = tmp[5]*src[12] + tmp[8]*src[13] + tmp[11]*src[14];
+		dst[11]-= tmp[4]*src[12] + tmp[9]*src[13] + tmp[10]*src[14];
+		dst[12] = tmp[2]*src[10] + tmp[5]*src[11] + tmp[1]*src[9];
+		dst[12]-= tmp[4]*src[11] + tmp[0]*src[9] + tmp[3]*src[10];
+		dst[13] = tmp[8]*src[11] + tmp[0]*src[8] + tmp[7]*src[10];
+		dst[13]-= tmp[6]*src[10] + tmp[9]*src[11] + tmp[1]*src[8];
+		dst[14] = tmp[6]*src[9] + tmp[11]*src[11] + tmp[3]*src[8];
+		dst[14]-= tmp[10]*src[11] + tmp[2]*src[8] + tmp[7]*src[9];
+		dst[15] = tmp[10]*src[10] + tmp[4]*src[8] + tmp[9]*src[9];
+		dst[15]-= tmp[8]*src[9] + tmp[11]*src[10] + tmp[5]*src[8];
+		
+		/* calculate matrix inverse */
+		return result*det;
+	}
+
+	const _T Determinant() const
+	{
+		_T tmp[12];
+		_T det;
+		Matrix4<_T> result;
+		const Matrix4<_T> transpose = Transpose();
+
+		const _T* src = transpose.v;
+		_T* dst[4];
+
+		/* calculate pairs for first 8 elements (cofactors) */
+		tmp[0]  = src[10] * src[15];
+		tmp[1]  = src[11] * src[14];
+		tmp[2]  = src[9]  * src[15];
+		tmp[3]  = src[11] * src[13];
+		tmp[4]  = src[9]  * src[14];
+		tmp[5]  = src[10] * src[13];
+		tmp[6]  = src[8]  * src[15];
+		tmp[7]  = src[11] * src[12];
+		tmp[8]  = src[8]  * src[14];
+		tmp[9]  = src[10] * src[12];
+		tmp[10] = src[8]  * src[13];
+		tmp[11] = src[9]  * src[12];
+
+		/* calculate first 8 elements (cofactors) */
+		dst[0]  = tmp[0]*src[5] + tmp[3]*src[6] + tmp[4]*src[7];
+		dst[0] -= tmp[1]*src[5] + tmp[2]*src[6] + tmp[5]*src[7];
+		dst[1]  = tmp[1]*src[4] + tmp[6]*src[6] + tmp[9]*src[7];
+		dst[1] -= tmp[0]*src[4] + tmp[7]*src[6] + tmp[8]*src[7];
+		dst[2]  = tmp[2]*src[4] + tmp[7]*src[5] + tmp[10]*src[7];
+		dst[2] -= tmp[3]*src[4] + tmp[6]*src[5] + tmp[11]*src[7];
+		dst[3]  = tmp[5]*src[4] + tmp[8]*src[5] + tmp[11]*src[6];
+		dst[3] -= tmp[4]*src[4] + tmp[9]*src[5] + tmp[10]*src[6];
+
+		/* calculate determinant */
+		det=src[0]*dst[0]+src[1]*dst[1]+src[2]*dst[2]+src[3]*dst[3];
+
+		return det;
+	}
+
+	// Originally based on public domain code by <Ajay_Shah@rand.org>
+	// which can be found at http://lib.stat.cmu.edu/general/ajay
+	/*
+	  Inputs:
+	  N, integer
+	  A, N x N matrix _indexed_from_1_
+	  Returns:
+	  U, N x N matrix, _indexed_from_1_, you must allocate before
+	  calling this routine,
+	  nullity, integer
+	*/
+
+	const Matrix4<_T>& Cholesky() const
+	{
+	  Matrix4<_T> U;/*
+	  Matrix4x4& A = *this;
+	  static const Real TOOSMALL ((Real) 0.0);
+	  static const int N = 4;
+	  int nullity = 0;
+	  int row, j, k;
+	  Real sum;
+
+	  for (row=0; row<N; row++) {
+		sum = A(row,row);
+		for (j=0; j<=(row-1); j++) sum -= U(j,row)*U(j,row);
+		if (sum > TOOSMALL) {
+		  U(row, row) = sqrt(sum);
+		  for (k=(row+1); k<N; k++) {
+			sum = A(row, k);
+			for (j=0; j<=(row-1); j++)
+			  sum -= U(j,row)*U(j,k);
+			U(row,k) = sum/U(row, row);
+		  }
+		}
+		else { 
+		  for (k=row; k<N; k++) U(row, k) = 0.0;
+		  nullity++;
+		}
+	  }
+
+	  return (nullity==0);*/
+
+	  return U;
+	}
 };
 
 }
