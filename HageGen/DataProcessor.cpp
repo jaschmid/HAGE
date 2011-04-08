@@ -192,7 +192,7 @@ namespace HAGE
 							float distance_sq = !( pos1 - pos2);
 							if(distance_sq < 0.000001f)
 							{
-								assert(_mesh.MergeVertex(_mesh.MakePair(v1,v2)));
+								assert(_mesh.MergeVertex(_mesh.MakePair(v1,v2)) != MeshType::nullVertex);
 								break;
 							}
 						}

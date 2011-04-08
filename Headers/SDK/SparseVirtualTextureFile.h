@@ -56,6 +56,11 @@ namespace HAGE {
 			}
 		}
 
+		inline u32 GetSize() const
+		{
+			return GetPageInnerSize() * GetNumXPagesAtDepth(fileHeader.pagedepth-1);
+		}
+
 		inline u64 GetTotalNumPages() const
 		{
 			return pageHeaders.size();

@@ -71,8 +71,46 @@ namespace HAGE {
 
 			SparseVirtualTextureFile::Commit();
 		}
+
+		
+		struct Rectangle
+		{
+			u32 xBegin,xSize;
+			u32 yBegin,ySize;
+		};
+
+		class PlacedTexture
+		{
+		public:
+			f32 GetUBegin() const{return (f32)location.xBegin / (float)base->GetSize();}
+			f32 GetUSize() const{return (f32)location.xSize / (float)base->GetSize();}
+			f32 GetVBegin() const{return (f32)location.yBegin / (float)base->GetSize();}
+			f32 GetVSize() const{return (f32)location.ySize / (float)base->GetSize();}
+		private:
+			PlacedTexture(const SparseVirtualTextureGenerator* parent,const Rectangle& rect,u32 i) : 
+			   base(parent),location(rect),index(i) {}
+
+			u32 index;
+			const SparseVirtualTextureGenerator* base;
+			Rectangle location;
+		};
+
+		typedef const PlacedTexture& TextureReference;
+		typedef std::vector<std::pair<TextureReference,f32>> RelationArray;
+
+		TextureReference PlaceTexture(u32 xSize,u32 ySize,u32* pImageData,RelationArray relationArray);
 		
 	private:
+
+		class FreeSquare : public Rectangle
+		{
+		public:
+			bool operator < (const FreeSquare& sq) const
+			{
+			}
+
+		};
+
 
 		struct Color
 		{
