@@ -566,8 +566,11 @@ namespace HAGE {
 
 		Samplers[2].State = (Samplers[1].State = Samplers[0].State);
 
-		_pEffect = new EffectContainer(pWrapper,default_program,&DefaultRasterizerState,&DefaultBlendState,1,false,Samplers,3);
-		_pCelEffect = new EffectContainer(pWrapper,cel_program,&DefaultRasterizerState,&DefaultBlendState,1,false,Samplers,3);
+		APIWRasterizerState wireframe = DefaultRasterizerState;
+		wireframe.bWireframe = true;
+
+		_pEffect = new EffectContainer(pWrapper,default_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
+		_pCelEffect = new EffectContainer(pWrapper,cel_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
 		_pConstants = pWrapper->CreateConstantBuffer(sizeof(position_constants));
 		_pLightConstants = pWrapper->CreateConstantBuffer(sizeof(light_constants));
 		_pShadowcubeConstants = pWrapper->CreateConstantBuffer(sizeof(shadowcube_constants));

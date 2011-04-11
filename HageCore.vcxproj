@@ -199,6 +199,9 @@
     <ClInclude Include="Headers\SDK\interlocked_functions.h" />
     <ClInclude Include="Headers\SDK\IObject.h" />
     <ClInclude Include="Headers\SDK\MainClass.h" />
+    <ClInclude Include="Headers\SDK\MeshExDecimator.h" />
+    <ClInclude Include="Headers\SDK\MeshExGeometry.h" />
+    <ClInclude Include="headers\sdk\MeshEx.h" />
     <ClInclude Include="Headers\SDK\messages.h" />
     <ClInclude Include="Headers\SDK\ObjectBase.h" />
     <ClInclude Include="Headers\SDK\PinBase.h" />

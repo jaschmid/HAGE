@@ -110,6 +110,8 @@ namespace _EditableMeshInternal {
 			RAW_INDEX_TRIANGLE_STRIP = 1,
 			RAW_INDEX_TRIANGLE_FAN = 2
 		} RAW_INDEX_FORMAT;
+
+		_CEditableMeshBase() : _unusedEdges(0),_unusedVertices(0),_unusedFaces(0) {}
 	private:
 		template<class _internal,class _data> class _InternalConvert
 		{
@@ -119,7 +121,7 @@ namespace _EditableMeshInternal {
 				return ((_internal*)(this))->internal_data->data.contents;
 			}
 
-			template<class _target> operator const _target&&() const
+			template<class _target> operator const _target() const
 			{
 				return (const _target)((_internal*)(this))->internal_data->data.contents;
 			}
@@ -136,18 +138,19 @@ namespace _EditableMeshInternal {
 		};
 
 		class _HE_edge;
+		class _HE_edge_pair;
 		class _HE_vert;
 		class _HE_face;
 	public:
 		typedef class _Edge : public _InternalConvert<_Edge,EdgeType>
 		{ 
 		private:
-			_HE_edge* internal_data; 
-			_Edge(_HE_edge* val) : internal_data(val) {}
+			_HE_edge_pair* internal_data; 
+			_Edge(_HE_edge_pair* val) : internal_data(val) {}
 		public:
 			IndexType Index() const
 			{
-				return internal_data->index/2;
+				return internal_data->index;
 			}
 
 			bool operator == (const _Edge& e) const
@@ -242,15 +245,15 @@ namespace _EditableMeshInternal {
 
 		IndexType GetNumFaces() const
 		{
-			return (IndexType)_faces.size() - _facesFree.size();
+			return (IndexType)_faces.size() - _unusedFaces;
 		}
 		IndexType GetNumEdges() const
 		{
-			return (IndexType)(_edges.size() - _edgesFree.size())/2;
+			return (IndexType)_edges.size() - _unusedEdges;
 		}
 		IndexType GetNumVertices() const
 		{
-			return (IndexType)_vertices.size() - _verticesFree.size();
+			return (IndexType)_vertices.size() - _unusedVertices;
 		}
 
 		IndexType GetNumFaceIndices() const
@@ -259,7 +262,7 @@ namespace _EditableMeshInternal {
 		}
 		IndexType GetNumEdgeIndices() const
 		{
-			return (IndexType)_edges.size()/2;
+			return (IndexType)_edges.size();
 		}
 		IndexType GetNumVertexIndices() const
 		{
@@ -281,7 +284,7 @@ namespace _EditableMeshInternal {
 				return nullVertex;
 		}
 	
-		Edge GetEdge(IndexType index) const { if(index >= GetNumEdgeIndices()) return nullEdge; else return getExternal(_edges[(size_t)index*2]);}
+		Edge GetEdge(IndexType index) const { if(index >= GetNumEdgeIndices()) return nullEdge; else return getExternal(_edges[(size_t)index]);}
 		IndexType GetIndex(const Edge& e) const { return getInternal(e)->index;}
 		Edge GetEdge(const VertexPair& _v) const
 		{
@@ -597,6 +600,23 @@ namespace _EditableMeshInternal {
 			while((f =GetFirstVertexFace(v)) != nullFace);
 		}
 
+		bool IsValidVertexMerge(const VertexPair& vpair)
+		{
+			if(vpair[0] == vpair[1])
+				return false;
+
+			HE_vert* v1 = getInternal(vpair[0]),* v2 = getInternal(vpair[1]);
+				
+			//try new test function
+
+			_edgeAdjectencyData data;
+
+			if(!findMergeEdgesEx(v1,v2,data))
+				return false;
+
+			return true;
+		}
+
 		Vertex MergeVertex(const VertexPair& vpair)
 		{
 			if(vpair[0] == vpair[1])
@@ -700,9 +720,7 @@ namespace _EditableMeshInternal {
 			else if(!v2->edge)
 				v2->edge = v1->edge;
 
-			internalRemove(v1);		
-
-			DebugValidateMesh();
+			internalRemove(v1);	
 
 			return getExternal(v2);
 		}
@@ -737,61 +755,70 @@ namespace _EditableMeshInternal {
 						assert(ps->end_vertex == s->pair_edge->end_vertex);
 						assert(psp->end_vertex == s->end_vertex);
 						
-					/*
-						for(size_t i2 = 0; i2<_edges.size();++i2)
-							if(_edges[i2] && _edges[i2] != s)
-								assert(! ( _edges[i2]->end_vertex == e->end_vertex && _edges[i2]->pair_edge->end_vertex == e->pair_edge->end_vertex) );
-								*/
+					
 						++nEdges;
 					}
 
 					assert(e==f->edge);
 				}
 			//rest of edges must be outer
+			HE_edge_pair* p;
 			e = nullptr;
 			for(size_t i = 0; i<_edges.size();++i)
-				if((e = _edges[i]) && e->face == nullptr)
-				{
-					nEdges ++;
+				if(p = _edges[i])
+					for(int ie=0;ie<2;ie++)
+						if(((e = &p->edges[ie])!=nullptr) && (e->face == nullptr))
+						{
+							nEdges ++;
 
-					const HE_edge* s = e;
-					const HE_edge* ps = getPrevEdge(s);
-					const HE_edge* psp = getPrevEdge(s->pair_edge);
+							const HE_edge* s = e;
+							const HE_edge* ps = getPrevEdge(s);
+							const HE_edge* psp = getPrevEdge(s->pair_edge);
 					
-					assert(s->end_vertex);
-					assert(ps->next_edge == s);
-					assert(getPrevEdge(s->next_edge) == s);
-					assert(e->end_vertex->edge);
-					assert(_vertices[(size_t)e->end_vertex->index]);
-					assert(s->pair_edge->face);
-					assert(!s->face);
-					assert(s->next_edge->next_edge->end_vertex != s->end_vertex);
-					assert(ps->end_vertex == s->pair_edge->end_vertex);
-					assert(psp->end_vertex == s->end_vertex);
+							assert(s->end_vertex);
+							assert(ps->next_edge == s);
+							assert(getPrevEdge(s->next_edge) == s);
+							assert(e->end_vertex->edge);
+							assert(_vertices[(size_t)e->end_vertex->index]);
+							assert(s->pair_edge->face);
+							assert(!s->face);
+							assert(s->next_edge->next_edge->end_vertex != s->end_vertex);
+							assert(ps->end_vertex == s->pair_edge->end_vertex);
+							assert(psp->end_vertex == s->end_vertex);
 
-					/* takes too long
-					for(size_t i2 = 0; i2<_edges.size();++i2)
-						if( _edges[i2] && _edges[i2] != s)
-							assert(! ( _edges[i2]->end_vertex == e->end_vertex && _edges[i2]->pair_edge->end_vertex == e->pair_edge->end_vertex) );
-					*/
-				}
-			assert(nEdges/2 == GetNumEdges());
+							s = s->pair_edge->next_edge;
+							while(s!=e)
+							{
+								assert(s->end_vertex != e->end_vertex);
+								s = s->pair_edge->next_edge;
+							}
+
+							/* takes too long
+							for(size_t i2 = 0; i2<_edges.size();++i2)
+								if( _edges[i2] && _edges[i2] != s)
+									assert(! ( _edges[i2]->end_vertex == e->end_vertex && _edges[i2]->pair_edge->end_vertex == e->pair_edge->end_vertex) );
+							*/
+						}
+
+			assert(nEdges == GetNumEdges()*2);
 
 			//chec edge loops
 			for(size_t i = 0; i<_edges.size();++i)
-				if(e = _edges[i])
-				{
-					const HE_edge* s = e->pair_edge->end_vertex->edge;
-					bool bFound = false;
-					do
+				if(p = _edges[i])
+					for(int ie=0;ie<2;ie++)
 					{
-						if(s==e)
-							bFound=true;
-						s = s->pair_edge->next_edge;
+						e = &p->edges[ie];
+						const HE_edge* s = e->pair_edge->end_vertex->edge;
+						bool bFound = false;
+						do
+						{
+							if(s==e)
+								bFound=true;
+							s = s->pair_edge->next_edge;
+						}
+						while(s!=e->pair_edge->end_vertex->edge);
+						assert(bFound);
 					}
-					while(s!=e->pair_edge->end_vertex->edge);
-					assert(bFound);
-				}
 
 			//check vertices
 			const HE_vert* v = nullptr;
@@ -955,7 +982,7 @@ namespace _EditableMeshInternal {
 					++w;
 				}
 			_edges.resize((size_t)w);
-			_edgesFree.clear();
+			_unusedEdges = 0;
 
 			//compact faces
 			w=0;
@@ -967,7 +994,7 @@ namespace _EditableMeshInternal {
 					++w;
 				}
 			_faces.resize((size_t)w);
-			_facesFree.clear();
+			_unusedFaces = 0;
 
 			//compact vertices
 			w=0;
@@ -979,7 +1006,7 @@ namespace _EditableMeshInternal {
 					++w;
 				}
 			_vertices.resize((size_t)w);
-			_verticesFree.clear();
+			_unusedVertices = 0;
 		}
 
 		template<RAW_INDEX_FORMAT _format,class _index_type> void ImportRawIndexData(const size_t& nPrimitives,const _index_type* pData)
@@ -1003,7 +1030,7 @@ namespace _EditableMeshInternal {
 			// we're gonna allocate alot
 			_vertices.reserve(newVerticesBegin + nNewVertices);
 			_faces.reserve(newFacesBegin + nPrimitives);
-			_edges.reserve(newEdgesBegin + 4*nPrimitives); // just a guess, no way to know this
+			_edges.reserve(newEdgesBegin + 2*nPrimitives); // just a guess, no way to know this
 
 			for(int i = 0 ; i <nNewVertices;++i)
 				internalAllocVert()->edge = nullptr;
@@ -1059,35 +1086,6 @@ namespace _EditableMeshInternal {
 				static_assert(0,"Not yet Implemented");
 			}
 		};
-			
-		/*
-		template<size_t _index> struct contains_impl
-		{
-			template<class _tuple,class _element> bool operator()( const _tuple& tuple, const _element& element)
-			{	
-				if( std::get<_index>(tuple) == element)
-					return true;
-				contains_impl<_index-1> contains;
-				return contains(tuple,element);
-			}
-		};
-
-		template<> struct contains_impl<0>
-		{
-			template<class _tuple,class _element> bool operator()( const _tuple& tuple, const _element& element)
-			{	
-				if( std::get<0>(tuple) == element)
-					return true;
-				return false;
-			}
-		};
-
-		template<class _tuple,class _element> bool contains( const _tuple& tuple, const _element& element)
-		{
-			contains_impl<std::tuple_size<_tuple>::value -1> contains;
-			return contains(tuple,element);
-		}
-		*/
 
 		template<class _contents> class voidContainer
 		{
@@ -1110,10 +1108,14 @@ namespace _EditableMeshInternal {
 			_HE_face*	face;		//bordering face (null for border)
 			_HE_edge*	next_edge;	//next HALF edge around the face if inside, on the circumference if outside
 		
-			IndexType	index;
-
-			voidContainer<EdgeType> data;
 		} HE_edge;
+
+		typedef struct _HE_edge_pair
+		{
+			HE_edge		edges[2];
+			IndexType	index;
+			voidContainer<EdgeType> data;
+		} HE_edge_pair;
 	
 		typedef struct _HE_vert
 		{
@@ -1135,12 +1137,12 @@ namespace _EditableMeshInternal {
 
 		// private members
 
-		std::vector<HE_edge*> _edges;
-		std::list<IndexType>	_edgesFree;
+		std::vector<HE_edge_pair*> _edges;
+		IndexType	_unusedEdges;
 		std::vector<HE_vert*> _vertices;
-		std::list<IndexType>	_verticesFree;
+		IndexType	_unusedVertices;
 		std::vector<HE_face*> _faces;
-		std::list<IndexType>	_facesFree;
+		IndexType	_unusedFaces;
 
 
 		//private functions
@@ -1178,7 +1180,10 @@ namespace _EditableMeshInternal {
 				
 			data_out.v1_prev = getPrevEdge(data_out.edge->pair_edge);
 			data_out.v1_next = data_out.edge->next_edge;
-			
+
+			HE_edge* removed_v0_prev[2] = {nullptr,nullptr};
+			HE_edge* removed_v1_prev[2] = {nullptr,nullptr};
+
 			//might point to edges that will be removed so fix them
 			
 			if(data_out.v0_next->pair_edge == data_out.v0_prev)
@@ -1196,11 +1201,17 @@ namespace _EditableMeshInternal {
 						data_out.v0_prev = nullptr;
 					}
 					else
+					{
+						removed_v0_prev[0] = data_out.v0_next->pair_edge;
 						data_out.v0_next = data_out.v0_next->pair_edge->next_edge;
+					}
 				}
 
 				if(data_out.v0_prev && !data_out.v0_prev->pair_edge->face)
+				{
+					removed_v0_prev[1] = data_out.v0_prev;
 					data_out.v0_prev = getPrevEdge(data_out.v0_prev->pair_edge);
+				}
 			}
 
 			
@@ -1219,11 +1230,17 @@ namespace _EditableMeshInternal {
 						data_out.v1_prev = nullptr;
 					}
 					else
+					{
+						removed_v1_prev[0] = data_out.v1_next->pair_edge;
 						data_out.v1_next = data_out.v1_next->pair_edge->next_edge;
+					}
 				}
 
 				if(data_out.v1_prev && !data_out.v1_prev->pair_edge->face)
+				{
+					removed_v1_prev[1] = data_out.v1_prev;
 					data_out.v1_prev = getPrevEdge(data_out.v1_prev->pair_edge);
+				}
 			}
 
 			if(!data_out.v0_prev || !data_out.v1_prev)
@@ -1235,44 +1252,46 @@ namespace _EditableMeshInternal {
 			
 			do
 			{
-				v0_prev = v0_prev->next_edge->pair_edge;
 				
-				if(v0_prev->pair_edge->end_vertex == v1)
+				if(	v0_prev->pair_edge == data_out.edge )
 					continue;//ignore connecting edge
-				if(v0_prev->next_edge == data_out.edge && !v0_prev->pair_edge->face)
+				if(v0_prev == removed_v0_prev[0])
 					continue;//this edge will be removed if connecting edge disappears
-				if(!v0_prev->face && getPrevEdge(v0_prev->pair_edge) == data_out.edge->pair_edge)
+				if(v0_prev == removed_v0_prev[1])
 					continue;//this edge will be removed if connecting edge disappears
 
 				
 				HE_edge* v1_prev = v1->edge->pair_edge;
 				do
 				{
-					v1_prev = v1_prev->next_edge->pair_edge;
 				
-					if(v1_prev->pair_edge->end_vertex == v0)
+					if(v1_prev == data_out.edge)
 						continue;//ignore connecting edge
-					if(v1_prev->next_edge == data_out.edge->pair_edge && !v1_prev->pair_edge->face)
+					if(v1_prev == removed_v1_prev[0])
 						continue;//this edge will be removed if connecting edge disappears
-					if(!v1_prev->face && getPrevEdge(v1_prev->pair_edge) == data_out.edge)
+					if(v1_prev == removed_v1_prev[1])
 						continue;//this edge will be removed if connecting edge disappears
 
 					if(v1_prev->pair_edge->end_vertex == v0_prev->pair_edge->end_vertex)
 					{
 						//since we skip removed edges just check if these match
 
-						if(v0_prev != data_out.v0_prev && v0_prev->pair_edge != data_out.v0_next)
-							return false;
+						if(
+							(v0_prev == data_out.v0_prev && v1_prev->pair_edge == data_out.v1_next)
+							||
+							(v0_prev->pair_edge == data_out.v0_next && v1_prev == data_out.v1_prev)
+							)
+							continue;
 
-						if(v1_prev != data_out.v1_prev && v1_prev->pair_edge != data_out.v1_next)
-							return false;
+
+						return false;
 					}
-
+					
 				}
-				while(v1_prev != v1->edge->pair_edge);
-
+				while( (v1_prev = v1_prev->next_edge->pair_edge) != v1->edge->pair_edge);
+				
 			}
-			while(v0_prev != v0->edge->pair_edge);
+			while( (v0_prev = v0_prev->next_edge->pair_edge) != v0->edge->pair_edge);
 
 			return true;
 		}
@@ -1557,88 +1576,6 @@ namespace _EditableMeshInternal {
 
 			return true;
 		}
-			/*
-			if(v1->edge)
-			{
-				//find open border on v1
-				HE_edge* cur = v1->edge;
-				do
-				{
-					if(!cur->pair_edge->face)
-					{
-						if(!bExclusiveBorder)
-						{
-							v1_prev = cur->pair_edge;
-							v1_next = v1_prev->next_edge;
-						}
-						HE_edge* temp = loopFind(cur->pair_edge->next_edge,v2,v1);
-						if(temp && temp->pair_edge->end_vertex == cur->pair_edge->next_edge->end_vertex)
-						{
-							if(bExclusiveBorder)
-							{
-								//twist mesh structure
-									
-								v2_prev = temp;
-								v1_next = cur->pair_edge->next_edge;
-
-								if(v2_prev->next_edge != v2_next)
-								{
-									HE_edge* freeInner = getNextFreeInner(v2_next->pair_edge);
-									HE_edge* p = getPrevEdge(v2_next);
-
-									if(freeInner == v2_prev)
-										return false; // not mergable
-					
-									HE_edge* buffer =freeInner->next_edge;
-
-									freeInner->next_edge = v2_prev->next_edge;
-									v2_prev->next_edge = v2_next;
-									p->next_edge = buffer;
-								}
-
-								if(v1_prev->next_edge != v1_next)
-								{
-									HE_edge* freeInner = getNextFreeInner(v1_next->pair_edge);
-									HE_edge* p = getPrevEdge(v1_next);
-
-									if(freeInner == v1_prev)
-										return false; // not mergable
-					
-									HE_edge* buffer =freeInner->next_edge;
-
-									freeInner->next_edge = v1_prev->next_edge;
-									v1_prev->next_edge = v1_next;
-									p->next_edge = buffer;
-								}
-
-								assert(v1_prev->next_edge == v1_next);
-								assert(v2_prev->next_edge == v2_next);
-									
-								assert(v1_prev->end_vertex == v1);
-								assert(v2_prev->end_vertex == v2);
-
-								assert(v1_next->end_vertex == v2_prev->pair_edge->end_vertex);
-								assert(v2_next->end_vertex == v1_prev->pair_edge->end_vertex);
-
-								break;
-							}
-									
-							assert(!bExclusiveBorder || v1_prev == cur->pair_edge);
-							v2_prev = temp;
-							v2_next = temp->next_edge;
-							bExclusiveBorder = true;
-							break;
-						}
-					}
-					cur = cur->pair_edge->next_edge;
-				}
-				while(cur != v1->edge);
-
-				if(!v1_next && v2->edge)
-					return false;
-
-			}
-		}*/
 
 		bool twistEdgeConnect(HE_edge* i,HE_edge* o)
 		{
@@ -1869,91 +1806,72 @@ namespace _EditableMeshInternal {
 			return true;
 		}
 
+		inline static HE_edge_pair* getPair(HE_edge* e)
+		{
+			if( e->pair_edge < e)
+				return reinterpret_cast<HE_edge_pair*>(e->pair_edge);
+			else
+				return reinterpret_cast<HE_edge_pair*>(e);
+		}
+		inline static const HE_edge_pair* getPair(const HE_edge* e)
+		{
+			if( e->pair_edge < e)
+				return reinterpret_cast<const HE_edge_pair*>(e->pair_edge);
+			else
+				return reinterpret_cast<const HE_edge_pair*>(e);
+		}
+
+		inline void internalRemove(HE_edge_pair* e)
+		{
+			_unusedEdges++;
+			_edges[(size_t)e->index] = nullptr;
+ 			delete e;
+		}
 		inline void internalRemove(HE_edge* e)
 		{
-			_edgesFree.push_back(e->index);
-			_edgesFree.push_back(e->pair_edge->index);
-			_edges[(size_t)e->index] = nullptr;
-			_edges[(size_t)e->pair_edge->index] = nullptr;
-
-			HE_edge* less = ( (e<e->pair_edge) ? e : (e->pair_edge) );
-
-			assert(less->pair_edge > less);
- 			delete [] less;
+			internalRemove(getPair(e));
 		}
 		inline void internalRemove(HE_face* f)
 		{
-			_facesFree.push_back(f->index);
+			_unusedFaces++;
 			_faces[(size_t)f->index] = nullptr;
  			delete f;
 		}
 		inline void internalRemove(HE_vert* v)
 		{
-			_verticesFree.push_back(v->index);
+			_unusedVertices++;
 			_vertices[(size_t)v->index] = nullptr;
  			delete v;
 		}
 
 		inline HE_edge* internalAllocEdge()
 		{
-			HE_edge* e= new HE_edge[2];
-			e->pair_edge = &e[1];
-			e->pair_edge->pair_edge = e;
-			if(!_edgesFree.empty())
-			{
-				e->index = _edgesFree.front();
-				_edges[(size_t)e->index] = e;
-				_edgesFree.pop_front();
-				e->pair_edge->index = _edgesFree.front();
-				_edges[(size_t)e->pair_edge->index] = e->pair_edge;
-				_edgesFree.pop_front();
-			}
-			else
-			{
-				e->index = _edges.size();
-				e->pair_edge->index = _edges.size() +1;
-				_edges.push_back(e);
-				_edges.push_back(e->pair_edge);
-			}
-			return e;
+			HE_edge_pair* e= new HE_edge_pair;
+			e->edges[0].pair_edge = &e->edges[1];
+			e->edges[1].pair_edge = &e->edges[0];
+			e->index = _edges.size();
+			_edges.push_back(e);
+			return &e->edges[0];
 		}
 
 		inline HE_face* internalAllocFace()
 		{
 			HE_face* f = new HE_face;
-			if(!_edgesFree.empty())
-			{
-				f->index = _facesFree.front();
-				_faces[(size_t)f->index] = f;
-				_facesFree.pop_front();
-			}
-			else
-			{
-				f->index = _faces.size();			
-				_faces.push_back(f);
-			}
+			f->index = _faces.size();			
+			_faces.push_back(f);
 			return f;
 		}
 		inline HE_vert* internalAllocVert()
 		{
 			HE_vert* v = new HE_vert;
-			if(!_verticesFree.empty())
-			{
-				v->index = _verticesFree.front();
-				_vertices[(size_t)v->index] = v;
-				_verticesFree.pop_front();
-			}
-			else
-			{
-				v->index = _vertices.size();			
-				_vertices.push_back(v);
-			}
+			v->index = _vertices.size();			
+			_vertices.push_back(v);
 			return v;
 		}
 
 		inline const HE_edge* getInternal(const Edge& e) const
 		{
-			return (const HE_edge*)e.internal_data;
+			return (const HE_edge*)&e.internal_data->edges[0];
 		}
 		inline const HE_vert* getInternal(const Vertex& v) const
 		{
@@ -1966,7 +1884,7 @@ namespace _EditableMeshInternal {
 
 		inline HE_edge* getInternal(const Edge& e)
 		{
-			return ((HE_edge*)e.internal_data);
+			return ((HE_edge*)&e.internal_data->edges[0]);
 		}
 		inline HE_vert* getInternal(const Vertex& v)
 		{
@@ -1977,11 +1895,13 @@ namespace _EditableMeshInternal {
 			return ((HE_face*)f.internal_data);
 		}
 
+		inline Edge getExternal(const HE_edge_pair* e) const
+		{
+			return Edge(const_cast<HE_edge_pair*>(e));
+		}
 		inline Edge getExternal(const HE_edge* e) const
 		{
-			if(e==nullptr)
-				return nullEdge;
-			return e<e->pair_edge?Edge(const_cast<HE_edge*>(e)):Edge(const_cast<HE_edge*>(e->pair_edge));
+			return Edge(getPair(const_cast<HE_edge*>(e)));
 		}
 		inline Vertex getExternal(const HE_vert* v) const
 		{
@@ -2044,13 +1964,14 @@ namespace _EditableMeshInternal {
 				(f->index < _faces.size()) && 
 				(f == _faces[(size_t)f->index]);
 		}
-		inline bool isValid(const HE_edge* e) const
+		inline bool isValid(const HE_edge* h) const
 		{
+			const HE_edge_pair* p = h?getPair(h):nullptr;
 			return 
-				(e!=nullptr) && 
-				(e->end_vertex!=nullptr) && 
-				(e->index < _edges.size()) && 
-				(e == _edges[(size_t)e->index]);
+				(p!=nullptr) && 
+				(h->end_vertex!=nullptr) && 
+				(p->index < _edges.size()) && 
+				(p == _edges[(size_t)p->index]);
 		}
 		inline bool isValid(const HE_vert* v,bool ignore_invalidated = false) const
 		{
@@ -2098,88 +2019,5 @@ template<class _VertexType = Vector3<>, class _FaceType = void, class _EdgeType 
 
 
 }
-/*
-			HE_vert* vp[PolySize][2];
-			HE_edge* potential_edges[PolySize];
-			for(int i = 0 ; i < PolySize; ++i)
-			{
-				if(!isValid(v[i],true))
-					return nullFace;
-				vp[i][0] = v[i];
-				vp[i][1] = v[(i+1)%PolySize];
-				potential_edges[i] = getInternal(GetEdge(MakePair(vertices[i],vertices[(i+1)%PolySize])));
-			}
-			
-			int num_existing_edges = 0;
-
-			//check orientation of used edges
-			for(int i = 0 ; i < PolySize; ++i)
-				if(potential_edges[i])
-				{
-					if(potential_edges[i]->face)
-						potential_edges[i] = potential_edges[i]->pair_edge;
-		
-					if(potential_edges[i]->face)//both sides in use
-						return nullFace;
-							
-					if(potential_edges[i]->pair_edge->end_vertex != vp[i][0] || potential_edges[i]->end_vertex != vp[i][1])
-						return nullFace; // wrong orientation
-
-					num_existing_edges ++;
-				}
-
-			//everything ok add face
-			HE_face* f = internalAllocFace();
-			f->edge = nullptr;
-
-			//everything ok now add the edges
-			for(int i = 0 ; i < PolySize; ++i)
-			{
-				if(potential_edges[i])
-				{
-					potential_edges[i] -> face = f;
-					if(f->edge == nullptr)
-						f->edge = potential_edges[i];
-				}
-				else
-				{
-					//add new edges
-					potential_edges[i] = internalAllocEdge();
-					potential_edges[i]->end_vertex = vp[i][1];
-					potential_edges[i]->face = f;
-					potential_edges[i]->next_edge = nullptr;
-
-					potential_edges[i]->pair_edge->end_vertex = vp[i][0];
-					potential_edges[i]->pair_edge->face = f;
-					potential_edges[i]->pair_edge->next_edge = nullptr;
-				}
-			}
-
-			// fix outer next_edges
-			for(int i = 0 ; i < PolySize; ++i)
-				if(potential_edges[i]->pair_edge->next_edge == nullptr)
-				{
-					if(potential_edges[i]->pair_edge->end_vertex->edge == nullptr)
-					{
-						potential_edges[i]->pair_edge->end_vertex->edge = potential_edges[i];
-						potential_edges[i]->pair_edge->next_edge = potential_edges[(i+2)%PolySize]->pair_edge;
-					}
-					else
-					{
-						HE_edge* outer = potential_edges[i]->pair_edge->end_vertex->edge;
-		
-						//find edge poitning away from this vertex who's pair is an outer
-						while(outer->pair_edge->face != nullptr)
-							outer = outer->pair_edge->next_edge;
-
-						potential_edges[i]->pair_edge->next_edge = outer->pair_edge->next_edge;
-						outer->pair_edge->next_edge = potential_edges[i]->pair_edge;
-					}
-				}
-
-			// fix inner edges
-			for(int i = 0 ; i < PolySize; ++i)
-				potential_edges[i]->next_edge = potential_edges[(i+1)%PolySize];
-*/
 
 #endif

@@ -19,11 +19,11 @@ namespace HAGE {
 	template<class _source,class _dest> class ConversionFunctor
 	{
 	public:
-		_dest&& operator()(_source& s) const
+		_dest operator()(_source& s) const
 		{
 			return (_dest)s;
 		}
-		const _dest&& operator()(const _source& s) const
+		const _dest operator()(const _source& s) const
 		{
 			return (const _dest)s;
 		}
@@ -61,7 +61,7 @@ namespace HAGE {
 			}
 			else
 			{
-				yMin = parent.split_location.x;
+				yMin = parent.split_location.y;
 				yMax = parent.yMax;
 			}
 				
@@ -81,7 +81,7 @@ namespace HAGE {
 						
 		bool operator()(const _element& inserted,const std::vector<_element>& elements,size_t depth)
 		{
-			if(elements.size() > max_elements && std::min(std::min(xMax-xMin,yMax-yMin),zMax-zMin) > 0.01f)
+			if(elements.size() > max_elements && std::min(std::min(xMax-xMin,yMax-yMin),zMax-zMin) > 0.0001f)
 			{
 					
 				split_location = Vector3<>((xMin+xMax)/2.0f,(yMin+yMax)/2.0f,(zMin+zMax)/2.0f);
@@ -131,6 +131,8 @@ namespace HAGE {
 		}
 			
 	private:
+
+		OctSplitter() {}
 		const _converter converter;
 		Vector3<> split_location;
 		f32 xMin,xMax;

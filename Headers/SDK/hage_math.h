@@ -201,6 +201,10 @@ public:
 	template<class _T2> Vector3(const _T2& _1,const Vector2<_T2>& _v) : x((const _T&)_1),y((const _T&)_v.x),z((const _T&)_v.y)
 	{
 	}
+	
+	template<class _T2> Vector3(const Vector3<_T2>& _v) : x((const _T&)_v.x),y((const _T&)_v.y),z((const _T&)_v.z)
+	{
+	}
 
 	Vector3(){};
 
@@ -209,6 +213,14 @@ public:
 	bool operator ==(const Vector3<_T>& v2)
 	{
 		return (x==v2.x) && (y==v2.y) && (z==v2.z);
+	}
+	
+	template<class _T2> Vector3<_T>& operator = (const Vector3<_T2>& _v) 
+	{
+		x = ((const _T&)_v.x);
+		y = ((const _T&)_v.y);
+		z = ((const _T&)_v.z);
+		return *this;
 	}
 
 	// math operations
@@ -351,7 +363,11 @@ public:
 	{
 	}
 
-	Vector4(const Vector3<>& _v,const _T& _4) : x(_v.x),y(_v.y),z(_v.z),w(_4)
+	template<class _T2> Vector4(const Vector3<_T2>& _v,const _T& _4) : x((_T)_v.x),y((_T)_v.y),z((_T)_v.z),w(_4)
+	{
+	}
+	
+	template<class _T2> Vector4(const Vector4<_T2>& _v) : x((_T)_v.x),y((_T)_v.y),z((_T)_v.z),w((_T)_v.w)
 	{
 	}
 
@@ -361,6 +377,18 @@ public:
 
 	Vector4()
 	{
+	}
+
+	//assignment
+
+	
+	template<class _T2> Vector4<_T>& operator = (const Vector4<_T2>& _v) 
+	{
+		x = ((const _T&)_v.x);
+		y = ((const _T&)_v.y);
+		z = ((const _T&)_v.z);
+		w = ((const _T&)_v.w);
+		return *this;
 	}
 
 	// math operations
@@ -634,7 +662,7 @@ template<class _T = f32> struct Matrix4
 	// advanced operations
 
 	//Invert code from Intel paper Streaming SIMD Extensions - Inverse of 4x4 Matrix (Ref AP-928)
-	const Matrix4<_T> Invert() const
+	const Matrix4<_T> Invert(_T* pDet = nullptr) const
 	{
 		_T tmp[12];
 		_T det;
@@ -672,6 +700,8 @@ template<class _T = f32> struct Matrix4
 		/* calculate determinant */
 		det=src[0]*dst[0]+src[1]*dst[1]+src[2]*dst[2]+src[3]*dst[3];
 
+		if(pDet)
+			*pDet = det;
 		//return nan if determinant is zero
 		if(IsZero<_T>(det))
 			return Matrix4<_T>::NaN();
@@ -775,35 +805,36 @@ template<class _T = f32> struct Matrix4
 	  nullity, integer
 	*/
 
-	const Matrix4<_T>& Cholesky() const
+	const Matrix4<_T> Cholesky() const
 	{
-	  Matrix4<_T> U;/*
-	  Matrix4x4& A = *this;
-	  static const Real TOOSMALL ((Real) 0.0);
+	  Matrix4<_T> U = Matrix4<_T>::Zero();
+	  Matrix4<_T> A = *this;
+	  static const _T TOOSMALL ((_T) 0.0);
 	  static const int N = 4;
 	  int nullity = 0;
 	  int row, j, k;
-	  Real sum;
+	  _T sum;
 
 	  for (row=0; row<N; row++) {
-		sum = A(row,row);
-		for (j=0; j<=(row-1); j++) sum -= U(j,row)*U(j,row);
+		sum = A.v[row*4+row];
+		for (j=0; j<=(row-1); j++) sum -= U.v[j*4+row]*U.v[j*4+row];
 		if (sum > TOOSMALL) {
-		  U(row, row) = sqrt(sum);
+		  U.v[row*4+row] = sqrt(sum);
 		  for (k=(row+1); k<N; k++) {
-			sum = A(row, k);
+			sum = A.v[row*4+k];
 			for (j=0; j<=(row-1); j++)
-			  sum -= U(j,row)*U(j,k);
-			U(row,k) = sum/U(row, row);
+			  sum -= U.v[j*4+row]*U.v[j*4+k];
+			U.v[row*4+k] = sum/U.v[row*4+row];
 		  }
 		}
 		else { 
-		  for (k=row; k<N; k++) U(row, k) = 0.0;
+		  for (k=row; k<N; k++) U.v[row*4+k] = 0.0;
 		  nullity++;
 		}
 	  }
 
-	  return (nullity==0);*/
+	  if(nullity != 0)
+		  return Matrix4<_T>::NaN();
 
 	  return U;
 	}
@@ -814,5 +845,5 @@ template<class _T = f32> struct Matrix4
 #endif
 
 #include "EditableMesh.h"
-#include "MeshUtils.h"
+#include "MeshEx.h"
 #include "SpatialTree.h"

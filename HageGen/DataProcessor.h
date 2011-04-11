@@ -16,8 +16,12 @@ namespace HAGE
 		DataProcessor(u32 xStart,u32 xEnd,u32 yStart,u32 yEnd);
 		~DataProcessor();
 
+		const static bool bProcessMesh = true;
+		const static bool bProcessTexture = false;
+
 		bool Process();
 	private:
+
 		
 		class DataItem
 		{
@@ -48,7 +52,23 @@ namespace HAGE
 
 		u32 _xBegin,_xEnd,_yBegin,_yEnd;
 		
-		typedef CEditableMesh<> MeshType;
+		typedef HAGE::set<HAGE::MeshGeometryFeature,HAGE::MeshDecimatorFeature<f32>> MeshFeatures;
+
+		
+		struct VertexData : public HAGE::MinVertexType<MeshFeatures>::type
+		{
+			operator Vector3<>&()
+			{
+				return Position;
+			}
+			operator const Vector3<>&() const
+			{
+				return Position;
+			}
+		};
+
+		typedef HAGE::HageMeshEx< MeshFeatures , VertexData> MeshType;
+
 		MeshType	_mesh;
 		SparseVirtualTextureGenerator hsvt;
 		Vector3<> min,max;//extents of the mesh

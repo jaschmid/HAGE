@@ -144,6 +144,15 @@
     <ClInclude Include="Headers\SDK\SparseVirtualTextureFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\SDK\MeshExGeometry.h">
+      <Filter>Header Files\Hage Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\MeshExDecimator.h">
+      <Filter>Header Files\Hage Math</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\sdk\MeshEx.h">
+      <Filter>Header Files\Hage Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">
