@@ -255,14 +255,21 @@ namespace HAGE {
 			_Precision det;
 			Matrix4<_Precision> QEdge = vp[0]->Quadric + vp[1]->Quadric;
 			Matrix4<_Precision> QEdgeInv = Matrix4<_Precision>(QEdge.Row(0),QEdge.Row(1),QEdge.Row(2),Vector4<_Precision>(0.0,0.0,0.0,1.0)).Invert(&det);
-			
+			bool bValueAccepted = false;
+
 			if(!QEdgeInv.IsNaN() && det > COST_EPSILON)
 			{
 				Vector4<_Precision> vIdeal = QEdgeInv*Vector4<_Precision>(0.0f,0.0f,0.0f,1.0f);
 				e->DecimationPosition = vIdeal.xyz();
 				e->Cost = vIdeal*(QEdge*vIdeal);
+
+				//sanity check, if we moved out point by more than 2 times the edge length, something is wrong
+				//prefer the other solution then
+				if( !(e->DecimationPosition - vp[0]->Position) < 4*!(vp[1]->Position - vp[0]->Position) )
+					bValueAccepted = true;
 			}
-			else
+			
+			if(!bValueAccepted)
 			{
 				Vector4<_Precision> vM = Vector4<f64>((vp[0]->Position + vp[1]->Position)/2.0f,1.0f);
 				Vector4<_Precision> v1 = Vector4<f64>(vp[0]->Position,1.0f);
