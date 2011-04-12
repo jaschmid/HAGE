@@ -835,6 +835,86 @@ namespace _EditableMeshInternal {
 				}
 		}
 
+		Vertex SplitEdge(const Edge& edge)
+		{
+			if(!isValid(edge))
+				return nullVertex;
+
+			HE_edge* e = getInternal(edge);
+
+			HE_edge* pair_prev = getPrevEdge(e->pair_edge);
+
+			//first naively split the edge creating 2 4-gons
+
+			HE_edge* v = internalAllocVert();
+			HE_edge* e2 = internalAllocEdge();
+
+			e2->next_edge = e->next_edge;
+			e2->end_vertex = e->end_vertex;
+
+			e2->pair_edge->next_edge = e->pair_edge;
+			e2->pair_edge->end_vertex = v;
+
+			e->next_edge = e2;
+			pair_prev->next_edge = e2->pair_edge;
+
+			e->end_vertex = v;
+
+			v->edge = e2;
+
+			//check if we have faces to split
+
+			if(e->face)
+			{
+				HE_edge* e_side = internalAllocEdge();
+				HE_face* f_side = internalAllocFace();
+
+				f_side->edge = e2;
+				e2->face = f_side;
+
+				e_side->face = e->face;
+				e_side->pair_edge->face = f_side;
+				e2->next_edge->face = f_side;
+
+				e_side->next_edge = e2->next_edge->next_edge;
+				e_side->pair_edge->next_edge = e2;
+
+				e_side->end_vertex = e2->next_edge->end_vertex;
+				e_side->pair_edge->end_vertex = e->end_vertex;
+
+				e2->next_edge->next_edge = e_side->pair_edge;
+				e->next_edge = e_side;
+			}
+			else
+				e2->face = nullptr;
+
+			if(e->pair_edge->face)
+			{
+				HE_edge* e_side = internalAllocEdge();
+				HE_face* f_side = internalAllocFace();
+
+				f_side->edge = e2->pair_edge;
+				e2->pair_edge->face = f_side;
+
+				e_side->face = f_side;
+				e_side->pair_edge->face = e->pair_edge->face;
+				e->pair_edge->next_edge->next_edge->face = f_side;
+
+				e_side->next_edge = e->pair_edge->next_edge->next_edge;
+				e_side->pair_edge->next_edge = e->pair_edge;
+
+				e_side->end_vertex = e->pair_edge->next_edge->end_vertex;
+				e_side->pair_edge->end_vertex = e->end_vertex;
+
+				e->pair_edge->next_edge = e_side->pair_edge;
+				e2->pair_edge->next_edge = e_side;
+			}
+			else
+				e2->pair_edge->face = nullptr;
+
+			return getExternal(v);
+		}
+
 		Face InsertFace(const VertexTriple& vertices)
 		{
 			// find if we're re-using any old edges
