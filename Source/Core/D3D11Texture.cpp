@@ -1,28 +1,31 @@
 #include "Hage.h"
 #include "D3D11APIWrapper.h"
 
-D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
-	: _pWrapper(pWrapper),_xSize(xSize),_ySize(ySize),_mipLevels(mipLevels),_format(format),_miscFlags(miscFlags),_texture(nullptr),_shaderResourceView(nullptr),_renderTargetView(nullptr),_depthStencilView(nullptr)
+D3D11_TEXTURE2D_DESC APIWToD3D11Texture2DDesc(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels,HAGE::APIWFormat format,HAGE::u32 miscFlags)
 {
 	D3D11_TEXTURE2D_DESC desc;
 	desc.ArraySize = 1;
-	desc.Format = APIWFormatToD3DFormat(_format);
+	desc.Format = APIWFormatToD3DFormat(format);
 	desc.Height = ySize;
 	desc.Width = xSize;
 	desc.MipLevels = mipLevels;
 	desc.MiscFlags = 0;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
-	if(_miscFlags & HAGE::TEXTURE_CPU_WRITE)
+
+	if(miscFlags & HAGE::TEXTURE_CPU_WRITE || miscFlags & HAGE::TEXTURE_CPU_READ)
 	{
-		desc.Usage = D3D11_USAGE_DYNAMIC ;
-		desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		desc.Usage = D3D11_USAGE_STAGING ;
+		desc.CPUAccessFlags = 0;
+		if(miscFlags & HAGE::TEXTURE_CPU_WRITE)
+			desc.CPUAccessFlags |=D3D11_CPU_ACCESS_WRITE;
+		if(miscFlags & HAGE::TEXTURE_CPU_READ)
+			desc.CPUAccessFlags |=D3D11_CPU_ACCESS_READ;
+
+		assert(!(miscFlags & HAGE::TEXTURE_GPU_WRITE || miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL));
+		assert(miscFlags & HAGE::TEXTURE_GPU_NO_READ);
 	}
-	else if(_miscFlags & HAGE::TEXTURE_CPU_READ)
-	{
-		assert(!"Currently don't support staging resources");
-	}
-	else if(!(_miscFlags & HAGE::TEXTURE_GPU_WRITE || _miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL))
+	else if(!(miscFlags & HAGE::TEXTURE_GPU_WRITE || miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL || HAGE::TEXTURE_GPU_COPY))
 	{
 		desc.Usage = D3D11_USAGE_IMMUTABLE ;
 		desc.CPUAccessFlags = 0;
@@ -35,15 +38,15 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 
 	desc.BindFlags = 0;
 
-	if(!(_miscFlags & HAGE::TEXTURE_GPU_NO_READ))
+	if(!(miscFlags & HAGE::TEXTURE_GPU_NO_READ))
 	{
 		desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 	}
-	if(_miscFlags & HAGE::TEXTURE_GPU_WRITE)
+	if(miscFlags & HAGE::TEXTURE_GPU_WRITE)
 	{
 		desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
 	}
-	if(_miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL)
+	if(miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL)
 	{
 		switch(desc.Format)
 		{
@@ -61,11 +64,19 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 
 	desc.MiscFlags = 0;
 
-	if(_miscFlags & HAGE::TEXTURE_CUBE )
+	if(miscFlags & HAGE::TEXTURE_CUBE )
 	{
 		desc.ArraySize = 6;
 		desc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE ;
 	}
+	return desc;
+}
+
+
+D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
+	: _pWrapper(pWrapper),_xSize(xSize),_ySize(ySize),_mipLevels(mipLevels),_format(format),_miscFlags(miscFlags),_texture(nullptr),_shaderResourceView(nullptr),_renderTargetView(nullptr),_depthStencilView(nullptr),_query(nullptr)
+{
+	D3D11_TEXTURE2D_DESC desc = APIWToD3D11Texture2DDesc(_xSize,_ySize,_mipLevels,_format,_miscFlags);
 
 	D3D11_SUBRESOURCE_DATA data[16];
 	D3D11_SUBRESOURCE_DATA* pLocalData = nullptr;
@@ -201,8 +212,137 @@ void D3D11Texture::Clear(HAGE::Vector4<> vColor)
 
 D3D11Texture::~D3D11Texture()
 {
+	if(_query)
+		_query->Release();
+	if(_shaderResourceView)
+		_shaderResourceView->Release();
+	if(_renderTargetView)
+		_renderTargetView->Release();
+	if(_depthStencilView)
+		_depthStencilView->Release();
+	if(_texture)
+		_texture->Release();
 }
 
 void D3D11Texture::GenerateMips()
+{
+	assert(_shaderResourceView);
+	_pWrapper->GetContext()->GenerateMips(_shaderResourceView);
+}
+
+
+void D3D11Texture::StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pTarget) const
+{
+	if(! (_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ) )
+	{
+		assert(!"Not supported yet");
+
+		// copy texture to pbo	
+		assert(_miscFlags & HAGE::TEXTURE_GPU_COPY); 
+		D3D11Texture* target = (D3D11Texture*)pTarget;
+
+		assert(target->_miscFlags & HAGE::TEXTURE_CPU_READ); 
+
+		//settings have to match
+		assert(target->_xSize == _xSize);
+		assert(target->_ySize == _ySize);
+		assert(target->_mipLevels == _mipLevels);
+		assert(target->_format == _format);
+
+		D3D11_BOX box;
+		box.left = xOff;
+		box.right = xOff+xSize;
+		box.top = yOff;
+		box.bottom = yOff+ySize;
+		box.front = 0;
+		box.back = 1;
+
+		_pWrapper->GetContext()->CopySubresourceRegion(_texture,0,xOff,yOff,0,target->_texture,0,&box);
+
+		if(!_query)
+		{
+			D3D11_QUERY_DESC query_desc;
+			query_desc.MiscFlags=0;
+			query_desc.Query = D3D11_QUERY_EVENT;
+			_pWrapper->GetDevice()->CreateQuery(&query_desc,&_query);
+			_pWrapper->GetContext()->End(_query);
+		}
+		if(!target->_query)
+		{
+			D3D11_QUERY_DESC query_desc;
+			query_desc.MiscFlags=0;
+			query_desc.Query = D3D11_QUERY_EVENT;
+			_pWrapper->GetDevice()->CreateQuery(&query_desc,&target->_query);
+			_pWrapper->GetContext()->End(target->_query);
+		}
+	}
+	else
+	{
+		//copy pbo to texture
+		D3D11Texture* target = (D3D11Texture*)pTarget;
+
+		assert(target->_miscFlags & HAGE::TEXTURE_GPU_COPY); 
+
+		assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
+
+		//settings have to match
+		assert(target->_xSize == _xSize);
+		assert(target->_ySize == _ySize);
+		assert(target->_mipLevels == _mipLevels);
+		assert(target->_format == _format);
+
+		D3D11_BOX box;
+		box.left = xOff;
+		box.right = xOff+xSize;
+		box.top = yOff;
+		box.bottom = yOff+ySize;
+		box.front = 0;
+		box.back = 1;
+		
+		_pWrapper->GetContext()->CopySubresourceRegion(_texture,0,xOff,yOff,0,target->_texture,0,&box);
+		
+		if(!_query)
+		{
+			D3D11_QUERY_DESC query_desc;
+			query_desc.MiscFlags=0;
+			query_desc.Query = D3D11_QUERY_EVENT;
+			_pWrapper->GetDevice()->CreateQuery(&query_desc,&_query);
+			_pWrapper->GetContext()->End(_query);
+		}
+		if(!target->_query)
+		{
+			D3D11_QUERY_DESC query_desc;
+			query_desc.MiscFlags=0;
+			query_desc.Query = D3D11_QUERY_EVENT;
+			_pWrapper->GetDevice()->CreateQuery(&query_desc,&target->_query);
+			_pWrapper->GetContext()->End(target->_query);
+		}
+	}
+}
+
+bool D3D11Texture::IsStreamComplete()
+{
+	BOOL data;
+	_pWrapper->GetContext()->GetData(_query, &data, sizeof(BOOL), 0);
+	return data;
+}
+
+void D3D11Texture::WaitForStream()
+{
+	BOOL data;
+	while( S_OK != _pWrapper->GetContext()->GetData(_query, &data, sizeof(BOOL), 0) );
+}
+
+HAGE::u32 D3D11Texture::ReadTexture(const HAGE::u8** ppBufferOut) const
+{
+	return 0;
+}
+
+HAGE::u32 D3D11Texture::LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags)
+{
+	return 0;
+}
+
+void D3D11Texture::UnlockTexture()
 {
 }

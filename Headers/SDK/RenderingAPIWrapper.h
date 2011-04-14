@@ -15,12 +15,23 @@
 
 namespace HAGE {
 
+
+
+class APIWObject
+{
+protected:
+	virtual ~APIWObject(){}
+
+	friend class RenderingAPIAllocator;
+};
+
 class APIWVertexBuffer;
 class APIWEffect;
 class APIWConstantBuffer;
 struct VertexDescriptionEntry;
 class APIWVertexArray;
 class APIWTexture;
+class APIWSystemBuffer;
 
 typedef enum _APIWPrimitiveType
 {
@@ -114,7 +125,8 @@ typedef enum _APIWTextureFlags
 	TEXTURE_CPU_READ			= 0x00000004,
 	TEXTURE_GPU_WRITE			= 0x00000008,
 	TEXTURE_GPU_NO_READ			= 0x00000010,
-	TEXTURE_GPU_DEPTH_STENCIL	= 0x00000020
+	TEXTURE_GPU_DEPTH_STENCIL	= 0x00000020,
+	TEXTURE_GPU_COPY			= 0x00000040
 } APIWTextureFlags;
 typedef enum _APIWFilterFlags
 {
@@ -326,8 +338,10 @@ public:
 		const APIWRasterizerState* pRasterizerState = &DefaultRasterizerState, 
 		const APIWBlendState* pBlendState = &DefaultBlendState,const u32 nBlendStates = 1, bool AlphaToCoverage = false,
 		const APIWSampler* pSamplers= nullptr,u32 nSamplers = 0) = 0;
+
 	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData,u32 nDataSize = 0) = 0;
-	//virtual APIWSampler* CreateSampler(APIWSamplerState* pSamplerState) = 0;
+
+	virtual void FreeObject(APIWObject* pObject) = 0;
 
 	virtual void BeginAllocation() = 0;
 	virtual void EndAllocation() = 0;
@@ -338,8 +352,12 @@ public:
 	virtual	HAGE::Matrix4<> GenerateRenderTargetProjectionBase() = 0;
 
 	static RenderingAPIAllocator* QueryAPIAllocator(){return _pAllocator;}
+
 protected:
+
 	static RenderingAPIAllocator* _pAllocator;
+
+	static void freeObject(APIWObject* pObject){delete pObject;}
 };
 
 class RenderingAPIWrapper : public RenderingAPIAllocator
@@ -357,39 +375,42 @@ public:
 	virtual void UpdateDisplaySettings(const APIWDisplaySettings* pSettings) = 0;
 };
 
-class APIWVertexBuffer
+class APIWVertexBuffer : public APIWObject
 {
 public:
-	virtual ~APIWVertexBuffer(){}
 	virtual void UpdateContent(const void* pData)=0;
 };
 
-class APIWVertexArray
+class APIWVertexArray : public APIWObject
 {
 public:
-	virtual ~APIWVertexArray(){}
 };
 
-class APIWTexture
+class APIWTexture : public APIWObject
 {
 public:
 	virtual void Clear(Vector4<> Color) = 0;
 	virtual void Clear(bool bDepth,float depth,bool bStencil = false,u32 stencil = 0) = 0;
 	virtual void GenerateMips() = 0;
-	virtual ~APIWTexture(){}
+
+	virtual void StreamToTexture(u32 xOff,u32 yOff,u32 xSize,u32 ySize,APIWTexture* pTarget) const = 0;
+	virtual bool IsStreamComplete() = 0;
+	virtual void WaitForStream() = 0;
+
+	virtual u32 ReadTexture(const u8** ppBufferOut) const = 0;
+	virtual u32 LockTexture(u8** ppBufferOut,u32 flags) = 0;
+	virtual void UnlockTexture() = 0;
 };
 
-class APIWConstantBuffer
+class APIWConstantBuffer : public APIWObject
 {
 public:
-	virtual ~APIWConstantBuffer(){}
 	virtual void UpdateContent(const void* pData)=0;
 };
 
-class APIWEffect
+class APIWEffect : public APIWObject
 {
 public:
-	virtual ~APIWEffect(){}
 	virtual void SetConstant(const char* pName,const APIWConstantBuffer* constant)=0;
 	virtual void SetTexture(const char* pName,const APIWTexture* texture)=0;
 	virtual void Draw(HAGE::APIWVertexArray* pArray)=0;

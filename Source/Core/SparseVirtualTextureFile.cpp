@@ -277,12 +277,12 @@ namespace HAGE {
 		const u64 vtPageSize = GetPageInnerSize();
 		const u64 vtXPageBegin = vtXOffset / vtPageSize;
 		const u64 vtYPageBegin = vtYOffset / vtPageSize;
-		const u64 vtXPageEnd = (vtXOffset + ImageX)/ vtPageSize + 1;
-		const u64 vtYPageEnd = (vtYOffset + ImageY)/ vtPageSize + 1;
+		const u64 vtXPageEnd = (vtXOffset + ImageX -1)/ vtPageSize + 1;
+		const u64 vtYPageEnd = (vtYOffset + ImageY -1)/ vtPageSize + 1;
 		const u64 vtXPixelBegin = vtXOffset % vtPageSize;
 		const u64 vtYPixelBegin = vtYOffset % vtPageSize;
-		const u64 vtXPixelEnd = (vtXOffset+ImageX) % vtPageSize;
-		const u64 vtYPixelEnd = (vtYOffset+ImageY) % vtPageSize;
+		const u64 vtXPixelEnd = (vtXOffset+ImageX -1) % vtPageSize +1;
+		const u64 vtYPixelEnd = (vtYOffset+ImageY -1) % vtPageSize +1;
 		if(level == -1)
 			level = GetMaxDepth()-1;
 
@@ -318,12 +318,12 @@ namespace HAGE {
 		const u64 vtPageSize = GetPageInnerSize();
 		const u64 vtXPageBegin = vtXOffset / vtPageSize;
 		const u64 vtYPageBegin = vtYOffset / vtPageSize;
-		const u64 vtXPageEnd = (vtXOffset + ImageX)/ vtPageSize + 1;
-		const u64 vtYPageEnd = (vtYOffset + ImageY)/ vtPageSize + 1;
+		const u64 vtXPageEnd = (vtXOffset + ImageX -1)/ vtPageSize + 1;
+		const u64 vtYPageEnd = (vtYOffset + ImageY -1)/ vtPageSize + 1;
 		const u64 vtXPixelBegin = vtXOffset % vtPageSize;
 		const u64 vtYPixelBegin = vtYOffset % vtPageSize;
-		const u64 vtXPixelEnd = (vtXOffset+ImageX) % vtPageSize;
-		const u64 vtYPixelEnd = (vtYOffset+ImageY) % vtPageSize;
+		const u64 vtXPixelEnd = (vtXOffset+ImageX - 1) % vtPageSize + 1;
+		const u64 vtYPixelEnd = (vtYOffset+ImageY - 1) % vtPageSize + 1;
 		if(level == -1)
 			level = GetMaxDepth()-1;
 

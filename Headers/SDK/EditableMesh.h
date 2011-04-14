@@ -454,7 +454,7 @@ namespace _EditableMeshInternal {
 
 		Edge GetFirstVertexEdge(const Vertex& vertex) const { return GetNextVertexEdge(vertex,nullEdge); }
 		Face GetFirstVertexFace(const Vertex& vertex) const { return GetNextVertexFace(vertex,nullFace); }
-		ElementTriple GetFirstVertexElementTriple(const Vertex& vertex) const { return GetNextVertexFace(vertex,ElementTriple(nullEdge,nullVertex,nullFace)); }
+		ElementTriple GetFirstVertexElementTriple(const Vertex& vertex) const { return GetNextVertexElementTriple(vertex,ElementTriple(nullVertex,nullEdge,nullFace)); }
 
 		Edge GetNextVertexEdge(const Vertex& vertex,const Edge& previous_edge) const
 		{

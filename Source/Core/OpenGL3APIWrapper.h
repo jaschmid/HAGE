@@ -249,6 +249,8 @@ public:
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
+
+	void FreeObject(HAGE::APIWObject* pObject){RenderingAPIWrapper::freeObject(pObject);}
 	
 	struct VertexFormatEntry
 	{
@@ -345,7 +347,6 @@ private:
 	friend class OGL3VertexArray;
 };
 
-
 class OGL3Texture : public HAGE::APIWTexture
 {
 public:
@@ -353,6 +354,15 @@ public:
 	void Clear(HAGE::Vector4<> Color);
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
 	void GenerateMips();
+	
+	void StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pTarget) const;
+	bool IsStreamComplete();
+	void WaitForStream();
+
+	HAGE::u32 ReadTexture(const HAGE::u8** ppBufferOut) const;
+	HAGE::u32 LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags);
+	void UnlockTexture();
+
 	virtual ~OGL3Texture();
 private:
 	HAGE::u32			_xSize;
@@ -367,6 +377,8 @@ private:
 	HAGE::f32			_ClearDepth;
 	bool				_bClearStencil;
 	HAGE::u32			_ClearStencil;
+
+	mutable GLsync		_streamSync;
 
 	unsigned int		_tbo;
 	friend class OGL3Effect;

@@ -217,6 +217,7 @@
     <ClInclude Include="Headers\SDK\TLS.h" />
     <ClInclude Include="Headers\SDK\traits.h" />
     <ClInclude Include="Headers\SDK\types.h" />
+    <ClInclude Include="Headers\SDK\VirtualTextureManager.h" />
     <ClInclude Include="Source\Core\CImageLoader.h" />
     <ClInclude Include="Source\Core\CMapLoader.h" />
     <ClInclude Include="Source\Core\CMeshLoader.h" />
@@ -279,6 +280,7 @@
     <ClCompile Include="Source\Core\SparseVirtualTextureFile.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />
     <ClCompile Include="Source\Core\TLS.cpp" />
+    <ClCompile Include="Source\Core\VirtualTextureManager.cpp" />
     <ClCompile Include="Source\Core\WinMain.cpp" />
     <ClCompile Include="Source\Core\XMain.cpp" />
   </ItemGroup>

@@ -16,8 +16,8 @@ namespace HAGE
 		DataProcessor(u32 xStart,u32 xEnd,u32 yStart,u32 yEnd);
 		~DataProcessor();
 
-		const static bool bProcessMesh = true;
-		const static bool bProcessTexture = false;
+		const static bool bProcessMesh = false;
+		const static bool bProcessTexture = true;
 
 		bool Process();
 	private:

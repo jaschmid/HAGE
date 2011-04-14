@@ -245,113 +245,130 @@ OGL3Texture::OGL3Texture(OpenGL3APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 	_mipLevels = mipLevels;
 	_format = format;
 	_miscFlags = miscFlags;
+	_streamSync=nullptr;
 
 	_bClearColor= false;
 	_bClearDepth = false;
 	_bClearStencil = false;
 
 
-	glGenTextures(1,&_tbo);
-	glError();
-	GLenum target= GL_TEXTURE_2D;
-	if(miscFlags & HAGE::TEXTURE_CUBE)
-		target = GL_TEXTURE_CUBE_MAP;
-	glBindTexture(target,_tbo);
-	glError();
-
 	GLenum GL_format = APIWFormatToOGLFormat(format);
 
 	//create texture
-	glError();
-	int w=xSize,h=ySize;
-	int offset = 0;
-	for(int i = 0; i < _mipLevels; ++i)
+	if(_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ)
 	{
-		OGLPixelTransferBuffer Buffer(format,w,h,pData?(&((HAGE::u8*)pData)[offset]):nullptr);
-		int psize = HAGE::APIWFormatImagePhysicalSize(_format,w,h);
-		GLenum GL_pix_format = Buffer._DestFormat;
+		glError();
+		glGenBuffers(1,&_tbo);
 
-		if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
-		{
-			switch(GL_format)
-			{
-			case GL_R16:
-				GL_format = GL_DEPTH_COMPONENT16;
-				break;
-			case GL_R32F:
-				GL_format = GL_DEPTH_COMPONENT32F;
-				break;
-			default:
-				assert(!"Unsupported Depth Buffer Format");
-				break;
-			}
-			GL_pix_format =  GL_DEPTH_COMPONENT;
-		}
-
+		assert(!(_miscFlags & HAGE::TEXTURE_GPU_WRITE || _miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL));
+		assert(_miscFlags & HAGE::TEXTURE_GPU_NO_READ);
+		glError();
+	}
+	else
+	{
+		glGenTextures(1,&_tbo);
+		glError();
+		GLenum target= GL_TEXTURE_2D;
 		if(miscFlags & HAGE::TEXTURE_CUBE)
-		{
-			for(int face = 0;face < 6; ++ face)
-			{
-				if(GL_pix_format == 0) // compressed
-					glCompressedTexImage2DARB(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
-				else
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, GL_pix_format, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
-				glError();
-			}
-		}
-		else
-		{	
-			if(GL_pix_format == 0) // compressed
-				glCompressedTexImage2DARB(GL_TEXTURE_2D, i, GL_format, w, h, 0, Buffer._DestChannel, Buffer._pData);
-			else
-				glTexImage2D(GL_TEXTURE_2D, i, GL_format, w, h, 0, GL_pix_format,	Buffer._DestChannel, Buffer._pData);
-		}
+			target = GL_TEXTURE_CUBE_MAP;
+		glBindTexture(target,_tbo);
 		glError();
 
-		w>>=1;
-		h>>=1;
-		if(w==0)
-			w=1;
-		if(h==0)
-			h=1;
+		glError();
+		int w=xSize,h=ySize;
+		int offset = 0;
+		for(int i = 0; i < _mipLevels; ++i)
+		{
+			OGLPixelTransferBuffer Buffer(format,w,h,pData?(&((HAGE::u8*)pData)[offset]):nullptr);
+			int psize = HAGE::APIWFormatImagePhysicalSize(_format,w,h);
+			GLenum GL_pix_format = Buffer._DestFormat;
 
-		offset += psize;
-	}
+			if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
+			{
+				switch(GL_format)
+				{
+				case GL_R16:
+					GL_format = GL_DEPTH_COMPONENT16;
+					break;
+				case GL_R32F:
+					GL_format = GL_DEPTH_COMPONENT32F;
+					break;
+				default:
+					assert(!"Unsupported Depth Buffer Format");
+					break;
+				}
+				GL_pix_format =  GL_DEPTH_COMPONENT;
+			}
+
+			if(miscFlags & HAGE::TEXTURE_CUBE)
+			{
+				for(int face = 0;face < 6; ++ face)
+				{
+					if(GL_pix_format == 0) // compressed
+						glCompressedTexImage2DARB(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
+					else
+						glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, i, GL_format, w, h, 0, GL_pix_format, Buffer._DestChannel, pData?(&((HAGE::u8*)Buffer._pData)[psize*face]):nullptr);
+					glError();
+				}
+			}
+			else
+			{	
+				if(GL_pix_format == 0) // compressed
+					glCompressedTexImage2DARB(GL_TEXTURE_2D, i, GL_format, w, h, 0, Buffer._DestChannel, Buffer._pData);
+				else
+					glTexImage2D(GL_TEXTURE_2D, i, GL_format, w, h, 0, GL_pix_format,	Buffer._DestChannel, Buffer._pData);
+			}
+			glError();
+
+			w>>=1;
+			h>>=1;
+			if(w==0)
+				w=1;
+			if(h==0)
+				h=1;
+
+			offset += psize;
+		}
 	
-	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mipLevels-1);
+		glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mipLevels-1);
 
-	// set glTexParameter
-	/*glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glError();
-	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glError();
-	glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glError();
-	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glError();
-	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glError();
-	if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
-	{	
-		glTexParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-		glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-		//glTexParameteri(target, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE); 
-	}*/
+		// set glTexParameter
+		/*glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glError();
+		glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glError();
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glError();
+		glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glError();
+		glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glError();
+		if(miscFlags&HAGE::TEXTURE_GPU_DEPTH_STENCIL)
+		{	
+			glTexParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+			glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+			//glTexParameteri(target, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE); 
+		}*/
 
-	glBindTexture(target,0);
+		glBindTexture(target,0);
 
-	glError();
+		glError();
+	}
 }
 
 void OGL3Texture::Clear(HAGE::Vector4<> Color)
 {
+	assert(!(_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ));
+
 	_bClearColor= true;
 	_ClearColor = Color;
 }
 
 void OGL3Texture::Clear(bool bDepth,float depth,bool bStencil,HAGE::u32 stencil )
 {
+	assert(!(_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ));
+
 	if(bDepth)
 	{
 		_bClearDepth = true;
@@ -365,12 +382,29 @@ void OGL3Texture::Clear(bool bDepth,float depth,bool bStencil,HAGE::u32 stencil 
 }
 
 OGL3Texture::~OGL3Texture()
-{
+{	
+	if(_streamSync)
+	{
+		glDeleteSync(_streamSync);
+		_streamSync = nullptr;
+	}
+
+	
+	if(! (_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ) )
+	{
+		//free texture
+		glDeleteTextures(1,&_tbo);
+	}
+	else
+	{
+		//free buffer
+		glDeleteBuffers(1,&_tbo);
+	}
 }
 
 void OGL3Texture::GenerateMips()
 {
-	
+
 	GLenum target= GL_TEXTURE_2D;
 	if(_miscFlags & HAGE::TEXTURE_CUBE)
 		target = GL_TEXTURE_CUBE_MAP;
@@ -379,4 +413,124 @@ void OGL3Texture::GenerateMips()
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(target,_tbo);
+}
+
+
+void OGL3Texture::StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pBuffer) const
+{	
+	if(! (_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ) )
+	{
+		glError();
+		assert(!"Not supported yet");
+
+		// copy texture to pbo	
+		assert(_miscFlags & HAGE::TEXTURE_GPU_COPY); 
+		OGL3Texture* target = (OGL3Texture*)pBuffer;
+
+		assert(target->_miscFlags & HAGE::TEXTURE_CPU_READ); 
+
+		//settings have to match
+		assert(target->_xSize == _xSize);
+		assert(target->_ySize == _ySize);
+		assert(target->_mipLevels == _mipLevels);
+		assert(target->_format == _format);
+
+
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, target->_tbo);
+		glReadPixels(0, 0, _xSize, _ySize, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+
+		if(_streamSync)
+		{
+			glDeleteSync(_streamSync);
+			_streamSync = nullptr;
+		}
+		if(target->_streamSync)
+		{
+			glDeleteSync(target->_streamSync);
+			target->_streamSync = nullptr;
+		}
+
+		_streamSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
+		target->_streamSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
+		glError();
+	}
+	else
+	{
+		glError();
+		//copy pbo to texture
+		glError();
+		OGL3Texture* target = (OGL3Texture*)pBuffer;
+
+		assert(target->_miscFlags & HAGE::TEXTURE_GPU_COPY); 
+
+		assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
+
+		//settings have to match
+		assert(target->_xSize == _xSize);
+		assert(target->_ySize == _ySize);
+		assert(target->_mipLevels == _mipLevels);
+		assert(target->_format == _format);
+
+		glBindTexture(GL_TEXTURE_2D, target->_tbo);
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _tbo);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, xSize, ySize,
+                GL_BGRA, GL_UNSIGNED_BYTE, 0);
+
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glError();
+
+		
+		if(_streamSync)
+		{
+			glDeleteSync(_streamSync);
+			_streamSync = nullptr;
+		}
+		if(target->_streamSync)
+		{
+			glDeleteSync(target->_streamSync);
+			target->_streamSync = nullptr;
+		}
+
+		_streamSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
+		target->_streamSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
+		glError();
+	}
+
+}
+
+bool OGL3Texture::IsStreamComplete()
+{
+	assert(_streamSync);
+	GLenum result =glClientWaitSync(_streamSync,GL_SYNC_FLUSH_COMMANDS_BIT,0);
+
+	if(result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
+		return true;
+	else
+		return false;
+}
+
+void OGL3Texture::WaitForStream()
+{
+	assert(_streamSync);
+	GLenum result = glClientWaitSync(_streamSync,GL_SYNC_FLUSH_COMMANDS_BIT,1000000000);
+	assert(result != GL_TIMEOUT_EXPIRED);
+}
+
+HAGE::u32 OGL3Texture::ReadTexture(const HAGE::u8** ppBufferOut) const
+{
+	assert(_miscFlags & HAGE::TEXTURE_CPU_READ); 
+	return 0;
+}
+
+HAGE::u32 OGL3Texture::LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags)
+{	
+	assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
+	return 0;
+}
+
+void OGL3Texture::UnlockTexture()
+{
+	assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
 }

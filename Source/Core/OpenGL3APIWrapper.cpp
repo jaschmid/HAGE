@@ -2,6 +2,7 @@
 #include "OpenGL3APIWrapper.h"
 #include <string.h>
 #include "ResourceDomain.h"
+#include "VirtualTextureManager.h"
 
 #ifndef NO_OGL
 
@@ -58,6 +59,7 @@ HAGE::RenderingAPIWrapper* OpenGL3APIWrapper::CreateOGL3Wrapper(const HAGE::APIW
 	_pAllocator= pResult;
 	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::IDrawableMesh>::Get(),&HAGE::CDrawableMeshLoader::Initialize);
 	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::ITextureImage>::Get(),&HAGE::CTextureImageLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceStreamingType(HAGE::guid_of<HAGE::IVirtualTexture>::Get(),&HAGE::VirtualTextureManager::LoadVirtualTexture);
 	return pResult;
 }
 

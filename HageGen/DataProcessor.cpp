@@ -9,7 +9,7 @@ namespace HAGE
 		_xBegin(xStart),_xEnd(xEnd),
 		_yBegin(yStart),_yEnd(yEnd)
 	{
-		hsvt.New("landscape.hsvt",128,9,4);
+		hsvt.New("landscape.hsvt",128,10,4);
 
 		for(u32 y=yStart;y<yEnd;++y)
 			for(u32 x=xStart;x<xEnd;++x)

@@ -153,6 +153,9 @@
     <ClInclude Include="Headers\SDK\MeshExGeometry.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\SDK\VirtualTextureManager.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\CoreFactory.cpp">
@@ -271,6 +274,9 @@
     </ClCompile>
     <ClCompile Include="Source\Core\SparseVirtualTextureFile.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\VirtualTextureManager.cpp">
+      <Filter>Source Files\Resources</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

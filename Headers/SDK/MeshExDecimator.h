@@ -29,7 +29,7 @@ namespace HAGE {
 		Vector3<_Precision>	DecimationPosition;
 	};
 
-	const static f64 COST_EPSILON	= 0.00001;
+	const static f64 COST_EPSILON	= 0.0001;
 	
 	template<class _MeshType,class _Features,class _Precision> class ImplMeshDecimatorProcessor
 	{

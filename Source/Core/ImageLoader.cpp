@@ -225,13 +225,15 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 		SparseVirtualTextureFile hsvt;
 		if(hsvt.Open(pData))
 		{
-			_Width = 4096;
-			_Height = 4096;
+			_Width = 5120;
+			_Height = 5120;
 			_Format = R8G8B8A8;
 			_Levels = 1;
 			_Data = new u8[_Width*_Height*sizeof(u32)];
 
-			hsvt.ReadImageFromVirtualTexture(0,0,4096,4096,_Data,6);
+
+			hsvt.ReadImageFromVirtualTexture(0,0,_Width,_Height,_Data,6);
+
 
 			return;
 		}

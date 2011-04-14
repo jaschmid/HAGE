@@ -55,7 +55,7 @@ f32 light3_r 0.7
 f32 light3_g 0.7
 f32 light3_b 0.7
 f32 light3_range 20.0
-string rendering_api opengl
+string rendering_api direct3d
 bool fullscreen false
 u32 x_res 1024
 u32 y_res 768

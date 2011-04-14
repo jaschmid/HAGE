@@ -404,6 +404,10 @@ namespace HAGE {
 
 	void RenderingDomain::DomainStep(t64 time)
 	{
+		TResourceAccess<IVirtualTexture>	vt = GetResource().OpenResource<IVirtualTexture>("t_landscape.hsvt");
+
+		vt->ProvideFeedback();
+
 		pWrapper->BeginFrame();
 
 		const int max_lights = 3;
@@ -567,7 +571,7 @@ namespace HAGE {
 		Samplers[2].State = (Samplers[1].State = Samplers[0].State);
 
 		APIWRasterizerState wireframe = DefaultRasterizerState;
-		wireframe.bWireframe = true;
+		wireframe.bWireframe = false;
 
 		_pEffect = new EffectContainer(pWrapper,default_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
 		_pCelEffect = new EffectContainer(pWrapper,cel_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);

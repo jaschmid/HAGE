@@ -27,6 +27,80 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 	private:
 		
 		u32 RunGarbageCollection();
+		
+		
+		
+
+		class StagedResourceMaster : public StagedResource
+		{
+		public:
+			
+			virtual ~StagedResourceMaster(){ if(pModStage) delete pModStage; }
+			StagedResourceMaster() : StagedResource(0,nullptr,0),pModStage(nullptr) {}
+			u32 GetRefCount() const{return nRefCount;}
+			IResource* FullAccessResource() {return pModStage;}
+			void UpdateStage(u32 newStage,IResource* newResource){nCurrentStage=newStage;pCurrentStage=newResource;pModStage=newResource;}
+
+		protected:
+	
+			IResource* pModStage;
+		};
+		
+		typedef std::function<IResourceLoader* (IDataStream* pStream,const IResource* pPrev)> loaderFunction;
+		typedef std::function<IStreamingResourceProvider* (IDataStream* pStream)> streamingLoaderFunction;
+		typedef	std::unordered_map<tResourceKey,std::vector<StagedResourceMaster*>,key_hasher> tResourceMap;
+		typedef tResourceMap::iterator											tResourceMapReference;
+		typedef std::list<tResourceMapReference>								tStreamerList;
+		typedef std::unordered_map<std::string,IDataArchive*>					archiveMap;
+
+		class StagedResourceMasterStreaming : public  StagedResourceMaster
+		{
+		public:
+
+			StagedResourceMasterStreaming(IStreamingResourceProvider* p,tStreamerList& list,tResourceMapReference ref) : provider(p) , _list(list)
+			{
+				nCurrentStage = 1;
+				pCurrentStage = nullptr;
+				nRefCount = 0xffffffff;
+				pModStage=nullptr;
+				_list.push_front(ref);
+				_listEntry = _list.begin();
+			}
+
+			void ProcessFeedback(const StagedResourceMaster* feedback,u32 idxClient);
+			StagedResourceMaster* OpenStream(u32 idxClient);
+			StagedResourceMaster* ContinueStream(u32 idxClient);
+			void CloseStream(u32 idxClient);
+			u32 GetNumClients(){return clients.size();}
+			virtual ~StagedResourceMasterStreaming();
+
+			u32 RunStreamGarbageCollect();
+
+		private:
+
+			typedef enum _StreamStatus
+			{
+				OPENING,
+				OPEN,
+				CLOSING,
+				CLOSED
+			} StreamStatus;
+
+			struct ClientEntry
+			{
+				std::vector<StagedResourceMaster*>	feedbackBuffers;
+				u32									nFirstUsedBuffer;
+				u32									nUsedBuffers;
+				u32									nFirstAvailableBuffer;
+				StreamStatus						status;
+				StagedResourceMaster				streamingMaster;
+			};
+
+			IStreamingResourceProvider* provider;
+			std::vector< ClientEntry*>  clients;
+			tStreamerList&				_list;
+			tStreamerList::iterator		_listEntry;
+		};
 
 		class CNullStream : public IDataStream
 		{
@@ -57,7 +131,6 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			FILE*		_file;
 		};
 
-		typedef std::function<IResourceLoader* (IDataStream* pStream,const IResource* pPrev)> loaderFunction;
 
 		struct RegisteredResourceManager
 		{
@@ -65,22 +138,27 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			CResourceManager::QueueOutType* outQueue;
 		};
 
-		SStagedResourceMaster* _LoadResource(const char* pName,const guid& type);
+		StagedResourceMaster* _LoadResource(const char* pName,const guid& type);
 		IDataStream* _OpenDataStream(const char* pName);
 
-		const std::unordered_map<guid,SStagedResourceMaster,guid_hasher>& RegisterResourceManager(CResourceManager::QueueInType& in_queue,CResourceManager::QueueOutType& out_queue);
+		const std::unordered_map<guid,StagedResource*,guid_hasher>& RegisterResourceManager(CResourceManager::QueueInType& in_queue,CResourceManager::QueueOutType& out_queue);
 
 		void _RegisterResourceType(const guid& resourceId,const loaderFunction& stage0Loader);
+		void _RegisterResourceStreamingType(const guid& resourceId,const streamingLoaderFunction& streamingLoader);
 
-		std::unordered_map<guid,SStagedResourceMaster,guid_hasher>				_stage0Database;
+		//actually they are all StagedResourceMaster
+		std::unordered_map<guid,StagedResource*,guid_hasher>				_stage0Database;
 		CNullStream																_NullStream;
 		bool																	_registrationLocked;
 
-		std::unordered_multimap<guid,loaderFunction,guid_hasher>							_loaderMap;
-		typedef	std::unordered_map<tResourceKey,std::vector<SStagedResourceMaster*>,key_hasher> tResourceMap;
-		tResourceMap			_centralResourceMap;
+		std::unordered_multimap<guid,loaderFunction,guid_hasher>				_loaderMap;
+		std::unordered_multimap<guid,streamingLoaderFunction,guid_hasher>		_streamingLoaderMap;
 
-		typedef std::unordered_map<std::string,IDataArchive*>					archiveMap;
+
+
+		tResourceMap															_centralResourceMap;
+		tStreamerList															_streamerList;
+
 		archiveMap																_archives;
 
 		std::vector<RegisteredResourceManager>									_clients;

@@ -45,12 +45,12 @@ namespace HAGE {
 		{
 		}
 		
-		Vector3<> CalculateFaceNormal(const Vector3<>& p1,const Vector3<>& p2,const Vector3<>& p3)
+		static Vector3<> CalculateFaceNormal(const Vector3<>& p1,const Vector3<>& p2,const Vector3<>& p3)
 		{
 			return ((p2-p1) % (p3-p1)).normalize();
 		}
 
-		Vector3<> CalculateFaceNormal(const Face& f)
+		Vector3<> CalculateFaceNormal(const Face& f) const
 		{
 			auto vp = Final()->GetFaceVertices(f);
 			return CalculateFaceNormal(vp[0]->Position,vp[1]->Position,vp[2]->Position);
@@ -93,7 +93,7 @@ namespace HAGE {
 	private:
 
 		_MeshType* Final() { return static_cast<_MeshType*>(this);}
-		const _MeshType* Final() const { return static_cast<_MeshType*>(this);}
+		const _MeshType* Final() const { return static_cast<const _MeshType*>(this);}
 	};
 	
 	struct MeshGeometryFeature 

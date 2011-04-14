@@ -3,6 +3,7 @@
 
 #include "D3D11APIWrapper.h"
 #include "ResourceDomain.h"
+#include "VirtualTextureManager.h"
 
 #ifndef NO_D3D
 
@@ -65,6 +66,7 @@ HAGE::RenderingAPIWrapper* D3D11APIWrapper::CreateD3D11Wrapper(const HAGE::APIWD
 	_pAllocator= pResult;
 	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::IDrawableMesh>::Get(),&HAGE::CDrawableMeshLoader::Initialize);
 	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceType(HAGE::guid_of<HAGE::ITextureImage>::Get(),&HAGE::CTextureImageLoader::Initialize);
+	HAGE::domain_access<HAGE::ResourceDomain>::Get()->_RegisterResourceStreamingType(HAGE::guid_of<HAGE::IVirtualTexture>::Get(),&HAGE::VirtualTextureManager::LoadVirtualTexture);
 	return pResult;
 }
 

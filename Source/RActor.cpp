@@ -64,8 +64,8 @@ namespace HAGE {
 			
 			if(_init.bCastShadow)
 			{	
-				pc.diffuseFactor = 1.0f;
-				pc.ambientFactor = 0.0f;
+				pc.diffuseFactor = 0.0f;
+				pc.ambientFactor = 1.0f;
 			}
 			else
 			{

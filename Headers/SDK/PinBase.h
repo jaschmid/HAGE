@@ -48,23 +48,24 @@ public:
 			assert(nReadIndex > nWriteIndex + nSize || nReadIndex <= nWriteIndex);
 			// no wrap
 			m.CopyTo(&Mem[nWriteIndex]);
-			nWriteIndex += nSize;
+
+			u32 nNewIndex = nWriteIndex + nSize;
+
+			if(nNewIndex + sizeof(Message) >= size)
+				nWriteIndex = 0;
+			else
+				nWriteIndex = nNewIndex;
 			return S_OK;
-		}
-		else if( nWriteIndex >= size - sizeof(Message))
-		{
-			assert(nReadIndex <= nWriteIndex);
-			// auto wrap
-			nWriteIndex = 0;
-			return PostMessage(m);
 		}
 		else
 		{
 			// manual wrap
 			assert(nReadIndex <= nWriteIndex);
-			assert(succeeded(PostMessage(WrapMessage::_wrap)));
-			nWriteIndex = 0;
-			return PostMessage(m);
+			assert(nReadIndex > nSize);
+			WrapMessage::_wrap.CopyTo(&Mem[nWriteIndex]);
+			m.CopyTo(&Mem[0]);
+			nWriteIndex = nSize;
+			return S_OK;
 		}
 	}
 
@@ -74,13 +75,18 @@ public:
 		if(nReadIndex == nWriteIndex)
 			return;
 
-		nReadIndex += GetTopMessage()->GetSize();
+		if(((const Message*)(&Mem[nReadIndex]))->GetMessageCode() ==  MESSAGE_RESERVED_WRAP_QUEUE)
+			nReadIndex = 0;
+
+		u32 MsgSize = ((const Message*)(&Mem[nReadIndex]))->GetSize();
+
+		assert(MsgSize != 0);
+
+		nReadIndex += MsgSize;
 
 		if(nReadIndex + sizeof(Message) >= size)
 			nReadIndex = 0;
-		else if(nReadIndex != nWriteIndex && GetTopMessage()->GetMessageCode() == MESSAGE_RESERVED_WRAP_QUEUE)
-			nReadIndex = 0;
-
+		
 		return;
 	}
 	const Message*	GetTopMessage() const
@@ -88,7 +94,10 @@ public:
 		if(nReadIndex == nWriteIndex)
 			return nullptr;
 
-		return (const Message*)(&Mem[nReadIndex]);
+		if(((const Message*)(&Mem[nReadIndex]))->GetMessageCode() == MESSAGE_RESERVED_WRAP_QUEUE)
+			return (const Message*)(&Mem[0]);
+		else
+			return (const Message*)(&Mem[nReadIndex]);
 	}
 
 private:

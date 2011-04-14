@@ -21,18 +21,37 @@ namespace HAGE {
 const u32 RESOURCE_DOMAIN_QUEUE_SIZE	=	1024*32;
 const u32 LOCAL_RESOURCE_QUEUE_SIZE		=	1024*32;
 
+const u32 RESOURCE_STAGE_STREAMING		=	0xffffffff;
+
 class IResource;
 
-struct SStagedResourceMaster
-{
-	u32		nCurrentStage;
-	IResource*	pCurrentStage;
-	volatile i32		nRefCount;
-};
 
-struct SStagedResource : public SStagedResourceMaster
+class StagedResource
 {
-	SStagedResourceMaster*	pMaster;
+public:
+	
+	u32 GetCurrentStage() const{ return nCurrentStage;}
+	const IResource* GetResource() const{ return  pCurrentStage;}
+	void AddRef() const{assert(nRefCount!=RESOURCE_STAGE_STREAMING);_InterlockedIncrement(&nRefCount);}
+	void Release() const {assert(nRefCount!=RESOURCE_STAGE_STREAMING);_InterlockedDecrement(&nRefCount);}
+
+protected:
+
+	StagedResource(u32 nStage,const IResource* pStage,i32 ref) :
+		 nCurrentStage(nStage),pCurrentStage(pStage),nRefCount(ref)
+		 {
+		 }
+	
+	StagedResource(StagedResource& other)
+		 {
+		 }
+
+	StagedResource(){}
+	~StagedResource(){}
+	
+	u32		nCurrentStage;
+	const IResource*	pCurrentStage;
+	mutable volatile i32		nRefCount;
 };
 
 class MessageResourceUnknown : public Message
@@ -61,17 +80,81 @@ struct SStagedResource;
 class MessageResourceNotifyLoaded : public MessageHelper<MessageResourceNotifyLoaded,MessageResourceUnknown>
 {
 public:
-	MessageResourceNotifyLoaded(SStagedResourceMaster* pMaster,const std::string& name,const guid& type) : MessageHelper<MessageResourceNotifyLoaded,MessageResourceUnknown>(id),
+	MessageResourceNotifyLoaded(const StagedResource* pMaster,const std::string& name,const guid& type) : MessageHelper<MessageResourceNotifyLoaded,MessageResourceUnknown>(id),
 		_type(type),_Master(pMaster)
 	{ assert(name.size() <= 255); strcpy(_name,name.c_str());}
 	const char* GetName() const{return _name;}
 	const guid& GetType() const{return _type;}
-	SStagedResourceMaster* GetMaster() const{return _Master;}
+	const StagedResource* GetMaster() const{return _Master;}
 private:
 	char				_name[256];
 	guid				_type;
-	SStagedResourceMaster*	_Master;
+	const StagedResource*	_Master;
 	static const u32 id = MESSAGE_RESOURCE_NOTIFY_LOADED;
+};
+
+class MessageResourceNotifyStreamOpen : public MessageHelper<MessageResourceNotifyStreamOpen,MessageResourceUnknown>
+{
+public:
+	MessageResourceNotifyStreamOpen(const StagedResource* pMaster,const StagedResource* pStreamingMaster,const std::string& name,const guid& type) : MessageHelper<MessageResourceNotifyStreamOpen,MessageResourceUnknown>(id),
+		_type(type),_Master(pMaster),_StreamingMaster(pStreamingMaster)
+	{ assert(name.size() <= 255); strcpy(_name,name.c_str());}
+	const char* GetName() const{return _name;}
+	const guid& GetType() const{return _type;}
+	const StagedResource* GetMaster() const{return _Master;}
+	const StagedResource* GetStreamingMaster() const{return _StreamingMaster;}
+private:
+	char				_name[256];
+	guid				_type;
+	const StagedResource*	_Master;
+	const StagedResource*	_StreamingMaster;
+	static const u32 id = MESSAGE_RESOURCE_NOTIFY_STREAM_OPEN;
+};
+
+class MessageResourceNotifyStreamIn : public MessageHelper<MessageResourceNotifyStreamIn,MessageResourceUnknown>
+{
+public:
+	MessageResourceNotifyStreamIn(const StagedResource* pStream,const std::string& name,const guid& type) : MessageHelper<MessageResourceNotifyStreamIn,MessageResourceUnknown>(id),
+		_type(type),_Stream(pStream)
+	{ assert(name.size() <= 255); strcpy(_name,name.c_str());}
+	const char* GetName() const{return _name;}
+	const guid& GetType() const{return _type;}
+	const StagedResource* GetStream() const{return _Stream;}
+private:
+	char				_name[256];
+	guid				_type;
+	const StagedResource*	_Stream;
+	static const u32 id = MESSAGE_RESOURCE_NOTIFY_STREAM_IN;
+};
+
+class MessageResourceNotifyStreamOut : public MessageHelper<MessageResourceNotifyStreamOut,MessageResourceUnknown>
+{
+public:
+	MessageResourceNotifyStreamOut(const StagedResource* pStream,const std::string& name,const guid& type) : MessageHelper<MessageResourceNotifyStreamOut,MessageResourceUnknown>(id),
+		_type(type),_Stream(pStream)
+	{ assert(name.size() <= 255); strcpy(_name,name.c_str());}
+	const char* GetName() const{return _name;}
+	const guid& GetType() const{return _type;}
+	const StagedResource* GetStream() const{return _Stream;}
+private:
+	char				_name[256];
+	guid				_type;
+	const StagedResource*	_Stream;
+	static const u32 id = MESSAGE_RESOURCE_NOTIFY_STREAM_OUT;
+};
+
+class MessageResourceRequestStreamClose : public MessageHelper<MessageResourceRequestStreamClose,MessageResourceUnknown>
+{
+public:
+	MessageResourceRequestStreamClose(const std::string& name,const guid& type) : MessageHelper<MessageResourceRequestStreamClose,MessageResourceUnknown>(id),
+		_type(type)
+	{ assert(name.size() <= 255); strcpy(_name,name.c_str());}
+	const char* GetName() const{return _name;}
+	const guid& GetType() const{return _type;}
+private:
+	char				_name[256];
+	guid				_type;
+	static const u32 id = MESSAGE_RESOURCE_REQUEST_STREAM_CLOSE;
 };
 
 class ResourceAccess
@@ -86,38 +169,38 @@ public:
 	ResourceAccess(const ResourceAccess& in) : _data(in._data)
 	{
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 	}
 
 	~ResourceAccess()
 	{
 		if(_data)
-			_data->nRefCount--;
+			_data->Release();
 	}
 
 	inline ResourceAccess& operator =(const ResourceAccess& other)
 	{
 		if(_data)
-			_data->nRefCount--;
+			_data->Release();
 		_data=other._data;
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 		return *this;
 	}
 
-	inline const IResource* operator ->() const {return (const IResource*)_data->pCurrentStage;}
-	inline u32 getStage() const {return _data->nCurrentStage;}
-	inline operator const IResource*() const {return (const IResource*)_data->pCurrentStage;}
+	inline const IResource* operator ->() const {return (const IResource*)_data->GetResource();}
+	inline u32 getStage() const {return _data->GetCurrentStage();}
+	inline operator const IResource*() const {return (const IResource*)_data->GetResource();}
 
 private:
 
-	ResourceAccess(SStagedResourceMaster& data) : _data(&data)
+	ResourceAccess(StagedResource& data) : _data(&data)
 	{
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 	}
 
-	SStagedResourceMaster* _data;
+	StagedResource* _data;
 
 	friend class ResourceDomain;
 	template<class _T> friend class TResourceAccess;
@@ -134,53 +217,53 @@ public:
 	TResourceAccess(const TResourceAccess<_T>& in) : _data(in._data)
 	{
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 	}
 
 	TResourceAccess(const ResourceAccess& in) : _data(in._data)
 	{
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 	}
 
 	~TResourceAccess()
 	{
 		if(_data)
-			_data->nRefCount--;
+			_data->Release();
 	}
 
 	inline TResourceAccess& operator =(const TResourceAccess& other)
 	{
 		if(_data)
-			_data->nRefCount--;
+			_data->Release();
 		_data=other._data;
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 		return *this;
 	}
 
 	inline TResourceAccess& operator =(const ResourceAccess& other)
 	{
 		if(_data)
-			_data->nRefCount--;
+			_data->Release();
 		_data=other._data;
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 		return *this;
 	}
 
-	inline const _T* operator ->() const {return (const _T*)_data->pCurrentStage;}
-	inline u32 getStage() const {return _data->nCurrentStage;}
+	inline const _T* operator ->() const {return (const _T*)_data->GetResource();}
+	inline u32 getStage() const {return _data->GetCurrentStage();}
 
 private:
 
-	TResourceAccess(SStagedResourceMaster& data) : _data(&data)
+	TResourceAccess(StagedResource& data) : _data(&data)
 	{
 		if(_data)
-			_data->nRefCount++;
+			_data->AddRef();
 	}
 
-	SStagedResourceMaster* _data;
+	StagedResource* _data;
 
 	friend class CResourceManager;
 };
@@ -217,24 +300,72 @@ public:
 	~CResourceManager();
 	template<class _T> TResourceAccess<_T> OpenResource(const std::string& name)
 	{
-		return TResourceAccess<_T>(_OpenResource(name,guid_of<_T>::Get()));
+		return TResourceAccess<_T>(*_OpenResource(name,guid_of<_T>::Get()));
 	}
 
 	void RunGarbageCollection();
 private:
+	
+	class StagedResourceLocal : public StagedResource
+	{
+	public:
+		
+		~StagedResourceLocal(){ pMaster->Release(); }
 
+		StagedResourceLocal(const StagedResource* rMaster, const StagedResource* rStreamingMaster = nullptr) :
+			StagedResource((rStreamingMaster)?(rStreamingMaster->GetCurrentStage()):(rMaster->GetCurrentStage()),
+				(rStreamingMaster)?(rStreamingMaster->GetResource()):(rMaster->GetResource()),0),pMaster(rMaster),pStreamingMaster(rStreamingMaster) {pMaster->AddRef();}
+		StagedResourceLocal(StagedResourceLocal& other) :
+			StagedResource(other.nCurrentStage,other.pCurrentStage,0),pMaster(other.pMaster),pStreamingMaster(other.pStreamingMaster) {pMaster->AddRef();}
+		StagedResourceLocal& operator = (const StagedResourceLocal& other) 
+		{
+			pMaster->Release(); 
+			nCurrentStage = other.nCurrentStage; 
+			pCurrentStage = other.pCurrentStage; 
+			pMaster = other.pMaster;
+			pMaster->AddRef();
+			pStreamingMaster = other.pStreamingMaster;
+		}
+		u32 GetRefCount() const{return nRefCount;}
+		void Update(const StagedResource* pUpdate)
+		{
+			pMaster->Release();
+			pMaster=pUpdate;
+			nCurrentStage=pUpdate->GetCurrentStage();
+			pCurrentStage=pUpdate->GetResource();
+			pMaster->AddRef();
+		}
+		const StagedResource* UpdateStreaming(const StagedResource* pUpdate)
+		{
+			const StagedResource* result = pStreamingMaster;
+			pStreamingMaster = pUpdate;
+			if(pUpdate)
+			{
+				nCurrentStage=pUpdate->GetCurrentStage();
+				pCurrentStage=pUpdate->GetResource();
+			}
+			return result;
+		}
+	
+		bool IsStreaming() const{return pStreamingMaster!=nullptr;}
+		bool HasMaster() const{return pMaster!=nullptr;}
+		
+	private:
+		const StagedResource*	pMaster;
+		const StagedResource*	pStreamingMaster;
+	};
 
 	void ProcessMessages();
-	SStagedResource& _OpenResource(const std::string& name, const guid& guid);
+	StagedResource* _OpenResource(const std::string& name, const guid& guid);
 
-	const std::unordered_map<guid,SStagedResourceMaster,guid_hasher>&					_remoteStage0Database;
+	const std::unordered_map<guid,StagedResource*,guid_hasher>&					_remoteStage0Database;
 
 	typedef StaticMessageQueue<LOCAL_RESOURCE_QUEUE_SIZE>			QueueInType;
 	typedef StaticMessageQueue<RESOURCE_DOMAIN_QUEUE_SIZE>			QueueOutType;
 	QueueInType						_queueIn;
 	QueueOutType					_queueOut;
 
-	std::unordered_map<tResourceKey,SStagedResource,key_hasher>			_localResourceMap;
+	std::unordered_map<tResourceKey,StagedResourceLocal,key_hasher>			_localResourceMap;
 	friend class ResourceDomain;
 	friend class SharedDomainBase;
 };

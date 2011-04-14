@@ -42,6 +42,29 @@ namespace HAGE {
 			virtual IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut) = 0;
 	};
 
+	class IStreamingResourceProvider : protected DomainMember<ResourceDomain>
+	{
+		public:
+			virtual ~IStreamingResourceProvider(){}
+			virtual void ProcessResourceAccess(IResource* feedback) =0;
+			virtual void CreateResourceAccessSet(std::vector<IResource*>& accesses) =0;
+			virtual bool QueryDependancies(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut) = 0;
+	};
+	
+	
+	class IVirtualTexture : public IResource
+	{
+	public:
+		//static data retrievel, does not change within one frame but results might change from frame to frame
+		virtual const APIWTexture* GetCurrentVTCache() const = 0;
+		virtual const APIWTexture* GetCurrentVTRedirection() const = 0;
+		virtual u32 GetCacheSize() const = 0; //returns current cache size (in bytes), note that adjusting it will not immediately change this
+		
+		//various functions to provide feedback
+		virtual void AdjustCacheSize(u32 newSize) const = 0; //enters a request to adjust the cache size
+		virtual void ProvideFeedback() const = 0;
+	};
+
 	class IMeshData : public IResource
 	{
 	public:
@@ -114,7 +137,8 @@ namespace HAGE {
 		virtual const APIWTexture* GetTexture() const = 0;
 	};
 
-
+	
+	DECLARE_CLASS_GUID(IVirtualTexture,	0x0549a888,0xb591,0x497f,0xbb2c,0x5a639476da5b);
 	DECLARE_CLASS_GUID(IDrawableMesh,	0x12d47f0e,0x8813,0x4ad5,0xb13d,0x916b7ab4a618);
 	DECLARE_CLASS_GUID(IMeshData,		0xcf361bc0,0xf572,0x4cc9,0xbc2f,0x547537da68a8);
 	DECLARE_CLASS_GUID(ITextureImage,	0x6353c6b2,0x1018,0x436f,0xb67b,0x6c2e69f7a931);

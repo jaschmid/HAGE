@@ -393,7 +393,7 @@ extern void SetWindowSize(bool bFullscreen,HAGE::u32 width,HAGE::u32 height)
 		yPos = (desktop_mode.dmPelsHeight-height)/2;
 	}
 	
-	SetWindowPos(hWnd,HWND_TOPMOST,xPos,yPos,width,height,SWP_FRAMECHANGED|SWP_SHOWWINDOW);
+	SetWindowPos(hWnd,bFullscreen?HWND_TOPMOST:0,xPos,yPos,width,height,SWP_FRAMECHANGED|SWP_SHOWWINDOW);
 	SetFocus(hWnd);
 }
 
