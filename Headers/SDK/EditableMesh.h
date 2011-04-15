@@ -148,6 +148,7 @@ namespace _EditableMeshInternal {
 			_HE_edge_pair* internal_data; 
 			_Edge(_HE_edge_pair* val) : internal_data(val) {}
 		public:
+			_Edge() : internal_data(nullptr) {}
 			IndexType Index() const
 			{
 				return internal_data->index;
@@ -171,6 +172,7 @@ namespace _EditableMeshInternal {
 			_HE_face* internal_data; 
 			_Face(_HE_face* val) : internal_data(val) {}
 		public:
+			_Face() : internal_data(nullptr) {}
 			IndexType Index() const
 			{
 				return internal_data->index;
@@ -194,6 +196,7 @@ namespace _EditableMeshInternal {
 			_HE_vert* internal_data; 
 			_Vertex(_HE_vert* val) : internal_data(val) {}
 		public:
+			_Vertex() : internal_data(nullptr) {}
 			IndexType Index() const
 			{
 				return internal_data->index;
@@ -439,6 +442,22 @@ namespace _EditableMeshInternal {
 
 			return result;
 		}
+		
+		VertexPair GetEdgeOpposingVertices(const Edge& edge) const
+		{
+			const HE_edge* e = getInternal(edge);
+			VertexPair result = {{nullVertex,nullVertex}};
+			if(!isValid(e))
+				return result;
+			if(e->face)
+				result[0] = getExternal(e->next_edge->end_vertex);
+
+			if(e->pair_edge->face)
+				result[1] = getExternal(e->pair_edge->next_edge->end_vertex);
+
+			return result;
+		}
+
 		FacePair GetEdgeFaces(const Edge& edge) const
 		{
 			const HE_edge* e = getInternal(edge);
@@ -835,18 +854,62 @@ namespace _EditableMeshInternal {
 				}
 		}
 
+		bool FlipEdge(const Edge& edge)
+		{
+			HE_edge* e = getInternal(edge);
+			
+			if(!isValid(e))
+				return false;
+
+			if( !e->face || !e->pair_edge->face )
+				return false;
+
+			if( getEdge(e->next_edge->end_vertex,e->pair_edge->next_edge->end_vertex) )
+				return false;
+
+			HE_edge* e_next = e->next_edge->next_edge;
+			HE_edge* ep_next = e->pair_edge->next_edge->next_edge;
+
+			e->face->edge = e;
+			e->next_edge->face = e->pair_edge->face;
+
+			e->pair_edge->face->edge = e->pair_edge;
+			e->pair_edge->next_edge->face = e->face;
+
+			e->next_edge->next_edge->next_edge = e->pair_edge->next_edge;
+			e->pair_edge->next_edge->next_edge->next_edge = e->next_edge;
+
+			e->next_edge->next_edge = e->pair_edge;
+			e->pair_edge->next_edge->next_edge = e;
+
+			if(e->end_vertex->edge == e->pair_edge)
+				e->end_vertex->edge = e->next_edge;
+			
+			if(e->pair_edge->end_vertex->edge == e)
+				e->pair_edge->end_vertex->edge = e->pair_edge->next_edge;
+
+			e->next_edge = e_next;
+			e->pair_edge->next_edge = ep_next;
+
+			e->end_vertex = e_next->pair_edge->end_vertex;
+			e->pair_edge->end_vertex = ep_next->pair_edge->end_vertex;
+
+			return true;
+		}
+
 		Vertex SplitEdge(const Edge& edge)
 		{
-			if(!isValid(edge))
-				return nullVertex;
 
 			HE_edge* e = getInternal(edge);
+			
+			if(!isValid(e))
+				return nullVertex;
 
 			HE_edge* pair_prev = getPrevEdge(e->pair_edge);
 
 			//first naively split the edge creating 2 4-gons
 
-			HE_edge* v = internalAllocVert();
+			HE_vert* v = internalAllocVert();
 			HE_edge* e2 = internalAllocEdge();
 
 			e2->next_edge = e->next_edge;
@@ -858,6 +921,7 @@ namespace _EditableMeshInternal {
 			e->next_edge = e2;
 			pair_prev->next_edge = e2->pair_edge;
 
+			e->end_vertex->edge = e2->pair_edge;
 			e->end_vertex = v;
 
 			v->edge = e2;
@@ -866,6 +930,7 @@ namespace _EditableMeshInternal {
 
 			if(e->face)
 			{
+				e->face->edge = e;
 				HE_edge* e_side = internalAllocEdge();
 				HE_face* f_side = internalAllocFace();
 
@@ -890,6 +955,7 @@ namespace _EditableMeshInternal {
 
 			if(e->pair_edge->face)
 			{
+				e->pair_edge->face->edge = e->pair_edge;
 				HE_edge* e_side = internalAllocEdge();
 				HE_face* f_side = internalAllocFace();
 
@@ -906,7 +972,7 @@ namespace _EditableMeshInternal {
 				e_side->end_vertex = e->pair_edge->next_edge->end_vertex;
 				e_side->pair_edge->end_vertex = e->end_vertex;
 
-				e->pair_edge->next_edge = e_side->pair_edge;
+				e->pair_edge->next_edge->next_edge = e_side->pair_edge;
 				e2->pair_edge->next_edge = e_side;
 			}
 			else

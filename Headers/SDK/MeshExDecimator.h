@@ -86,7 +86,7 @@ namespace HAGE {
 				v->Quadric = createQuadricForVert(v,&v->nQuadrics);
 			}
 			
-			lookup.resize(Final()->GetNumEdgeIndices());
+			lookup.resize((size_t)Final()->GetNumEdgeIndices());
 
 			for (unsigned int i = 0; i <  Final()->GetNumEdgeIndices(); i++) 
 			{
@@ -158,11 +158,11 @@ namespace HAGE {
 
 		void SetCustomWeightingFunction(const std::function<bool(Edge&)>& function) {_customEdgeWeightingFunction = function; }
 		
-		_MeshType* Final() { return static_cast<_MeshType*>(this);}
-		const _MeshType* Final() const { return static_cast<const _MeshType*>(this);}
 
 	private:
-
+		
+		_MeshType* Final() { return static_cast<_MeshType*>(this);}
+		const _MeshType* Final() const { return static_cast<const _MeshType*>(this);}
 		//private members
 
 		//custom weighting function
@@ -227,10 +227,10 @@ namespace HAGE {
 						u32 count;
 						if(count = computeCollapse(e2))
 							updateEdgeCollapse(e2,count);
-						else if(lookup[e2.Index()] != collapseMap.end())
+						else if(lookup[(size_t)e2.Index()] != collapseMap.end())
 						{
-							collapseMap.erase(lookup[e2.Index()]);
-							lookup[e2.Index()] =  collapseMap.end();
+							collapseMap.erase(lookup[(size_t)e2.Index()]);
+							lookup[(size_t)e2.Index()] =  collapseMap.end();
 						}
 
 						++nEdges;
@@ -331,12 +331,12 @@ namespace HAGE {
 
 		void updateEdgeCollapse(const Edge& e,u32 nCount)
 		{
-			if(lookup[e.Index()] != collapseMap.end())
-				collapseMap.erase(lookup[e.Index()]);
+			if(lookup[(size_t)e.Index()] != collapseMap.end())
+				collapseMap.erase(lookup[(size_t)e.Index()]);
 			costComparable c;
 			c.edges = nCount;
 			c.cost = e->Cost;
-			lookup[e.Index()] = collapseMap.insert(collapseType::value_type(c,e.Index()));
+			lookup[(size_t)e.Index()] = collapseMap.insert(collapseType::value_type(c,(u32)e.Index()));
 		}
 
 		Edge getNextCollapse(f32 fMax=-1.0f)
@@ -347,7 +347,7 @@ namespace HAGE {
 				Edge e = Final()->GetEdge(collapseMap.begin()->second);
 				_Precision cost = collapseMap.begin()->first.cost;
 				u32 count = collapseMap.begin()->first.edges;
-				lookup[collapseMap.begin()->second] = collapseMap.end();
+				lookup[(size_t)collapseMap.begin()->second] = collapseMap.end();
 				collapseMap.erase(collapseMap.begin());
 
 				if(e == Base::nullEdge)

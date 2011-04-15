@@ -191,5 +191,7 @@ namespace HAGE {
 
 #include "MeshExGeometry.h"
 #include "MeshExDecimator.h"
+#include "MeshExCurvature.h"
+#include "MeshExSubdivision.h"
 
 #endif
