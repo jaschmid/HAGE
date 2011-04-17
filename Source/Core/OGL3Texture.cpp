@@ -69,13 +69,24 @@ public:
 	typedef float DestChannelType;
 	typedef float SrcChannelType;
 };
-
 template<> class _OGLPixelTransferBufferInfo<HAGE::R32G32B32A32_FLOAT>
 {
 public:
 	const static HAGE::APIWFormat	SourceFormat = HAGE::R32G32B32A32_FLOAT;
 	const static GLenum				DestFormat = GL_RGBA;
 	const static GLenum				DestChannel = GL_FLOAT;
+	const static int				nSrcChannels = 4;
+	const static int				nDestChannels = 4;
+	
+	typedef float DestChannelType;
+	typedef float SrcChannelType;
+};
+template<> class _OGLPixelTransferBufferInfo<HAGE::R16G16B16A16_UNORM>
+{
+public:
+	const static HAGE::APIWFormat	SourceFormat = HAGE::R16G16B16A16_UNORM;
+	const static GLenum				DestFormat = GL_RGBA;
+	const static GLenum				DestChannel = GL_UNSIGNED_SHORT;
 	const static int				nSrcChannels = 4;
 	const static int				nDestChannels = 4;
 	
@@ -182,6 +193,9 @@ public:
 			break;
 		case HAGE::R32G32B32A32_FLOAT:
 			SetValues<HAGE::R32G32B32A32_FLOAT>(width,height,pData);
+			break;
+		case HAGE::R16G16B16A16_UNORM:
+			SetValues<HAGE::R16G16B16A16_UNORM>(width,height,pData);
 			break;
 		case HAGE::R8G8B8A8_UNORM:
 			SetValues<HAGE::R8G8B8A8_UNORM>(width,height,pData);
@@ -415,7 +429,7 @@ void OGL3Texture::GenerateMips()
 	glBindTexture(target,_tbo);
 }
 
-
+/*
 void OGL3Texture::StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pBuffer) const
 {	
 	if(! (_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ) )
@@ -533,4 +547,11 @@ HAGE::u32 OGL3Texture::LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags)
 void OGL3Texture::UnlockTexture()
 {
 	assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
+}*/
+
+void OGL3Texture::StreamForReading(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize)
+{
+}
+void OpenGL3APIWrapper::UpdateTexture(HAGE::APIWTexture* pTexture,HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::u32 Level, const void* pData)
+{
 }

@@ -18,7 +18,7 @@ private:
 	RenderingActor(const guid& ObjectId,const MemHandle& h,const guid& source,const ActorRInit* pInit);
 	virtual ~RenderingActor();
 
-
+	TResourceAccess<IVirtualTexture>					_virtTex;
 	TResourceAccess<ITextureImage>						_textureLines;
 	TResourceAccess<ITextureImage>						_texture;
 	TResourceAccess<IDrawableMesh>						_mesh;

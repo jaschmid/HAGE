@@ -32,6 +32,7 @@ struct VertexDescriptionEntry;
 class APIWVertexArray;
 class APIWTexture;
 class APIWSystemBuffer;
+class APIWFence;
 
 typedef enum _APIWPrimitiveType
 {
@@ -61,7 +62,8 @@ typedef enum _APIWFormat
 	DXTC3_UNORM			= 14,
 	DXTC3_UNORM_SRGB	= 15,
 	DXTC5_UNORM			= 16,
-	DXTC5_UNORM_SRGB	= 17
+	DXTC5_UNORM_SRGB	= 17,
+	R16G16B16A16_UNORM	= 18,
 } APIWFormat;
 
 typedef enum _APIWCullMode
@@ -128,6 +130,11 @@ typedef enum _APIWTextureFlags
 	TEXTURE_GPU_DEPTH_STENCIL	= 0x00000020,
 	TEXTURE_GPU_COPY			= 0x00000040
 } APIWTextureFlags;
+typedef enum _APIWTextureLock
+{
+	TEXTURE_LOCK_WRITE			= 0x00000001,
+	TEXTURE_LOCK_READ			= 0x00000002
+} APIWTextureLock;
 typedef enum _APIWFilterFlags
 {
 	FILTER_MIN_POINT			= 0x00000000,
@@ -224,6 +231,8 @@ static HAGE::u32 APIWFormatPixelSize(const HAGE::APIWFormat& format)
 		return sizeof(HAGE::f32)*3;
 	case HAGE::R32G32B32A32_FLOAT	:
 		return sizeof(HAGE::f32)*4;
+	case HAGE::R16G16B16A16_UNORM	:
+		return sizeof(HAGE::u16)*4;
 	case HAGE::R8G8B8A8_UNORM		:
 	case HAGE::R8G8B8A8_UNORM_SRGB	:
 	case HAGE::R8G8B8A8_SNORM		:
@@ -258,6 +267,7 @@ static HAGE::u32 APIWFormatImagePhysicalSize(const HAGE::APIWFormat& format,u32 
 	case HAGE::R32G32_FLOAT			:
 	case HAGE::R32G32B32_FLOAT		:
 	case HAGE::R32G32B32A32_FLOAT	:
+	case HAGE::R16G16B16A16_UNORM	:
 	case HAGE::R8G8B8A8_UNORM		:
 	case HAGE::R8G8B8A8_UNORM_SRGB	:
 	case HAGE::R8G8B8A8_SNORM		:
@@ -289,6 +299,7 @@ static HAGE::u32 APIWFormatImagePhysicalPitch(const HAGE::APIWFormat& format,u32
 	case HAGE::R32G32_FLOAT			:
 	case HAGE::R32G32B32_FLOAT		:
 	case HAGE::R32G32B32A32_FLOAT	:
+	case HAGE::R16G16B16A16_UNORM	:
 	case HAGE::R8G8B8A8_UNORM		:
 	case HAGE::R8G8B8A8_UNORM_SRGB	:
 	case HAGE::R8G8B8A8_SNORM		:
@@ -341,7 +352,12 @@ public:
 
 	virtual APIWTexture* CreateTexture(u32 xSize, u32 ySize, u32 mipLevels, APIWFormat format,u32 miscFlags,const void* pData,u32 nDataSize = 0) = 0;
 
+	virtual void UpdateTexture(APIWTexture* pTexture,u32 xOff,u32 yOff,u32 xSize,u32 ySize,u32 Level, const void* pData) = 0;
+	virtual bool ReadTexture(APIWTexture* pTexture, const void** ppDataOut) = 0;
+	virtual APIWFence* CreateStreamingFence() = 0;
+
 	virtual void FreeObject(APIWObject* pObject) = 0;
+	
 
 	virtual void BeginAllocation() = 0;
 	virtual void EndAllocation() = 0;
@@ -392,14 +408,7 @@ public:
 	virtual void Clear(Vector4<> Color) = 0;
 	virtual void Clear(bool bDepth,float depth,bool bStencil = false,u32 stencil = 0) = 0;
 	virtual void GenerateMips() = 0;
-
-	virtual void StreamToTexture(u32 xOff,u32 yOff,u32 xSize,u32 ySize,APIWTexture* pTarget) const = 0;
-	virtual bool IsStreamComplete() = 0;
-	virtual void WaitForStream() = 0;
-
-	virtual u32 ReadTexture(const u8** ppBufferOut) const = 0;
-	virtual u32 LockTexture(u8** ppBufferOut,u32 flags) = 0;
-	virtual void UnlockTexture() = 0;
+	virtual void StreamForReading(u32 xOff,u32 yOff,u32 xSize,u32 ySize) = 0;
 };
 
 class APIWConstantBuffer : public APIWObject
@@ -414,6 +423,12 @@ public:
 	virtual void SetConstant(const char* pName,const APIWConstantBuffer* constant)=0;
 	virtual void SetTexture(const char* pName,const APIWTexture* texture)=0;
 	virtual void Draw(HAGE::APIWVertexArray* pArray)=0;
+};
+
+class APIWFence : public APIWObject
+{
+public:
+	virtual bool CheckStatus() = 0;
 };
 
 struct VertexDescriptionEntry

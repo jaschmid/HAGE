@@ -12,6 +12,8 @@ namespace HAGE {
 		ObjectBase<RenderingActor>(ObjectId,h,source),scale(pInit->scale),_init(*pInit)
 	{
 		
+		
+		_virtTex =  GetResource()->OpenResource<IVirtualTexture>("t_landscape.hsvt");
 		_meshCircle = GetResource()->OpenResource<IDrawableMesh>("torus.ply");
 		_meshPoles = GetResource()->OpenResource<IDrawableMesh>("cylinder.ply");
 		_textureLines = GetResource()->OpenResource<ITextureImage>("Null");
@@ -25,7 +27,7 @@ namespace HAGE {
 			//art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp
 			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt
 			_mesh = GetResource()->OpenResource<IDrawableMesh>("t_landscape.hgeo");
-			_texture = GetResource()->OpenResource<ITextureImage>("t_landscape.hsvt");
+			//_texture = GetResource()->OpenResource<ITextureImage>("t_landscape.hsvt");
 		}
 		else
 		{
@@ -74,7 +76,10 @@ namespace HAGE {
 			}
 
 			pBuffer->UpdateContent(&pc);
-			if(_mesh->GetTexture(0))
+
+			if(strcmp(_init.mesh,"Box")==0)
+				pEffect->SetTexture("DiffuseTexture",_virtTex->GetCurrentVTRedirection());
+			else if(_mesh->GetTexture(0))
 				pEffect->SetTexture("DiffuseTexture",_mesh->GetTexture(0));
 			else
 				pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());

@@ -28,9 +28,6 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 		
 		u32 RunGarbageCollection();
 		
-		
-		
-
 		class StagedResourceMaster : public StagedResource
 		{
 		public:
@@ -68,6 +65,7 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			}
 
 			void ProcessFeedback(const StagedResourceMaster* feedback,u32 idxClient);
+			void ProcessQueuedFeedback();
 			StagedResourceMaster* OpenStream(u32 idxClient);
 			StagedResourceMaster* ContinueStream(u32 idxClient);
 			void CloseStream(u32 idxClient);
@@ -89,9 +87,12 @@ class ResourceDomain : public DomainBase<ResourceDomain>
 			struct ClientEntry
 			{
 				std::vector<StagedResourceMaster*>	feedbackBuffers;
+
+				u32									nBuffersWaitingForProcessing;
+
 				u32									nFirstUsedBuffer;
-				u32									nUsedBuffers;
 				u32									nFirstAvailableBuffer;
+				u32									nUsedBuffers;
 				StreamStatus						status;
 				StagedResourceMaster				streamingMaster;
 			};

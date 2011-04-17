@@ -68,7 +68,7 @@ namespace HAGE {
 
 		inline u64 GetMaxDepthPages() const
 		{
-			return 1i64 << (((u64)fileHeader.pagedepth-1i64)*2i64);
+			return 1i64 << (((u64)GetMaxDepth())*2i64);
 		}
 
 		inline u32 GetPageInnerSize() const
@@ -90,9 +90,14 @@ namespace HAGE {
 			return GetPageOuterSize()*GetPageOuterSize();
 		}
 
-		inline u32 GetMaxDepth() const
+		inline u32 GetNumLayers() const
 		{
 			return fileHeader.pagedepth;
+		}
+
+		inline u32 GetMaxDepth() const
+		{
+			return GetNumLayers()-1;
 		}
 
 		inline bool IsWriteEnabled() const
@@ -111,6 +116,31 @@ namespace HAGE {
 		inline static u64 GetFirstPageOfSubpageBlock(u64 page)
 		{
 			return GetFirstSubPage(GetParentPage(page));
+		}
+
+		inline static void GetPageLocation(u64 page,u32& xPage,u32& yPage,u32& Level)
+		{
+			if(page == 0)
+			{
+				xPage = 0;
+				yPage = 0;
+				Level = 0;
+			}
+			else
+			{
+				GetPageLocation(GetParentPage(page),xPage,yPage,Level);
+				++Level;
+				xPage*=2;
+				yPage*=2;
+				switch((page - 1)%4)
+				{
+					case 0: break;	
+					case 1: ++xPage; break;
+					case 2: ++yPage; break;
+					case 3: ++xPage;++yPage; break;
+				}
+
+			}
 		}
 		
 		inline static u32 GetNumXPagesAtDepth(u32 pagedepth)

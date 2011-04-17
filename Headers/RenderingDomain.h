@@ -53,12 +53,14 @@ class RenderingDomain : public DomainBase<RenderingDomain>
 		APIWConstantBuffer*							_pConstants;
 		APIWConstantBuffer*							_pShadowcubeConstants;
 		APIWConstantBuffer*							_pLightConstants;
+		EffectContainer*							_pVTEffect;
 		EffectContainer*							_pEffect;
 		EffectContainer*							_pCelEffect;
 		EffectContainer*							_pShadowmapEffect;
 		PostprocessFilter*							_pPostprocessFilter;
 
 		TResourceAccess<IMeshData>					_Map;
+		TResourceAccess<IVirtualTexture>			_VT;
 };
 
 }

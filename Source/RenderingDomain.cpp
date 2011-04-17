@@ -109,10 +109,79 @@ namespace HAGE {
 	"  for(int i =0;i<nLights;++i)\n"
 	"  {\n"
 	"      float3 normDir = normalize(lDir[i]);\n"
-	"      float light_intensity = saturate(dot(normDir,normal))*diffuse_factor + ambient_factor;\n"
-	"      FS_OUT_COLOR.xyz += light_intensity*LightColor(i)*visibility[i];\n"
+	"      float light_intensity = saturate(dot(normDir,normal))*diffuse_factor;\n"
+	"      FS_OUT_COLOR.xyz += (light_intensity*visibility[i] + ambient_factor)*LightColor(i);\n"
 	"  }\n"
 	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*H_SAMPLE_2D(DiffuseTexture,FS_IN(tex)).xyz,1.0f));\n"
+	"}\n";
+	
+	static const char* vt_test =
+	"H_CONSTANT_BUFFER_BEGIN(TransformGlobal)\n"
+	"    float4x4 model;\n"
+	"    float4x4 inverse_modelview;\n"
+	"    float4x4 modelview;\n"
+	"    float4x4 modelview_projection;\n"
+	"    float ambient_factor;\n"
+	"    float diffuse_factor;\n"
+	"H_CONSTANT_BUFFER_END\n"
+	"\n"
+	"H_TEXTURE_2D(VT_Cache);\n"
+	"H_TEXTURE_2D(VT_Redirection);\n"
+	"\n"
+	"// cbuffer Transform : register(b0)\n"
+	"#define Model					 model\n"
+	"#define Modelview               modelview\n"
+	"#define InverseModelview        inverse_modelview\n"
+	"#define ModelviewProjection     modelview_projection\n"
+	"\n"
+	"VS_IN_BEGIN\n"
+	"  DECL_VS_IN(float3,position);\n"
+	"  DECL_VS_IN(float3,normal);\n"
+	"  DECL_VS_IN(float3,color);\n"
+	"  DECL_VS_IN(float2,texcoord);\n"
+	"VS_IN_END\n"
+	"VS_OUT_BEGIN\n"
+	"  DECL_VS_OUT(float4,color);\n"
+	"  DECL_VS_OUT(float3,world_position);\n"
+	"  DECL_VS_OUT(float3,normal);\n"
+	"  DECL_VS_OUT(float2,tex);\n"
+	"  DECL_VS_POSITION;\n"
+	"VS_OUT_END\n"
+	"\n"
+	"VERTEX_SHADER\n"
+	"{	\n"
+	"\n"
+	"  VS_OUT_POSITION = mul( ModelviewProjection, float4( VS_IN(position), 1.0f ) );\n "
+	"  float3 vPosition = mul( Model, float4( VS_IN(position), 1.0f ) ).xyz;\n "
+	"  VS_OUT(world_position) = vPosition;\n "
+	"  VS_OUT(color) = float4(VS_IN(color),1.0f);\n"
+	"  VS_OUT(normal) = normalize(mul( Model, float4( VS_IN(normal), 1.0f ) ).xyz - mul( Model, float4( 0.0f,0.0f,0.0f, 1.0f ) ).xyz);\n"
+	"  VS_OUT(tex) = VS_IN(texcoord);\n"
+	"\n"
+	"}"
+	"FS_IN_BEGIN\n"
+	"  DECL_FS_IN(float4,color);\n"
+	"  DECL_FS_IN(float3,world_position);\n"
+	"  DECL_FS_IN(float3,normal);\n"
+	"  DECL_FS_IN(float2,tex);\n"
+	"FS_IN_END\n"
+	"FS_OUT_BEGIN\n"
+	"  DECL_FS_COLOR;\n"
+	"FS_OUT_END\n"
+	"\n"
+	"float mipmapLevel(float2 tex)\n"
+	"{ \n"
+	"  float2 dx = ddx(tex);\n"
+	"  float2 dy = ddy(tex);\n"
+	"  float d = max(dot(dx,dx), dot(dy,dy));\n"
+	"  return max(0.0f, ceil(-0.5f*log2(d) -7.0f));\n"
+	"} \n"
+	"FRAGMENT_SHADER\n"
+	"{\n"
+	"	float mip = 10.0f-mipmapLevel(FS_IN(tex));\n"
+	"	float3 redir = H_SAMPLE_2D_LOD(VT_Redirection,FS_IN(tex),mip).xyz;\n"
+	"	float2 cache_coord = (FS_IN(tex).xy*redir.z+redir.xy);\n"
+	"  FS_OUT_COLOR = saturate(H_SAMPLE_2D(VT_Cache,cache_coord ) );\n"
 	"}\n";
 
 	static const char* cel_program =
@@ -404,11 +473,31 @@ namespace HAGE {
 
 	void RenderingDomain::DomainStep(t64 time)
 	{
-		TResourceAccess<IVirtualTexture>	vt = GetResource().OpenResource<IVirtualTexture>("t_landscape.hsvt");
-
-		vt->ProvideFeedback();
-
+		
 		pWrapper->BeginFrame();
+
+		static u32 lastFeedbackIndex = 0xffffffff;
+
+		u32 currentIndex = _VT->GetId();
+
+		if(currentIndex != lastFeedbackIndex)
+		{
+			lastFeedbackIndex = currentIndex;
+			APIWEffect* pEffect = _VT->BeginFeedback(pWrapper);
+
+			
+			position_constants c;
+			c.model	=					Matrix4<>::One();
+			c.modelview =				GetViewMatrix().Transpose();
+			c.inverse_modelview =		GetInvViewMatrix().Transpose();
+			c.modelview_projection =	(GetProjectionMatrix()*c.modelview.Transpose()).Transpose();
+
+			EffectContainer effect(pWrapper,pEffect);
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(&effect,c,_pConstants,true,false);} , guid_of<RenderingActor>::Get() ,true);
+
+			 _VT->EndFeedback(pWrapper);
+		}
+
 
 		const int max_lights = 3;
 		
@@ -502,6 +591,9 @@ namespace HAGE {
 		c.modelview_projection =	c.modelview;*/
 		
 		_pLightConstants->UpdateContent(&lc);
+		
+		_pVTEffect->SetTexture("VT_Cache",_VT->GetCurrentVTCache());
+		_pVTEffect->SetTexture("VT_Redirection",_VT->GetCurrentVTRedirection());
 
 		if(bToonShading)
 		{
@@ -510,8 +602,8 @@ namespace HAGE {
 		}
 		else
 		{
-			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
-			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pVTEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
+			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pVTEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
 		}
 
 		_pPostprocessFilter->EndSceneRendering();
@@ -573,8 +665,16 @@ namespace HAGE {
 		APIWRasterizerState wireframe = DefaultRasterizerState;
 		wireframe.bWireframe = false;
 
+		APIWSampler VT_Samplers[2];
+		strcpy(VT_Samplers[0].SamplerName,"VT_Cache");
+		strcpy(VT_Samplers[1].SamplerName,"VT_Redirection");
+		VT_Samplers[0].State = DefaultSamplerState;
+		VT_Samplers[1].State = DefaultSamplerState;
+		VT_Samplers[1].State.FilterFlags = FILTER_MIN_POINT | FILTER_MAG_POINT | FILTER_MIP_POINT;
+
 		_pEffect = new EffectContainer(pWrapper,default_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
 		_pCelEffect = new EffectContainer(pWrapper,cel_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
+		_pVTEffect = new EffectContainer(pWrapper,vt_test,&wireframe,&DefaultBlendState,1,false,VT_Samplers,2);
 		_pConstants = pWrapper->CreateConstantBuffer(sizeof(position_constants));
 		_pLightConstants = pWrapper->CreateConstantBuffer(sizeof(light_constants));
 		_pShadowcubeConstants = pWrapper->CreateConstantBuffer(sizeof(shadowcube_constants));
@@ -605,7 +705,8 @@ namespace HAGE {
 		_invViewMatrix = Matrix4<>::AngleRotation(Vector3<>(0.0,1.0,0.0),-fCameraY)*Matrix4<>::AngleRotation(Vector3<>(1.0,0.0,0.0),-fCameraX)*Matrix4<>::Translate(Vector3<>(0.0,0.0,-fCameraZ));
 
 		//_Map = Resource->OpenResource<IMeshData>("@world.MPQ\\world\\maps\\Azeroth\\Azeroth_40_40.adt");
-
+		
+		_VT = GetResource().OpenResource<IVirtualTexture>("t_landscape.hsvt");
 
 		printf("Init Rendering\n");
 	}

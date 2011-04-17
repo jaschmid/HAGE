@@ -22,7 +22,9 @@ D3D11VertexBuffer::D3D11VertexBuffer(D3D11APIWrapper* pWrapper,const char* szVer
     bd.StructureByteStride = 0;
     D3D11_SUBRESOURCE_DATA initData;
     initData.pSysMem = pData;
+	m_pWrapper->EnterDeviceCritical();
     HRESULT hr = m_pWrapper->GetDevice()->CreateBuffer( &bd, &initData, &m_pVertexBuffer );
+	m_pWrapper->LeaveDeviceCritical();
 	assert(SUCCEEDED(hr));
 }
 

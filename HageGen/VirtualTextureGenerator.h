@@ -23,7 +23,7 @@ namespace HAGE {
 
 			//debug stuff
 			// without borders
-			for(int i = 0; i< std::min((int)GetMaxDepth(),(int)5);++i)
+			for(int i = 0; i< std::min((int)GetNumLayers(),(int)5);++i)
 			{
 				std::vector<u32> buffer;
 				u32 xSize = GetPageInnerSize()*GetNumXPagesAtDepth(i);
@@ -41,7 +41,7 @@ namespace HAGE {
 			}
 
 			//with borders
-			for(int i = 0; i< std::min((int)GetMaxDepth(),(int)5);++i)
+			for(int i = 0; i< std::min((int)GetNumLayers(),(int)5);++i)
 			{
 				std::vector<u32> buffer;
 				u32 xSize = GetPageOuterSize()*GetNumXPagesAtDepth(i);
@@ -374,7 +374,7 @@ namespace HAGE {
 
 		bool FinalizeDepthLayer(u32 depth) 
 		{
-			if(depth >= GetMaxDepth())
+			if(depth >= GetNumLayers())
 				return true;
 
 			

@@ -204,6 +204,7 @@ namespace HAGE {
 		{
 			const t64 stepBeginTime = OSGetTime();
 
+
 			for(int i =0;i<_clients.size();++i)
 			{
 				const Message* curr;
@@ -280,6 +281,7 @@ namespace HAGE {
 			for(auto it = _streamerList.begin(); it!= _streamerList.end();it++)
 			{
 				StagedResourceMasterStreaming* streamer = static_cast<StagedResourceMasterStreaming*>((*it)->second[0]);
+				streamer->ProcessQueuedFeedback();
 				for(int i = 0; i < streamer->GetNumClients(); ++i)
 				{
 					StagedResourceMaster* next = streamer->ContinueStream(i);
@@ -593,6 +595,7 @@ namespace HAGE {
 
 				clients[idxClient]->nFirstAvailableBuffer = 0;
 				clients[idxClient]->nFirstUsedBuffer = 0;
+				clients[idxClient]->nBuffersWaitingForProcessing = 0;
 				clients[idxClient]->status = OPENING;
 				clients[idxClient]->nUsedBuffers = 0;
 
@@ -612,6 +615,7 @@ namespace HAGE {
 				assert(clients[idxClient]->status == CLOSED);
 				assert(clients[idxClient]->nUsedBuffers == 0);
 
+				clients[idxClient]->nBuffersWaitingForProcessing = 0;
 				clients[idxClient]->nFirstAvailableBuffer = 0;
 				clients[idxClient]->nFirstUsedBuffer = 0;
 				clients[idxClient]->status = OPENING;
@@ -647,6 +651,10 @@ namespace HAGE {
 				if(entry.nFirstAvailableBuffer == entry.nFirstUsedBuffer)
 					return nullptr;
 				StagedResourceMaster* result = entry.feedbackBuffers[entry.nFirstAvailableBuffer];
+
+				if(!provider->CheckFeedbackBufferReady(result->FullAccessResource()))
+					return nullptr;
+
 				entry.nFirstAvailableBuffer = (entry.nFirstAvailableBuffer+1)%entry.feedbackBuffers.size();
 				entry.nUsedBuffers++;
 				assert(entry.nUsedBuffers <= entry.feedbackBuffers.size());
@@ -675,29 +683,56 @@ namespace HAGE {
 			}
 		}
 		
+		void  ResourceDomain::StagedResourceMasterStreaming::ProcessQueuedFeedback()
+		{
+			for(auto it = clients.begin();it!=clients.end();++it)
+				if((*it) && (*it)->nBuffersWaitingForProcessing)
+				{
+					ClientEntry& entry = **it;
+					size_t feedbackIndex = entry.nFirstUsedBuffer;
+					if(provider->ProcessResourceAccess(entry.feedbackBuffers[feedbackIndex]->FullAccessResource()))
+					{
+
+						entry.nFirstUsedBuffer = (entry.nFirstUsedBuffer+1)%entry.feedbackBuffers.size();
+						entry.nBuffersWaitingForProcessing--;
+						entry.nUsedBuffers--;
+
+						if(entry.nFirstAvailableBuffer == entry.nFirstUsedBuffer)
+						{
+							assert(entry.nUsedBuffers == 0);
+							assert(entry.status == CLOSING);
+							entry.status = CLOSED;
+						}
+					}
+				}
+		}
+
 		void  ResourceDomain::StagedResourceMasterStreaming::ProcessFeedback(const StagedResourceMaster* feedback,u32 idxClient)
 		{
 			ClientEntry& entry = *clients[idxClient];
-
-			//printf("Domain Recieved %08x\n",feedback);
 			
 			assert(entry.nUsedBuffers != 0);
 			assert(entry.status == OPEN || entry.status == CLOSING);
 
-			size_t feedbackIndex = entry.nFirstUsedBuffer;
+			size_t feedbackIndex = (entry.nFirstUsedBuffer + entry.nBuffersWaitingForProcessing)%entry.feedbackBuffers.size();
+
+			entry.nBuffersWaitingForProcessing++;
 
 			assert( entry.feedbackBuffers[feedbackIndex] == feedback);
 
-			provider->ProcessResourceAccess(entry.feedbackBuffers[feedbackIndex]->FullAccessResource());
-
-			entry.nFirstUsedBuffer = (entry.nFirstUsedBuffer+1)%entry.feedbackBuffers.size();
-			entry.nUsedBuffers--;
-
-			if(entry.nFirstAvailableBuffer == entry.nFirstUsedBuffer)
+			if(provider->ProcessResourceAccess(entry.feedbackBuffers[feedbackIndex]->FullAccessResource()))
 			{
-				assert(entry.nUsedBuffers == 0);
-				assert(entry.status == CLOSING);
-				entry.status = CLOSED;
+
+				entry.nFirstUsedBuffer = (entry.nFirstUsedBuffer+1)%entry.feedbackBuffers.size();
+				entry.nBuffersWaitingForProcessing--;
+				entry.nUsedBuffers--;
+
+				if(entry.nFirstAvailableBuffer == entry.nFirstUsedBuffer)
+				{
+					assert(entry.nUsedBuffers == 0);
+					assert(entry.status == CLOSING);
+					entry.status = CLOSED;
+				}
 			}
 		}
 

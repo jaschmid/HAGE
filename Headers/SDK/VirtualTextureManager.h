@@ -6,6 +6,10 @@
 /********************************************************/
 
 #include <HAGE.h>
+#include <deque>
+
+#include "VTFeedbackAnalyzer.h"
+#include <boost/circular_buffer.hpp>
 
 #ifndef __INTERNAL_VIRTUAL_TEXTURE_MANAGER_H__
 #define __INTERNAL_VIRTUAL_TEXTURE_MANAGER_H__
@@ -15,7 +19,8 @@ namespace HAGE {
 	class VirtualTextureManager : public IStreamingResourceProvider
 	{
 	public:
-		virtual void ProcessResourceAccess(IResource* feedback);
+		virtual bool ProcessResourceAccess(IResource* feedback);
+		virtual bool CheckFeedbackBufferReady(IResource* feedback);
 		virtual void CreateResourceAccessSet(std::vector<IResource*>& accesses);
 		virtual bool QueryDependancies(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut){return false;}
 
@@ -39,26 +44,35 @@ namespace HAGE {
 			virtual const APIWTexture* GetCurrentVTRedirection() const {return _redirection;}
 			virtual u32 GetCacheSize() const {return _currentCacheSize;}
 			virtual void AdjustCacheSize(u32 newSize) const {_requestedCacheSize=newSize;}
-			virtual void ProvideFeedback() const{++_nFeedback;}
+
+			virtual u32 GetId() const;
+			virtual APIWEffect* BeginFeedback(RenderingAPIWrapper* pRenderer) const;
+			virtual void EndFeedback(RenderingAPIWrapper* pRenderer) const;
 
 			//internal functions
 
-			FeedbackBuffer(const APIWTexture* Cache,const APIWTexture* Redirection,u32 CacheSize,u32 InternalIndex,VirtualTextureManager* Parent);
+			FeedbackBuffer(APIWTexture* Cache,APIWTexture* Redirection,u32 CacheSize,u32 InternalIndex,VirtualTextureManager* Parent);
 			~FeedbackBuffer();
 
 			u32 GetRequestedCacheSize(){return _requestedCacheSize;}
 			void SetCacheSize(u32 CacheSize){_requestedCacheSize = CacheSize; _currentCacheSize=CacheSize;}
 
 			u32 GetInternalIndex(){return _index;}
+			bool GetFeedbackData(const void** ppDataOut);
+			bool HasFeedback(){return _bFeedbackProvided;}
 
 		private:
-			mutable	int				_nFeedback;
+			mutable	bool			_bFeedbackProvided;
+			mutable APIWTexture*	_feedbackTexture;
+			mutable APIWTexture*	_feedbackDepth;
 			mutable	u32				_requestedCacheSize;
+
 			u32						_currentCacheSize;
 			const u32				_index;
-			const APIWTexture*		_cache;
-			const APIWTexture*		_redirection;
+			APIWTexture*			_cache;
+			APIWTexture*			_redirection;
 			VirtualTextureManager*	_parent;
+			APIWEffect*				_feedbackEffect;
 		};
 
 		typedef std::pair<APIWTexture*,u32> UpdatableTexture;
@@ -66,6 +80,7 @@ namespace HAGE {
 		struct FeedbackElement
 		{
 			FeedbackBuffer*		buffer;
+			APIWFence*			write_fence;
 			UpdatableTexture	cache;
 			UpdatableTexture	redirection;
 			u32					elementIndex;
@@ -75,71 +90,78 @@ namespace HAGE {
 		struct PageData
 		{
 			u32 nBytes;
-			u32 nPageIndex;
-			u32 nPageX;
-			u32 nPageY;
-			u32 nLevel;
+			u32 nCacheIndex;
 			u8*	pData;
 		};
 
 		class PageCache
 		{
 		public:
-			PageCache(u32 CacheSizeBytes,u32 PageSize,u32 nXPages,u32 nYPages);
+			PageCache(u32 CacheSizeBytes,u32 PageSize,u32 nBorderSize,u32 nXPages,u32 nYPages);
 			~PageCache();
 
 			u32 GetNumCachePages() {return nCachePagesX*nCachePagesY;}
-			void LoadPage(const PageData* page,u32 CacheIndex);
+			PageData* UpdatePage(u32 CacheIndex);
 
-			UpdatableTexture CreateCacheTexture() const;
-			void UpdateCacheTexture(UpdatableTexture& cacheTexture) const;
+			UpdatableTexture CreateCacheTexture();
+			void UpdateCacheTexture(UpdatableTexture& cacheTexture);
 
 			class PageRedirection
 			{
 			public:
 				PageRedirection()
 				{
-					DestXBegin=0.0f;
-					DestXEnd=0.0f;
-					DestYBegin=0.0f;
-					DestYEnd=0.0f;
+					OffsetX=0.0f;
+					OffsetY=0.0f;
+					Size=0.0f;
 				}
+
+				static const HAGE::APIWFormat format = HAGE::APIWFormat::R32G32B32A32_FLOAT;
 
 			private:
-				PageRedirection(f32 xBegin,f32 xEnd,f32 yBegin,f32 yEnd)
+				PageRedirection(f32 xOff,f32 yOff,f32 Scale)
 				{
-					DestXBegin=xBegin;
-					DestXEnd=xEnd;
-					DestYBegin=yBegin;
-					DestYEnd=yEnd;
+					OffsetX=xOff;
+					OffsetY=yOff;
+					Size=Scale;
+					Padding= 1.0f;
 				}
 
-				f32 DestXBegin;
-				f32 DestXEnd;
-				f32 DestYBegin;
-				f32 DestYEnd;
+				f32 OffsetX;
+				f32 OffsetY;
+				f32 Size;
+				f32 Padding;
+
+				friend class PageCache;
 			};
 
 			void UpdateCacheSize(u32 CacheSizeBytes);
 
-			PageRedirection CreateRedirection(u32 CacheIndex,f32 xBegin,f32 xEnd,f32 yBegin,f32 yEnd) const;
+			PageRedirection CreateRedirection(u32 CacheIndex,f32 xOff,f32 yOff,f32 scale) const;
 		private:
+
+			void GetCachePageInfo(const u32& cacheindex,u32& xBegin,u32& xEnd,u32& yBegin,u32& yEnd) const
+			{
+				xBegin = (cacheindex % nCachePagesX)*nPageSizeX;
+				xEnd = xBegin + nPageSizeX;
+				yBegin = (cacheindex / nCachePagesX)*nPageSizeY;
+				yEnd = yBegin + nPageSizeY;
+			}
 
 			struct Pixel
 			{
 				u8 r,g,b,a;
 			};
 
-			std::vector<PageData>	pageData;
+			std::vector<PageData>	pageData;//currently cached data
+			std::vector<Pixel>		pixelData; //pageData points into this
+			typedef std::vector<PageData*> item_changes;
+			std::vector<item_changes> changes;
+
 			u32						nCachePagesX, nCachePagesY;
-
-			std::vector<Pixel>		cacheData;
 			u32						nCacheX, nCacheY;
-
-			u32						nDataVersion;
-
-			APIWTexture*			pTextureBuffer;
-
+			
+			const u32				_nBorderSize;
 			const u32				nPageSizeX,nPageSizeY;
 			const u32				nPagesX,nPagesY;
 		};
@@ -160,7 +182,7 @@ namespace HAGE {
 				_Level(nLevel)
 			{
 				for(int i = 0; i < _redirectionTable.size(); ++i)
-					_redirectionTableIndices[i] = 0xffffffff;
+					_redirectionTableIndices[i].cacheIndex = 0xffffffff;
 			}
 
 			void UnloadPage(u32 nPageX,u32 nPageY,u32 nLevel)
@@ -168,34 +190,73 @@ namespace HAGE {
 				assert(nLevel > 0);
 
 				if(nLevel - 1 > _Level)
+				{
 					_subPage->UnloadPage(nPageX,nPageY,nLevel);
+					return;
+				}
 
 				assert(nLevel == _Level+1);
+				u32 this_X = nPageX/2;
+				u32 this_Y = nPageY/2;
 
-				u32 newIndex = _redirectionTableIndices[(nPageY/2) * _nPagesX + (nPageX/2)];
+				u32 newIndex = _redirectionTableIndices[this_Y * _nPagesX + this_X].cacheIndex;
+				u32 newSplit = _redirectionTableIndices[this_Y * _nPagesX + this_X].nSplit;
 
-				_subPage->replacePage(nPageX,nPageY,0,0xffffffff,newIndex);
+				u32 oldIndex = _subPage->_redirectionTableIndices[nPageY * _subPage->_nPagesX + nPageX].cacheIndex;
+
+				//adjust values for new split
+
+				this_X /= (newSplit);
+				this_X *= (newSplit*2);
+				this_Y /= (newSplit);
+				this_Y *= (newSplit*2);
+
+				_subPage->replacePage(this_X,this_Y,newSplit*2,oldIndex,newIndex);
 			}
 
 			void LoadPage(u32 nPageX,u32 nPageY,u32 nLevel,u32 CacheIndex)
 			{
 				if(nLevel > _Level)
+				{
 					_subPage->LoadPage(nPageX,nPageY,nLevel,CacheIndex);
+					return;
+				}
 
 				assert(nLevel == _Level);
 
-				u32 oldIndex = _redirectionTableIndices[nPageY * _nPagesX + nPageX];
+				u32 oldIndex = _redirectionTableIndices[nPageY * _nPagesX + nPageX].cacheIndex;
 
-				replacePage(nPageX,nPageY,0,oldIndex,CacheIndex);
+				replacePage(nPageX,nPageY,1,oldIndex,CacheIndex);
 			}
 			
 			UpdatableTexture CreateRedirectionTexture() const
 			{
-				UpdatableTexture result;
-				return result;
+				if(_subPage)
+					return _subPage->CreateRedirectionTexture();
+				else
+				{
+					RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
+					assert(pAlloc);
+					pAlloc->BeginAllocation();
+					UpdatableTexture result;
+					result.first = pAlloc->CreateTexture(_nPagesX,_nPagesY,_Level+1,
+						typename _TCache::PageRedirection::format,TEXTURE_CPU_WRITE,
+						nullptr);
+					pAlloc->EndAllocation();
+					return result;
+				}
 			}
 			void UpdateRedirectionTexture(UpdatableTexture& redirectionTexture) const
 			{
+				RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
+				assert(pAlloc);
+				pAlloc->BeginAllocation();
+				pAlloc->UpdateTexture(redirectionTexture.first,0,0,_nPagesX,_nPagesY,10-_Level,_redirectionTable.data());
+				pAlloc->EndAllocation();
+				if(_subPage)
+					return _subPage->UpdateRedirectionTexture(redirectionTexture);
+				else
+					return;
 			}
 
 		private:
@@ -206,37 +267,35 @@ namespace HAGE {
 				return new MipMappedPageRedirectionTable(nXPages,nYPages,cache,nLevel+1);
 			}
 			
-			void replacePage(u32 nPageX,u32 nPageY,u32 nSplitDepth,u32 OldCacheIndex,u32 NewCacheIndex)
+			void replacePage(u32 nPageX,u32 nPageY,u32 nPages,u32 OldCacheIndex,u32 NewCacheIndex)
 			{
-				u32 numSplit = 1 << nSplitDepth;
-				u32 xBegin = nPageX << nSplitDepth;
-				u32 yBegin = nPageY << nSplitDepth;
-				f32 splitSize = 1.0f / (f32)(numSplit);
-				for(int iy = 0; iy < numSplit; iy++)
-					for(int ix = 0; ix < numSplit; ix++)
-					{
-
-						if(OldCacheIndex == 0xffffffff)
-						{
-							assert(numSplit == 1);
-							OldCacheIndex = _redirectionTableIndices[(yBegin+iy) * _nPagesX + xBegin + ix];
-						}
-
+				f32 texelSize = 1.0f / (f32)_nPagesX;
+				f32 xOff = (f32)nPageX*texelSize;
+				f32 yOff = (f32)nPageY*texelSize;
+				PageCache::PageRedirection new_redir = _cache->CreateRedirection(NewCacheIndex,xOff,yOff,(f32)nPages*texelSize);
+				for(int iy = 0; iy < nPages; iy++)
+					for(int ix = 0; ix < nPages; ix++)
 						//only update lower detail loaded data
-						if(_redirectionTableIndices[(yBegin+iy) * _nPagesX + xBegin + ix] == OldCacheIndex)
+						if(_redirectionTableIndices[(nPageY+iy) * _nPagesX + nPageX + ix].cacheIndex == OldCacheIndex)
 						{
-							PageCache::PageRedirection& ref = _redirectionTable[(yBegin+iy) * _nPagesX + xBegin + ix];
-							_redirectionTableIndices[(yBegin+iy) * _nPagesX + xBegin + ix] = NewCacheIndex;
-							ref = _cache->CreateRedirection(NewCacheIndex,ix *splitSize,(ix+1) *splitSize,iy *splitSize,(iy+1) *splitSize);
+							PageCache::PageRedirection& ref = _redirectionTable[(nPageY+iy) * _nPagesX + nPageX + ix];
+							_redirectionTableIndices[(nPageY+iy) * _nPagesX + nPageX + ix].cacheIndex = NewCacheIndex;
+							_redirectionTableIndices[(nPageY+iy) * _nPagesX + nPageX + ix].nSplit = nPages;
+							ref =new_redir;
 						}
-					}
 
 				if(_subPage)
-					_subPage->replacePage(nPageX,nPageY,nSplitDepth+1,OldCacheIndex,NewCacheIndex);
+					_subPage->replacePage(nPageX*2,nPageY*2,nPages*2,OldCacheIndex,NewCacheIndex);
 			}
 
-			std::vector<PageCache::PageRedirection>	_redirectionTable;
-			std::vector<u32>				_redirectionTableIndices;
+			struct IndexInformation
+			{
+				u16 cacheIndex;
+				u16 nSplit;
+			};
+
+			std::vector<typename _TCache::PageRedirection>	_redirectionTable;
+			std::vector<IndexInformation>				_redirectionTableIndices;
 
 			const _TCache* const			_cache;
 			MipMappedPageRedirectionTable * const	_subPage;
@@ -250,6 +309,8 @@ namespace HAGE {
 
 		u32				_cacheSize;
 		u32				_nCurrentVersion;
+
+		VirtualTextureFeedbackAnalyzer* _analyzer;
 
 		//our page Cache
 		CacheType*		_pageCache;

@@ -12,7 +12,9 @@ D3D11ConstantBuffer::D3D11ConstantBuffer(D3D11APIWrapper* pWrapper,HAGE::u32 nSi
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
     bd.StructureByteStride = 0;
+	m_pWrapper->EnterDeviceCritical();
     HRESULT hr = m_pWrapper->GetDevice()->CreateBuffer( &bd, NULL, &m_pBuffer );
+	m_pWrapper->LeaveDeviceCritical();
 }
 
 D3D11ConstantBuffer::~D3D11ConstantBuffer()

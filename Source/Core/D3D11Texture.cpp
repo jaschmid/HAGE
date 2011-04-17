@@ -13,19 +13,7 @@ D3D11_TEXTURE2D_DESC APIWToD3D11Texture2DDesc(HAGE::u32 xSize, HAGE::u32 ySize, 
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 
-	if(miscFlags & HAGE::TEXTURE_CPU_WRITE || miscFlags & HAGE::TEXTURE_CPU_READ)
-	{
-		desc.Usage = D3D11_USAGE_STAGING ;
-		desc.CPUAccessFlags = 0;
-		if(miscFlags & HAGE::TEXTURE_CPU_WRITE)
-			desc.CPUAccessFlags |=D3D11_CPU_ACCESS_WRITE;
-		if(miscFlags & HAGE::TEXTURE_CPU_READ)
-			desc.CPUAccessFlags |=D3D11_CPU_ACCESS_READ;
-
-		assert(!(miscFlags & HAGE::TEXTURE_GPU_WRITE || miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL));
-		assert(miscFlags & HAGE::TEXTURE_GPU_NO_READ);
-	}
-	else if(!(miscFlags & HAGE::TEXTURE_GPU_WRITE || miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL || HAGE::TEXTURE_GPU_COPY))
+	if(!(miscFlags & HAGE::TEXTURE_GPU_WRITE || miscFlags & HAGE::TEXTURE_GPU_DEPTH_STENCIL || HAGE::TEXTURE_GPU_COPY|| HAGE::TEXTURE_CPU_WRITE|| HAGE::TEXTURE_CPU_READ))
 	{
 		desc.Usage = D3D11_USAGE_IMMUTABLE ;
 		desc.CPUAccessFlags = 0;
@@ -74,12 +62,14 @@ D3D11_TEXTURE2D_DESC APIWToD3D11Texture2DDesc(HAGE::u32 xSize, HAGE::u32 ySize, 
 
 
 D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize)
-	: _pWrapper(pWrapper),_xSize(xSize),_ySize(ySize),_mipLevels(mipLevels),_format(format),_miscFlags(miscFlags),_texture(nullptr),_shaderResourceView(nullptr),_renderTargetView(nullptr),_depthStencilView(nullptr),_query(nullptr)
+	: _pWrapper(pWrapper),_xSize(xSize),_ySize(ySize),_mipLevels(mipLevels),_format(format),_miscFlags(miscFlags),_texture(nullptr),_shaderResourceView(nullptr),_renderTargetView(nullptr),_depthStencilView(nullptr)
 {
+
 	D3D11_TEXTURE2D_DESC desc = APIWToD3D11Texture2DDesc(_xSize,_ySize,_mipLevels,_format,_miscFlags);
 
 	D3D11_SUBRESOURCE_DATA data[16];
 	D3D11_SUBRESOURCE_DATA* pLocalData = nullptr;
+
 	if(pData)
 	{		
 		HAGE::u8* pMipData = (HAGE::u8*)pData;
@@ -88,11 +78,10 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		for(int i =0;i<mipLevels;++i)
 		{
 			data[i].pSysMem = pMipData;
-			data[i].SysMemPitch = APIWFormatImagePhysicalPitch(format,w);
-			data[i].SysMemSlicePitch = APIWFormatImagePhysicalSize(format,w,h);
+			data[i].SysMemPitch = HAGE::APIWFormatImagePhysicalPitch(format,w);
+			data[i].SysMemSlicePitch = HAGE::APIWFormatImagePhysicalSize(format,w,h);
 
 			pMipData+=APIWFormatImagePhysicalSize(format,w,h);
-
 			w>>=1;
 			h>>=1;
 			if(w==0)
@@ -102,8 +91,42 @@ D3D11Texture::D3D11Texture(D3D11APIWrapper* pWrapper,HAGE::u32 xSize, HAGE::u32 
 		}
 		pLocalData = data;
 	}
+
+	pWrapper->EnterDeviceCritical();
 	HRESULT hres = pWrapper->GetDevice()->CreateTexture2D(&desc,pLocalData,&_texture);
+	pWrapper->LeaveDeviceCritical();
 	assert(SUCCEEDED(hres));
+	
+	
+	if(_miscFlags & HAGE::TEXTURE_CPU_READ)
+	{
+		//create reading texture
+		_pReadData = new _ReadData;
+
+		D3D11_TEXTURE2D_DESC descCPURead = desc;
+		descCPURead.CPUAccessFlags = D3D10_CPU_ACCESS_READ;
+		descCPURead.Usage = D3D11_USAGE_STAGING;
+		descCPURead.BindFlags = 0;
+		
+		D3D11_QUERY_DESC queryDesc;
+		queryDesc.MiscFlags = 0;
+		queryDesc.Query = D3D11_QUERY_EVENT;
+
+		pWrapper->EnterDeviceCritical();
+		HRESULT hres = pWrapper->GetDevice()->CreateTexture2D(&descCPURead,nullptr,&_pReadData->textureStagingRead);
+		pWrapper->GetDevice()->CreateQuery(&queryDesc,&_pReadData->pReadOpQuery);
+		pWrapper->LeaveDeviceCritical();
+		assert(SUCCEEDED(hres));
+
+		_pReadData->pixelSize= APIWFormatPixelSize(format);
+		_pReadData->bReadOpPending = false;
+		_pReadData->nReadBufferSize = APIWFormatImagePhysicalSize(format,xSize,ySize);
+		_pReadData->pReadBuffer = new HAGE::u8[_pReadData->nReadBufferSize];
+
+	}
+	else
+		_pReadData = nullptr;
+
 
 	if(!(_miscFlags & HAGE::TEXTURE_GPU_NO_READ))
 	{
@@ -212,8 +235,13 @@ void D3D11Texture::Clear(HAGE::Vector4<> vColor)
 
 D3D11Texture::~D3D11Texture()
 {
-	if(_query)
-		_query->Release();
+	if(_pReadData)
+	{
+		delete [] _pReadData->pReadBuffer;
+		_pReadData->textureStagingRead->Release();
+		_pReadData->pReadOpQuery->Release();
+		delete _pReadData;
+	}
 	if(_shaderResourceView)
 		_shaderResourceView->Release();
 	if(_renderTargetView)
@@ -230,119 +258,116 @@ void D3D11Texture::GenerateMips()
 	_pWrapper->GetContext()->GenerateMips(_shaderResourceView);
 }
 
-
-void D3D11Texture::StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pTarget) const
+void D3D11Texture::StreamForReading(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize)
 {
-	if(! (_miscFlags & HAGE::TEXTURE_CPU_WRITE || _miscFlags & HAGE::TEXTURE_CPU_READ) )
+	assert(_pReadData);
+	assert(!_pReadData->bReadOpPending);
+
+	D3D11_BOX box;
+	box.top = yOff;
+	box.bottom = yOff+ySize;
+	box.left = xOff;
+	box.right = xOff+xSize;
+	box.front = 0;
+	box.back = 1;
+
+	_pWrapper->GetContext()->CopySubresourceRegion(_pReadData->textureStagingRead,0,xOff,yOff,0,_texture,0,&box);
+	
+	_pWrapper->GetContext()->End(_pReadData->pReadOpQuery);
+
+	_pReadData->xReadOffset = xOff;
+	_pReadData->yReadOffset = yOff;
+	_pReadData->xReadSize = xSize;
+	_pReadData->yReadSize = ySize;
+	_pReadData->bReadOpPending= true;
+
+	_pWrapper->QueueTextureForCompleteRead(this);
+}
+
+bool D3D11Texture::_CompleteReadingStream()
+{
+	assert(_pReadData);
+	assert(_pReadData->bReadOpPending);
+
+	BOOL val = FALSE;
+	_pWrapper->GetContext()->GetData(_pReadData->pReadOpQuery,&val,sizeof(BOOL),D3D11_ASYNC_GETDATA_DONOTFLUSH);
+
+	if(val)
 	{
-		assert(!"Not supported yet");
+		_pReadData->bReadOpPending= false;
+		D3D11_MAPPED_SUBRESOURCE	sub;
+		_pWrapper->GetContext()->Map(_pReadData->textureStagingRead,0,D3D11_MAP_READ,0,&sub);
 
-		// copy texture to pbo	
-		assert(_miscFlags & HAGE::TEXTURE_GPU_COPY); 
-		D3D11Texture* target = (D3D11Texture*)pTarget;
+		for(int iy = _pReadData->yReadOffset; iy < _pReadData->yReadOffset + _pReadData->yReadSize; iy++)
+			for(int ix = _pReadData->xReadOffset; ix < _pReadData->xReadOffset + _pReadData->xReadSize; ix++)
+				for(int ip = 0; ip < _pReadData->pixelSize; ip++)
+					((HAGE::u8*)_pReadData->pReadBuffer)[(iy*_pReadData->xReadSize +ix)*_pReadData->pixelSize + ip] = 
+						((HAGE::u8*)sub.pData)[iy*sub.RowPitch + ix*_pReadData->pixelSize + ip];
 
-		assert(target->_miscFlags & HAGE::TEXTURE_CPU_READ); 
-
-		//settings have to match
-		assert(target->_xSize == _xSize);
-		assert(target->_ySize == _ySize);
-		assert(target->_mipLevels == _mipLevels);
-		assert(target->_format == _format);
-
-		D3D11_BOX box;
-		box.left = xOff;
-		box.right = xOff+xSize;
-		box.top = yOff;
-		box.bottom = yOff+ySize;
-		box.front = 0;
-		box.back = 1;
-
-		_pWrapper->GetContext()->CopySubresourceRegion(_texture,0,xOff,yOff,0,target->_texture,0,&box);
-
-		if(!_query)
-		{
-			D3D11_QUERY_DESC query_desc;
-			query_desc.MiscFlags=0;
-			query_desc.Query = D3D11_QUERY_EVENT;
-			_pWrapper->GetDevice()->CreateQuery(&query_desc,&_query);
-			_pWrapper->GetContext()->End(_query);
-		}
-		if(!target->_query)
-		{
-			D3D11_QUERY_DESC query_desc;
-			query_desc.MiscFlags=0;
-			query_desc.Query = D3D11_QUERY_EVENT;
-			_pWrapper->GetDevice()->CreateQuery(&query_desc,&target->_query);
-			_pWrapper->GetContext()->End(target->_query);
-		}
+		_pWrapper->GetContext()->Unmap(_pReadData->textureStagingRead,0);
+		return true;
 	}
 	else
+		return false;
+}
+
+void D3D11Texture::StreamFromSystem(const D3D11APIWrapper::CPUTextureWriteSettings& settings)
+{
+	assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE);
+
+	_pWrapper->GetContext()->CopySubresourceRegion(_texture,settings.level,settings.xOffset,settings.yOffset,0,settings.pSource,0,nullptr);
+}
+
+#undef PostMessage
+
+//more like texture things
+void D3D11APIWrapper::UpdateTexture(HAGE::APIWTexture* pTexture,HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::u32 Level, const void* pData)
+{
+	D3D11APIWrapper::CPUTextureWriteSettings settings;
+
+	D3D11Texture* texture = (D3D11Texture*)pTexture;
+	
+	assert(texture->_miscFlags & HAGE::TEXTURE_CPU_WRITE);
+
+	//create source texture
+	D3D11_TEXTURE2D_DESC descCPUWrite = APIWToD3D11Texture2DDesc(xSize,ySize,1,texture->_format,texture->_miscFlags);;
+	descCPUWrite.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	descCPUWrite.Usage = D3D11_USAGE_STAGING;
+	descCPUWrite.BindFlags = 0;
+	D3D11_SUBRESOURCE_DATA sub;
+	sub.pSysMem = pData;
+	sub.SysMemPitch = HAGE::APIWFormatImagePhysicalPitch(texture->_format,xSize);
+	sub.SysMemSlicePitch = HAGE::APIWFormatImagePhysicalSize(texture->_format,xSize,ySize);
+	
+	EnterDeviceCritical();
+	HRESULT hres = GetDevice()->CreateTexture2D(&descCPUWrite,pData?&sub:nullptr,&settings.pSource);
+	LeaveDeviceCritical();
+	if(SUCCEEDED(hres))
 	{
-		//copy pbo to texture
-		D3D11Texture* target = (D3D11Texture*)pTarget;
+		settings.pDest = texture;
+		settings.level = Level;
+		settings.xOffset = xOff;
+		settings.yOffset = yOff;
+		settings.xSize = xSize;
+		settings.ySize = ySize;
 
-		assert(target->_miscFlags & HAGE::TEXTURE_GPU_COPY); 
-
-		assert(_miscFlags & HAGE::TEXTURE_CPU_WRITE); 
-
-		//settings have to match
-		assert(target->_xSize == _xSize);
-		assert(target->_ySize == _ySize);
-		assert(target->_mipLevels == _mipLevels);
-		assert(target->_format == _format);
-
-		D3D11_BOX box;
-		box.left = xOff;
-		box.right = xOff+xSize;
-		box.top = yOff;
-		box.bottom = yOff+ySize;
-		box.front = 0;
-		box.back = 1;
-		
-		_pWrapper->GetContext()->CopySubresourceRegion(_texture,0,xOff,yOff,0,target->_texture,0,&box);
-		
-		if(!_query)
-		{
-			D3D11_QUERY_DESC query_desc;
-			query_desc.MiscFlags=0;
-			query_desc.Query = D3D11_QUERY_EVENT;
-			_pWrapper->GetDevice()->CreateQuery(&query_desc,&_query);
-			_pWrapper->GetContext()->End(_query);
-		}
-		if(!target->_query)
-		{
-			D3D11_QUERY_DESC query_desc;
-			query_desc.MiscFlags=0;
-			query_desc.Query = D3D11_QUERY_EVENT;
-			_pWrapper->GetDevice()->CreateQuery(&query_desc,&target->_query);
-			_pWrapper->GetContext()->End(target->_query);
-		}
+		_allocQueue.PostMessage(MessageD3DRenderingCPUWriteRequest(settings));
 	}
+	else
+		assert(!"could not create resource!");
 }
 
-bool D3D11Texture::IsStreamComplete()
+bool D3D11APIWrapper::ReadTexture(HAGE::APIWTexture* pTexture, const void** ppDataOut)
 {
-	BOOL data;
-	_pWrapper->GetContext()->GetData(_query, &data, sizeof(BOOL), 0);
-	return data;
-}
+	D3D11Texture* texture = (D3D11Texture*)pTexture;
 
-void D3D11Texture::WaitForStream()
-{
-	BOOL data;
-	while( S_OK != _pWrapper->GetContext()->GetData(_query, &data, sizeof(BOOL), 0) );
-}
+	if(!texture->_pReadData)
+		return false;
 
-HAGE::u32 D3D11Texture::ReadTexture(const HAGE::u8** ppBufferOut) const
-{
-	return 0;
-}
+	if(texture->_pReadData->bReadOpPending)
+		return false;
 
-HAGE::u32 D3D11Texture::LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags)
-{
-	return 0;
-}
+	*ppDataOut = texture->_pReadData->pReadBuffer;
 
-void D3D11Texture::UnlockTexture()
-{
+	return true;
 }

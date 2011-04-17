@@ -56,7 +56,9 @@ D3D11VertexArray::D3D11VertexArray(D3D11APIWrapper* pWrapper,HAGE::u32 nPrimitiv
 		bd.StructureByteStride = 0;
 		D3D11_SUBRESOURCE_DATA initData;
 		initData.pSysMem = pIndexBufferData;
+		m_pWrapper->EnterDeviceCritical();
 		HRESULT hr = m_pWrapper->GetDevice()->CreateBuffer( &bd, &initData, &m_pIndexBuffer );
+		m_pWrapper->LeaveDeviceCritical();
 		assert(SUCCEEDED(hr));
 	}
 	else

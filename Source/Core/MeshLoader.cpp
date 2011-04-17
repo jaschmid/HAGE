@@ -691,6 +691,7 @@ bool CMeshDataLoader::CMeshData::TryLoadHGEO(IDataStream* pData)
 	{
 		forceRead(pData,sizeof(Vector3<>),&pVertexData[i].position);
 		forceRead(pData,sizeof(Vector2<>),&pVertexData[i].texcoord0);
+		pVertexData[i].texcoord0 = pVertexData[i].texcoord0*2.0f/3.0f;
 		pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
 	}
 	forceRead(pData,sizeof(u32),&_nIndices);

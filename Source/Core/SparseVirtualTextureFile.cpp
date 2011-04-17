@@ -284,7 +284,7 @@ namespace HAGE {
 		const u64 vtXPixelEnd = (vtXOffset+ImageX -1) % vtPageSize +1;
 		const u64 vtYPixelEnd = (vtYOffset+ImageY -1) % vtPageSize +1;
 		if(level == -1)
-			level = GetMaxDepth()-1;
+			level = GetMaxDepth();
 
 		std::vector<u32> tempBuffer;
 		tempBuffer.resize(vtPageSize*vtPageSize);
@@ -325,7 +325,7 @@ namespace HAGE {
 		const u64 vtXPixelEnd = (vtXOffset+ImageX - 1) % vtPageSize + 1;
 		const u64 vtYPixelEnd = (vtYOffset+ImageY - 1) % vtPageSize + 1;
 		if(level == -1)
-			level = GetMaxDepth()-1;
+			level = GetMaxDepth();
 
 		std::vector<u32> tempBuffer;
 		tempBuffer.resize(vtPageSize*vtPageSize);

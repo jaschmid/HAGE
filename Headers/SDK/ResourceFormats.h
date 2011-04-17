@@ -46,13 +46,18 @@ namespace HAGE {
 	{
 		public:
 			virtual ~IStreamingResourceProvider(){}
-			virtual void ProcessResourceAccess(IResource* feedback) =0;
+			virtual bool ProcessResourceAccess(IResource* feedback) =0;
+			virtual bool CheckFeedbackBufferReady(IResource* feedback) =0;
 			virtual void CreateResourceAccessSet(std::vector<IResource*>& accesses) =0;
 			virtual bool QueryDependancies(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut) = 0;
 	};
 	
+	class IStreamingFeedbackProvider : public IResource
+	{
+	public:
+	};
 	
-	class IVirtualTexture : public IResource
+	class IVirtualTexture : public IStreamingFeedbackProvider
 	{
 	public:
 		//static data retrievel, does not change within one frame but results might change from frame to frame
@@ -62,7 +67,9 @@ namespace HAGE {
 		
 		//various functions to provide feedback
 		virtual void AdjustCacheSize(u32 newSize) const = 0; //enters a request to adjust the cache size
-		virtual void ProvideFeedback() const = 0;
+		virtual u32 GetId() const = 0;
+		virtual APIWEffect* BeginFeedback(RenderingAPIWrapper* pRenderer) const =0;
+		virtual void EndFeedback(RenderingAPIWrapper* pRenderer) const = 0;
 	};
 
 	class IMeshData : public IResource

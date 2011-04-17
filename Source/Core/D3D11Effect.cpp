@@ -77,7 +77,9 @@ static const char* preproc =
 	"	#define H_TEXTURE_2D_CMP(x) Texture2D x;SamplerComparisonState _Sampler##x\n"
 	"	#define H_TEXTURE_CUBE_CMP(x) TextureCube x;SamplerComparisonState _Sampler##x\n"
 	"	#define H_SAMPLE_2D(x,y) (x.Sample( _Sampler##x,(y)))\n"
+	"	#define H_SAMPLE_2D_LOD(x,y,z) (x.SampleLevel( _Sampler##x,(y),(z)))\n"
 	"	#define H_SAMPLE_CUBE(x,y) (x.Sample( _Sampler##x,(y)))\n"
+	"	#define H_SAMPLE_CUBE_LOD(x,y,z) (x.SampleLevel( _Sampler##x,(y),(z)))\n"
 	"	#define H_SAMPLE_2D_CMP(x,y,z) (x.SampleCmp( _Sampler##x,(y),(z)))\n"
 	"	#define H_SAMPLE_CUBE_CMP(x,y,z) (x.SampleCmp( _Sampler##x,(y),(z)))\n"
 	"	#define H_SAMPLE_2D_CMP0(x,y,z) (x.SampleCmpLevelZero( _Sampler##x,(y),(z)))\n"
@@ -173,9 +175,11 @@ ID3D11VertexShader* D3D11Effect::CompileVertexShader(const char* shader)
 		printf((const char*)pBlobError->GetBufferPointer());
 	}
 	assert( SUCCEEDED( hr ) );
-
+	
+	m_pWrapper->EnterDeviceCritical();
 	hr = m_pWrapper->GetDevice()->CreateVertexShader( m_pCompiledShader->GetBufferPointer(), m_pCompiledShader->GetBufferSize(),
                                         NULL, &pReturn );
+	m_pWrapper->LeaveDeviceCritical();
 
 	assert( SUCCEEDED( hr ) );
 
@@ -222,9 +226,11 @@ ID3D11GeometryShader* D3D11Effect::CompileGeometryShader(const char* shader)
 		printf((const char*)pBlobError->GetBufferPointer());
 	}
 	assert( SUCCEEDED( hr ) );
-
+	
+	m_pWrapper->EnterDeviceCritical();
 	hr = m_pWrapper->GetDevice()->CreateGeometryShader( pBlobGS->GetBufferPointer(), pBlobGS->GetBufferSize(),
                                         NULL, &pReturn );
+	m_pWrapper->LeaveDeviceCritical();
 
 	assert( SUCCEEDED( hr ) );
 	
@@ -272,8 +278,10 @@ ID3D11PixelShader* D3D11Effect::CompilePixelShader(const char* shader)
 	}
     assert( SUCCEEDED( hr ) );
 
+	m_pWrapper->EnterDeviceCritical();
     hr = m_pWrapper->GetDevice()->CreatePixelShader( pBlobPS->GetBufferPointer(), pBlobPS->GetBufferSize(),
                                        NULL, &pReturn );
+	m_pWrapper->LeaveDeviceCritical();
 	
 	ID3D11ShaderReflection* pReflector = nullptr; 
 	D3DReflect( pBlobPS->GetBufferPointer(),pBlobPS->GetBufferSize(), IID_ID3D11ShaderReflection,(void**)&pReflector);
@@ -503,8 +511,10 @@ void D3D11Effect::CreateInputLayout(const D3D11APIWrapper::VertexFormatKey& v)
 
 	ID3D11InputLayout* pLayout=nullptr;
 
+	m_pWrapper->EnterDeviceCritical();
 	HRESULT hr = m_pWrapper->GetDevice()->CreateInputLayout( pEntry->pD3DDescription, pEntry->nElements, m_pCompiledShader->GetBufferPointer(),
 										m_pCompiledShader->GetBufferSize(), &pLayout );
+	m_pWrapper->LeaveDeviceCritical();
 
 	assert(SUCCEEDED(hr) && pLayout);
 

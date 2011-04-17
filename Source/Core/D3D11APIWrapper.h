@@ -26,6 +26,8 @@
 #include <array>
 #include <algorithm>
 
+class D3D11Texture;
+
 class D3D11APIWrapper : public HAGE::RenderingAPIWrapper
 {
 public:
@@ -86,8 +88,16 @@ public:
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
+	
+	void UpdateTexture(HAGE::APIWTexture* pTexture,HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::u32 Level, const void* pData);
+	bool ReadTexture(HAGE::APIWTexture* pTexture, const void** ppDataOut);
+	
+	HAGE::APIWFence* CreateStreamingFence();
 
 	void FreeObject(HAGE::APIWObject* pObject){RenderingAPIWrapper::freeObject(pObject);}
+
+	void EnterDeviceCritical(){EnterCriticalSection(&_deviceCritical);}
+	void LeaveDeviceCritical(){LeaveCriticalSection(&_deviceCritical);}
 
 	ID3D11Device*				GetDevice(){return m_pDevice;}
 	ID3D11DeviceContext*		GetContext(){return m_pContext;}
@@ -116,14 +126,63 @@ public:
 		ID3D11SamplerState*	pSampler;
 	};
 	
+	struct CPUTextureWriteSettings
+	{
+		HAGE::u32 xOffset;
+		HAGE::u32 yOffset;
+		HAGE::u32 xSize;
+		HAGE::u32 ySize;
+		HAGE::u32 level;
+		ID3D11Texture2D* pSource;
+		D3D11Texture* pDest;
+	};
+
 	//should be called from main UI thread
 	void _UpdateDisplaySettings_RemoteCall();
 	void _Initialize_RemoteCall();
+	void _Present_RemoteCall();
 
 	inline ID3D11SamplerState*	GetDefaultSampler(){_defaultSampler->AddRef();return _defaultSampler;}
 	inline D3D11Effect* GetCurrentEffect(){return _currentEffect;}
 	inline void SetCurrentEffect(D3D11Effect* pNew){_currentEffect=pNew;}
 	inline void	SetViewport(const HAGE::APIWViewport& vp){_currentViewport = vp;}
+	inline void QueueTextureForCompleteRead(D3D11Texture* pTexture){_pendingTextureReads.push_back(pTexture);}
+	
+	class _D3DFenceInternal
+	{
+	public:
+		void AddRef()
+		{
+			_InterlockedIncrement(&refcount);
+		}
+		void Release()
+		{
+			if(_InterlockedDecrement(&refcount) == 0)
+			{
+				this->~_D3DFenceInternal();
+				HAGE::DomainMemory::GlobalFree(this);
+			}
+		}
+
+		_D3DFenceInternal() : refcount(0),_query(nullptr),_status(false) {}
+
+		void SetQuery(ID3D11Query* q){_query=q;q->AddRef();}
+		void CheckQuery(ID3D11DeviceContext* pContext)
+		{
+			HRESULT hres;
+			hres =pContext->GetData(_query,&_status,sizeof(BOOL),D3D11_ASYNC_GETDATA_DONOTFLUSH);
+			return;
+		}
+		bool GetStatus(){return _status;}
+
+	private:
+		~_D3DFenceInternal(){if(_query)_query->Release();}
+
+		BOOL _status;
+		ID3D11Query*	_query;
+		volatile HAGE::i32 refcount;
+	};
+
 private:
 
 	typedef std::basic_string<char,std::char_traits<char>,HAGE::global_allocator<char>> global_string;
@@ -157,7 +216,47 @@ private:
 	ArrayFormatListType			m_ArrayFormatList;
 	
 	void _UpdateDisplaySettings();
+	void _Present();
+	void _CheckFences();
 
+	static const int AllocThreadMessageQueueSize = 1024*512;
+	HAGE::StaticMessageQueue<AllocThreadMessageQueueSize>	_allocQueue;
+	
+	enum {
+		// D3DRENDERING MESSAGE 1200 0000
+		MESSAGE_D3DRENDERING_UNKNOWN			= 0x12000000,
+		MESSAGE_D3DRENDERING_CPU_READ_REQUEST	= 0x12000001,
+		MESSAGE_D3DRENDERING_CPU_WRITE_REQUEST	= 0x12000002,
+		MESSAGE_D3DRENDERING_SET_FENCE			= 0x12000003
+	};
+
+	class MessageD3DRenderingUnknown : public HAGE::Message
+	{
+	public:
+		MessageD3DRenderingUnknown(HAGE::u32 MessageCode,HAGE::u32 Size) : Message(MessageCode,Size) {}
+	private:
+		static const HAGE::u32 id = MESSAGE_D3DRENDERING_UNKNOWN;
+	};
+	class MessageD3DRenderingCPUWriteRequest : public HAGE::MessageHelper<MessageD3DRenderingCPUWriteRequest,MessageD3DRenderingUnknown>
+	{
+	public:
+		MessageD3DRenderingCPUWriteRequest(const CPUTextureWriteSettings& settings) :  HAGE::MessageHelper<MessageD3DRenderingCPUWriteRequest,MessageD3DRenderingUnknown>(id),_settings(settings)
+		{}
+		const CPUTextureWriteSettings& GetSettings() const{return _settings;}
+	private:
+		CPUTextureWriteSettings			_settings;
+		static const HAGE::u32 id = MESSAGE_D3DRENDERING_CPU_WRITE_REQUEST;
+	};
+	class MessageD3DRenderingSetFence : public HAGE::MessageHelper<MessageD3DRenderingSetFence,MessageD3DRenderingUnknown>
+	{
+	public:
+		MessageD3DRenderingSetFence(_D3DFenceInternal* f) :  HAGE::MessageHelper<MessageD3DRenderingSetFence,MessageD3DRenderingUnknown>(id),_fence(f)
+		{}
+		_D3DFenceInternal* GetFence() const{return _fence;}
+	private:
+		_D3DFenceInternal*			_fence;
+		static const HAGE::u32 id = MESSAGE_D3DRENDERING_SET_FENCE;
+	};
 
 	HAGE::APIWDisplaySettings	_currentDisplaySettings;
 	HAGE::APIWDisplaySettings	_newDisplaySettings;
@@ -179,6 +278,9 @@ private:
 
 	HAGE::RenderDebugUI*		m_DebugUIRenderer;
 
+	CRITICAL_SECTION			_deviceCritical;
+	std::list<_D3DFenceInternal*>	_pendingFences;
+	std::list<D3D11Texture*>		_pendingTextureReads;
 
 };
 
@@ -190,28 +292,41 @@ public:
 	void Clear(HAGE::Vector4<> Color);
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
 	void GenerateMips();
+	
 
-	void StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pTarget) const;
-	bool IsStreamComplete();
-	void WaitForStream();
-
-	HAGE::u32 ReadTexture(const HAGE::u8** ppBufferOut) const;
-	HAGE::u32 LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags);
-	void UnlockTexture();
+	void StreamForReading(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize);
+	
+	void StreamFromSystem(const D3D11APIWrapper::CPUTextureWriteSettings& settings);
+	bool _CompleteReadingStream();
 
 	virtual ~D3D11Texture();
 private:
-	HAGE::u32			_xSize;
-	HAGE::u32			_ySize;
-	HAGE::u32			_mipLevels;
-	HAGE::APIWFormat	_format;
-	HAGE::u32			_miscFlags;
+	HAGE::u32							_xSize;
+	HAGE::u32							_ySize;
+	HAGE::u32							_mipLevels;
+	HAGE::APIWFormat					_format;
+	HAGE::u32							_miscFlags;
 	ID3D11Texture2D*                    _texture;
 	ID3D11ShaderResourceView*           _shaderResourceView;
 	ID3D11RenderTargetView*				_renderTargetView;
 	ID3D11DepthStencilView*				_depthStencilView;
-	mutable ID3D11Query*				_query;
 	D3D11APIWrapper*					_pWrapper;
+	
+	//for read operations
+	struct _ReadData
+	{
+		ID3D11Texture2D*                    textureStagingRead;
+		ID3D11Query*						pReadOpQuery;
+		HAGE::u32							xReadOffset;
+		HAGE::u32							yReadOffset;
+		HAGE::u32							xReadSize;
+		HAGE::u32							yReadSize;
+		HAGE::u32							pixelSize;
+		bool								bReadOpPending;
+		HAGE::u32							nReadBufferSize;
+		void*								pReadBuffer;	
+	};
+	_ReadData*							_pReadData;
 
 	friend class D3D11APIWrapper;
 	friend class D3D11Effect;
@@ -323,6 +438,17 @@ private:
 	D3D11APIWrapper*			m_pWrapper;
 };
 
+class D3D11Fence : public HAGE::APIWFence
+{
+public:
+	D3D11Fence(D3D11APIWrapper::_D3DFenceInternal* pFence) : _fence(pFence) {_fence->AddRef();}
+	~D3D11Fence(){_fence->Release();}
+	bool CheckStatus(){return _fence->GetStatus();}
+private:
+	D3D11APIWrapper::_D3DFenceInternal* _fence;
+};
+
+
 static DXGI_FORMAT APIWFormatToD3DFormat(const HAGE::APIWFormat& format)
 {
 	switch(format)
@@ -341,6 +467,9 @@ static DXGI_FORMAT APIWFormatToD3DFormat(const HAGE::APIWFormat& format)
 		break;
 	case HAGE::R32G32B32A32_FLOAT	:
 		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case HAGE::R16G16B16A16_UNORM	:
+		return DXGI_FORMAT_R16G16B16A16_UNORM;
 		break;
 	case HAGE::R8G8B8A8_UNORM		:
 		return DXGI_FORMAT_R8G8B8A8_UNORM;

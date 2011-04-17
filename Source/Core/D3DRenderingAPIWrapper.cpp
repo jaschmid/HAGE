@@ -40,6 +40,15 @@ private:
 	D3D11APIWrapper* _pWrapper;
 };
 
+class PresentCall : public RemoteFunctionCall
+{
+public:
+	PresentCall(D3D11APIWrapper* pWrapper) : _pWrapper(pWrapper) {}
+	void Call(){_pWrapper->_Present_RemoteCall();}
+private:
+	D3D11APIWrapper* _pWrapper;
+};
+
 /*
 bool D3D11APIWrapper::checkForCgError(const char *situation)
 {
@@ -82,6 +91,8 @@ D3D11APIWrapper::D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
 	_newDisplaySettings(*pSettings),
 	_currentEffect(nullptr)
 {
+	InitializeCriticalSection(&_deviceCritical);
+
 	InitCall initCall(this);
 	SendMessage(m_hWnd,WM_REMOTE_FUNCTION_CALL,0,(LPARAM)&initCall);
 
@@ -90,7 +101,10 @@ D3D11APIWrapper::D3D11APIWrapper(const HAGE::APIWDisplaySettings* pSettings) :
 
 	m_DebugUIRenderer = new HAGE::RenderDebugUI(this);
 	D3D11_SAMPLER_DESC sampler= HAGESamplerToD3DSamplerState(HAGE::DefaultSamplerState);
+
+	EnterDeviceCritical();
 	m_pDevice->CreateSamplerState(&sampler,&_defaultSampler);
+	LeaveDeviceCritical();
 }
 
 void D3D11APIWrapper::_Initialize_RemoteCall()
@@ -103,7 +117,7 @@ void D3D11APIWrapper::_Initialize_RemoteCall()
 
 	HRESULT hr = S_OK;
 	
-    UINT createDeviceFlags = 0;//D3D11_CREATE_DEVICE_SINGLETHREADED;
+    UINT createDeviceFlags = 0;// D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS|D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -129,7 +143,7 @@ void D3D11APIWrapper::_Initialize_RemoteCall()
 	
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory( &sd, sizeof( sd ) );
-    sd.BufferCount = 2;
+    sd.BufferCount = 1;
     sd.BufferDesc.Width = window.right-window.left;
     sd.BufferDesc.Height = window.bottom-window.top;
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -138,7 +152,7 @@ void D3D11APIWrapper::_Initialize_RemoteCall()
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
 	sd.Windowed = 1;
-	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	sd.Flags = 0;
     D3D_DRIVER_TYPE driverType;
 
 	_currentDisplaySettings.xRes = sd.BufferDesc.Width;
@@ -175,6 +189,21 @@ void D3D11APIWrapper::_UpdateDisplaySettings()
 		ChangeResolutionCall updateCall(this);
 		SendMessage(m_hWnd,WM_REMOTE_FUNCTION_CALL,0,(LPARAM)&updateCall);
 	}
+}
+
+
+void D3D11APIWrapper::_Present()
+{
+	PresentCall presentCall(this);
+	
+	EnterDeviceCritical();
+	SendMessage(m_hWnd,WM_REMOTE_FUNCTION_CALL,0,(LPARAM)&presentCall);
+	LeaveDeviceCritical();
+}
+
+void D3D11APIWrapper::_Present_RemoteCall()
+{	
+    m_pSwapChain->Present( 0, 0 );
 }
 
 void D3D11APIWrapper::_UpdateDisplaySettings_RemoteCall()
@@ -310,15 +339,18 @@ void D3D11APIWrapper::EndAllocation()
 
 void D3D11APIWrapper::BeginFrame()
 {
+	_CheckFences();
     float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f }; 
     m_pContext->ClearRenderTargetView( m_pRenderTargetView, ClearColor );
 	m_pContext->ClearDepthStencilView( m_pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
     m_pContext->OMSetRenderTargets( 1, &m_pRenderTargetView, m_pDepthStencilView );
+
 }
 
 
 void D3D11APIWrapper::PresentFrame()
 {
+	_CheckFences();
 	/*
 	m_pContext->OMSetBlendState( myBlendState_NoBlend, 0, 0xffffffff );
     m_pContext->RSSetState( myRasterizerState_NoCull );
@@ -327,6 +359,7 @@ void D3D11APIWrapper::PresentFrame()
 	// Debug UI
 //	AttachThreadInput();
 //	AttachThreadInput();
+
 	m_DebugUIRenderer->Draw();
 
     // Show the rendered frame on the screen
@@ -336,7 +369,7 @@ void D3D11APIWrapper::PresentFrame()
 	/*if(_currentDisplaySettings.bFullscreen)
 		SetWindowPos(m_hWnd,HWND_TOPMOST,0,0,_currentDisplaySettings.xRes,_currentDisplaySettings.yRes,SWP_SHOWWINDOW|SWP_FRAMECHANGED);*/
 	//printf("About to present on %08x\n",GetCurrentThreadId());
-    m_pSwapChain->Present( 0, 0 );
+	
 	//printf("Presented on %08x\n",GetCurrentThreadId());
 	/*
 	static int i = 0;
@@ -344,6 +377,7 @@ void D3D11APIWrapper::PresentFrame()
 	if(i%10==0)
 		_newDisplaySettings.bFullscreen = !_currentDisplaySettings.bFullscreen;*/
 
+	_Present();
 	_UpdateDisplaySettings();
 	
 	//framerate hack yay
@@ -365,6 +399,75 @@ void D3D11APIWrapper::PresentFrame()
 
     if(nSum%100==0)
         printf("Average %.02f - current %.02f\n",sum/(float)nSum,1.0f/(float)diff*(float)freq);
+
+	
+	const HAGE::Message* pMessage;
+		
+	while((pMessage = _allocQueue.GetTopMessage()))
+	{
+		switch(pMessage->GetMessageCode())
+		{
+		case MESSAGE_D3DRENDERING_CPU_WRITE_REQUEST:
+			{
+				const MessageD3DRenderingCPUWriteRequest* pRequest = (const MessageD3DRenderingCPUWriteRequest*)pMessage;
+				const CPUTextureWriteSettings& settings = pRequest->GetSettings();
+				settings.pDest->StreamFromSystem(settings);
+				settings.pSource->Release();
+			}
+			break;
+		case MESSAGE_D3DRENDERING_SET_FENCE:
+			{
+				const MessageD3DRenderingSetFence* pRequest = (const MessageD3DRenderingSetFence*)pMessage;
+				ID3D11Query* pQuery;
+				D3D11_QUERY_DESC queryDesc;
+				queryDesc.MiscFlags = 0;
+				queryDesc.Query = D3D11_QUERY_EVENT;
+				m_pDevice->CreateQuery(&queryDesc,&pQuery);
+				m_pContext->End(pQuery);
+				pRequest->GetFence()->SetQuery(pQuery);
+				pQuery->Release();
+				_pendingFences.push_back(pRequest->GetFence());
+			}
+			break;
+		}
+		_allocQueue.PopMessage();
+	}
+
+	_CheckFences();
+}
+
+void D3D11APIWrapper::_CheckFences()
+{
+	while(!_pendingFences.empty())
+	{
+		_pendingFences.front()->CheckQuery(m_pContext);
+		if(_pendingFences.front()->GetStatus())
+		{
+			_pendingFences.front()->Release();
+			_pendingFences.pop_front();
+		}
+		else
+			break;
+	}
+
+	while(!_pendingTextureReads.empty())
+	{
+		if(_pendingTextureReads.front()->_CompleteReadingStream())
+			_pendingTextureReads.pop_front();
+		else
+			break;
+	}
+}
+
+#undef PostMessage
+
+HAGE::APIWFence* D3D11APIWrapper::CreateStreamingFence()
+{
+	_D3DFenceInternal* val = new (HAGE::DomainMemory::GlobalAllocate(sizeof(_D3DFenceInternal))) _D3DFenceInternal;
+	val->AddRef();
+	_allocQueue.PostMessage(MessageD3DRenderingSetFence(val));
+
+	return (HAGE::APIWFence*)new D3D11Fence(val);
 }
 
 HAGE::APIWVertexBuffer* D3D11APIWrapper::CreateVertexBuffer(const char* szVertexFormat,const void* pData,HAGE::u32 nElements,bool bDynamic,bool bInstanceData)
@@ -666,6 +769,7 @@ HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pProgram,
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers )
 {
+	
 	ID3D11RasterizerState*	rast;
 	ID3D11BlendState*		blend;
 	ID3D11DepthStencilState*		depth;
@@ -674,6 +778,7 @@ HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pProgram,
 	D3D11_RASTERIZER_DESC	rastDesc = HAGERasterizerToD3DRasterizerState(pRasterizerState);
 	D3D11_DEPTH_STENCIL_DESC	depthDesc = HAGERasterizerToD3DDepthStencilTest(pRasterizerState);
 	D3D11_BLEND_DESC		blendDesc = HAGEBlendToD3DBlendState(pBlendState,nBlendStates,AlphaToCoverage);
+	EnterDeviceCritical();
 	for(int i =0;i<nSamplers;++i)
 	{
 		D3D11_SAMPLER_DESC sampler= HAGESamplerToD3DSamplerState(pSamplers[i].State);
@@ -683,6 +788,7 @@ HAGE::APIWEffect* D3D11APIWrapper::CreateEffect(const char* pProgram,
 	m_pDevice->CreateRasterizerState(&rastDesc,&rast);
 	m_pDevice->CreateBlendState(&blendDesc,&blend);
 	m_pDevice->CreateDepthStencilState(&depthDesc,&depth);
+	LeaveDeviceCritical();
 	return new D3D11Effect(this,pProgram,rast,blend,depth,samplers,nSamplers);
 }
 

@@ -50,7 +50,7 @@ namespace HAGE {
 			boxinit.scale = Vector3<>(20.0f,20.0f,20.0f);
 			GetFactory().CreateObject<LogicActor>(boxinit);
 
-
+			
 			//create sun
 			ActorInit ainit;
 			ainit.bCastShadow = false;
@@ -65,7 +65,7 @@ namespace HAGE {
 			strcpy(ainit.mesh,"sphere.ply");
 			strcpy(ainit.texture,"sun.png");
 			ainit.scale = Vector3<>(0.5f,0.5f,0.5f);
-
+			/*
 			guid guidSun = GetFactory().CreateObject<LogicActor>(ainit);
 
 			//create planets
@@ -108,7 +108,7 @@ namespace HAGE {
 					ainit.scale = Vector3<>(.050f,.050f,.050f);
 					GetFactory().CreateObject<LogicActor>(ainit);
 				}
-			}
+			}*/
 
 			/*
 			Vector3<> ply_location(settings->getf32Setting("ply_spawn_x"),

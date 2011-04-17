@@ -249,6 +249,11 @@ public:
 		const HAGE::u32 nBlendStates, bool AlphaToCoverage,
 		const HAGE::APIWSampler* pSamplers,HAGE::u32 nSamplers );
 	HAGE::APIWTexture* CreateTexture(HAGE::u32 xSize, HAGE::u32 ySize, HAGE::u32 mipLevels, HAGE::APIWFormat format,HAGE::u32 miscFlags,const void* pData,HAGE::u32 nDataSize);
+	
+	void UpdateTexture(HAGE::APIWTexture* pTexture,HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::u32 Level, const void* pData);
+	bool ReadTexture(HAGE::APIWTexture* pTexture, const void** ppDataOut){return false;}
+	
+	HAGE::APIWFence* CreateStreamingFence(){return nullptr;}
 
 	void FreeObject(HAGE::APIWObject* pObject){RenderingAPIWrapper::freeObject(pObject);}
 	
@@ -355,13 +360,8 @@ public:
 	void Clear(bool bDepth,float depth,bool bStencil = false,HAGE::u32 stencil = 0);
 	void GenerateMips();
 	
-	void StreamToTexture(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize,HAGE::APIWTexture* pTarget) const;
-	bool IsStreamComplete();
-	void WaitForStream();
+	void StreamForReading(HAGE::u32 xOff,HAGE::u32 yOff,HAGE::u32 xSize,HAGE::u32 ySize);
 
-	HAGE::u32 ReadTexture(const HAGE::u8** ppBufferOut) const;
-	HAGE::u32 LockTexture(HAGE::u8** ppBufferOut,HAGE::u32 flags);
-	void UnlockTexture();
 
 	virtual ~OGL3Texture();
 private:
