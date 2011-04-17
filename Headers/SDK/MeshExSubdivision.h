@@ -75,8 +75,7 @@ namespace HAGE {
 			{
 				if(!edge_data[(size_t)std::get<1>(et).Index()].second)
 				{
-					newData.Position = v->Position;
-					return;
+					continue;
 				}
 				sum += std::get<0>(et)->Position;
 				++count;
@@ -85,7 +84,9 @@ namespace HAGE {
 
 			float beta;
 
-			if(count == 3)
+			if(count <= 2)
+				beta = 0.0f;
+			else if(count == 3)
 				beta = 3.0f/16.0f;
 			else
 				beta = 3.0f/8.0f/(float)count;
@@ -103,12 +104,12 @@ namespace HAGE {
 			size_t sizeV = (size_t)Final()->GetNumVertexIndices();
 			EDataT dataE(sizeE);
 			std::vector<typename BaseType::VertexType> dataV(sizeV);
-				
-			for(size_t i = 0; i < sizeV; ++i)
-				vr( Final()->GetVertex(i) , dataV[i], dataE ,*Final());
 
 			for(size_t i = 0; i < sizeE; ++i)
 				dataE[i].second = er( Final()->GetEdge(i) , dataE[i].first ,*Final());
+				
+			for(size_t i = 0; i < sizeV; ++i)
+				vr( Final()->GetVertex(i) , dataV[i], dataE ,*Final());
 
 			BaseType::IndexType original_edges = Final()->GetNumEdgeIndices();
 			BaseType::IndexType original_vertices = Final()->GetNumVertexIndices();
