@@ -60,11 +60,11 @@ template<> f64 sqrt<f64>(const f64& v)
 	return std::sqrtl(v);
 }
 
-template<class _T = f32> class Vector2<_T>;
-template<class _T = f32> class Vector3<_T>;
-template<class _T = f32> class Vector4<_T>;
-template<class _T = f32> class Matrix4<_T>;
-template<class _T = f32> class Quaternion<_T>;
+template<class _T = f32> struct Vector2;
+template<class _T = f32> struct Vector3;
+template<class _T = f32> struct Vector4;
+template<class _T = f32> struct Matrix4;
+template<class _T = f32> struct Quaternion;
 
 }
 

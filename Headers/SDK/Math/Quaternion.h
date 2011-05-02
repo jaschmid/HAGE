@@ -17,7 +17,7 @@
 namespace HAGE {
 
 	
-template<class _T = f32> class Quaternion<_T>
+template<class _T> struct Quaternion
 {
 public:
 

@@ -18,7 +18,7 @@
 namespace HAGE {
 
 
-template<typename _T = f32> struct Vector4
+template<typename _T> struct Vector4
 {
 public:
 	union

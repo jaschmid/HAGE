@@ -34,6 +34,9 @@
     <Filter Include="Dependancies\Snappy">
       <UniqueIdentifier>{481b4dde-20ae-4347-845e-e35301e437a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{d7f0ca61-ddea-4fa7-bcd1-b9d116c26959}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers\SDK\types.h">
@@ -171,27 +174,6 @@
     <ClInclude Include="Headers\SDK\MeshExSubdivision.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector2.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector3.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Matrix4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Quaternion.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Binary.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\MathTypes.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\MeshExCurvature.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
@@ -266,6 +248,27 @@
     </ClInclude>
     <ClInclude Include="Source\Core\SVTPageEncoding.h">
       <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Quaternion.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Matrix4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\MathTypes.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Binary.h">
+      <Filter>Header Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

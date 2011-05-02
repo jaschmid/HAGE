@@ -18,7 +18,7 @@
 
 namespace HAGE {
 
-template<class _T = f32> struct Matrix4
+template<class _T> struct Matrix4
 {
 	union
 	{
