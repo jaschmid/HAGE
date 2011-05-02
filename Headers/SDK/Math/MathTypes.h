@@ -50,12 +50,12 @@ template<typename _T> _T sqrt(const _T& v)
 	return std::sqrt(v);
 }
 
-template<> f32 sqrt<f32>(const f32& v)
+template<> static f32 sqrt<f32>(const f32& v)
 {
 	return std::sqrtf(v);
 }
 
-template<> f64 sqrt<f64>(const f64& v)
+template<> static f64 sqrt<f64>(const f64& v)
 {
 	return std::sqrtl(v);
 }
