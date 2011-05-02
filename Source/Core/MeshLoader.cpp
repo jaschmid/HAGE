@@ -1185,12 +1185,26 @@ IResource* CMeshDataLoader::CMeshData::Finalize(const ResourceAccess* dependanci
 
 CMeshDataLoader::CMeshData::~CMeshData()
 {
+	if( _pVertexData == (u8*) vertices)
+		return;
+	else if( _pVertexData == (u8*) boxVertices)
+		return;
+
 	if(_pVertexData)
+	{
 		delete _pVertexData;
+		_pVertexData = nullptr;
+	}
 	if(_pIndexData)
+	{
 		delete _pIndexData;
+		_pIndexData = nullptr;
+	}
 	if(_pMaterialData)
+	{
 		delete _pMaterialData;
+		_pMaterialData = nullptr;
+	}
 }
 u32 CMeshDataLoader::CMeshData::GetNumVertices() const
 {

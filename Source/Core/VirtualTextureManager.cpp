@@ -132,8 +132,8 @@ namespace HAGE {
 
 			u32 Black = 0;
 
-			cacheTexture = pAlloc->CreateTexture(1,1,1,HAGE::APIWFormat::R8G8B8A8_UNORM,0,&Black);
-			redirectionTexture = pAlloc->CreateTexture(1,1,1,HAGE::APIWFormat::R8G8B8A8_UNORM,0,&Black);
+			cacheTexture = pAlloc->CreateTexture(1,1,1,R8G8B8A8_UNORM,0,&Black);
+			redirectionTexture = pAlloc->CreateTexture(1,1,1,R8G8B8A8_UNORM,0,&Black);
 
 			pAlloc->EndAllocation();
 		}
@@ -204,8 +204,8 @@ namespace HAGE {
 					auto& e = pElementBuffer[nElements];
 					e.level = std::min((u16)(floorf((f32)(v.z*16)/(f32)0xffff+0.5f)),(u16)_pTextureSource->GetMaxDepth());
 					f32 nPages =  (f32)_pTextureSource->GetNumXPagesAtDepth(e.level);
-					e.x = (u32)(floorf((f32)(v.x)*nPages/(f32)0xffff)+0.5f) ;
-					e.y = (u32)(floorf((f32)(v.y)*nPages/(f32)0xffff)+0.5f) ;
+					e.x = (u16)(floorf((f32)(v.x)*nPages/(f32)0xffff)+0.5f) ;
+					e.y = (u16)(floorf((f32)(v.y)*nPages/(f32)0xffff)+0.5f) ;
 					
 					++nElements;
 				}
@@ -286,15 +286,15 @@ namespace HAGE {
 		_feedbackElements.resize(newSize);
 		for(size_t i = oldSize; i < newSize; ++i)
 		{
-			_feedbackElements[i].elementIndex = i - oldSize;
-			_feedbackElements[i].setIndex = oldSize /2;
+			_feedbackElements[i].elementIndex = (u32)(i - oldSize);
+			_feedbackElements[i].setIndex = (u32)(oldSize /2);
 			_feedbackElements[i].redirection = _redirectionTable->CreateRedirectionTexture();
 			_feedbackElements[i].cache = _pageCache->CreateCacheTexture();
 			_feedbackElements[i].write_fence = nullptr;
 			_feedbackElements[i].buffer = new FeedbackBuffer(
 				_feedbackElements[i].cache.first,
 				_feedbackElements[i].redirection.first,
-				_cacheSize,	i, this);
+				_cacheSize,	(u32)i, this);
 			FeedbackBuffer::VT_Settings settings;
 			settings.cache_inner_page_size = _pageCache->GetCachePageInnerSize();
 			settings.cache_border_size = _pageCache->GetCacheBorderSize();
@@ -482,7 +482,7 @@ namespace HAGE {
 
 	void VirtualTextureManager::PageCache::UpdateCacheSize(u32 CacheSizeBytes)
 	{
-		u32	oldCachePages = pageData.size();
+		u32	oldCachePages = (u32)pageData.size();
 
 		static const u32 PixelSize = sizeof(Pixel); //when we'll use compressed textures this will change
 		u32 nTotalCacheLog = FindLog2(RoundDownToPowerOfTwo(CacheSizeBytes/PixelSize));
@@ -509,7 +509,7 @@ namespace HAGE {
 		pixelData.resize(newCachePixels);
 		pageData.resize(newCachePages);
 
-		for(int i = 0; i< newCachePages;++i)
+		for(u32 i = 0; i< newCachePages;++i)
 		{
 			pageData[i].nBytes = nPageSizeX*nPageSizeY*sizeof(Pixel);
 			pageData[i].nCacheIndex = i;
@@ -549,7 +549,7 @@ namespace HAGE {
 		pAlloc->BeginAllocation();
 		UpdatableTexture result;
 
-		result.first = pAlloc->CreateTexture(nCacheX,nCacheY,1,APIWFormat::R8G8B8A8_UNORM,TEXTURE_CPU_WRITE,nullptr,0);
+		result.first = pAlloc->CreateTexture(nCacheX,nCacheY,1,R8G8B8A8_UNORM,TEXTURE_CPU_WRITE,nullptr,0);
 		result.second = changes.size();
 		changes.resize(changes.size()+1);
 

@@ -103,7 +103,7 @@ namespace HAGE {
 
 			auto it_old = _oldData.begin();
 
-			u32 nOldElementsToReplace = ( (_currentData.size() + changes.size() )> _cacheSize )?(_currentData.size() + changes.size()  - _cacheSize):0;
+			u32 nOldElementsToReplace = (u32)(( (_currentData.size() + changes.size() )> _cacheSize )?(_currentData.size() + changes.size()  - _cacheSize):0);
 
 			removed_pages.clear();
 
@@ -120,7 +120,7 @@ namespace HAGE {
 				else
 				{
 					cache_element new_cache;
-					new_cache.cache_index = _currentData.size();
+					new_cache.cache_index = (u32)_currentData.size();
 					new_cache.page_index = it->page_index;
 					it->cache_index = new_cache.cache_index;
 					_currentData.push_back(new_cache);
@@ -170,7 +170,7 @@ namespace HAGE {
 		public:
 			StaticRefCountQuadTree(u32 nLayers) : 
 				_pNodes(new tree_node[Exp2SquaredSeries(nLayers)]),
-				_nNodes(Exp2SquaredSeries(nLayers)),
+				_nNodes((u32)Exp2SquaredSeries(nLayers)),
 				_nLayers(nLayers)
 			{
 			}
@@ -283,7 +283,7 @@ namespace HAGE {
 
 			inline static u32 GetNodeLocation(u32 x,u32 y,u32 l)
 			{
-				return bitShuffle16bit(x,y) + Exp2SquaredSeries(l);
+				return bitShuffle16bit(x,y) + (u32)Exp2SquaredSeries(l);
 			}
 
 			inline static u32 GetParentNode(u32 n)

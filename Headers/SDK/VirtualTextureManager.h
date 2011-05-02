@@ -140,7 +140,7 @@ namespace HAGE {
 				}
 
 				//static const HAGE::APIWFormat format = HAGE::APIWFormat::R32G32B32A32_FLOAT;
-				static const HAGE::APIWFormat format = HAGE::APIWFormat::R10G10B10A2_UNORM;
+				static const HAGE::APIWFormat format = R10G10B10A2_UNORM;
 
 			private:
 				PageRedirection(u32 xOff,u32 yOff,u32 exponent)
