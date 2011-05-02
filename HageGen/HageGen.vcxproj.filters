@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Dependancies">
+      <UniqueIdentifier>{59d025a9-d94e-45c8-b66a-346749e1e918}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dependancies">
+      <UniqueIdentifier>{95e84f5d-15ff-4e2f-94ab-57f8c166428d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -23,6 +29,15 @@
     </ClCompile>
     <ClCompile Include="DataProcessor.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualTextureGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VTPacker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependancies\sqlite3.c">
+      <Filter>Header Files\Dependancies</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +55,12 @@
     </ClInclude>
     <ClInclude Include="VirtualTextureGenerator.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VTPacker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependancies\sqlite3.h">
+      <Filter>Source Files\Dependancies</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -403,7 +403,7 @@ void CMeshDataLoader::CMeshData::GenerateNormals()
 		pVertexData[i].normal = pVertexData[i].normal / sqrtf(!pVertexData[i].normal);
 }
 
-CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(false)
+CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(false),_WMO(false),_pMaterialData(nullptr)
 {
 	_pData = pData;
 	if(pData->IsValid())
@@ -478,6 +478,14 @@ CMeshDataLoader::CMeshData::CMeshData(IDataStream* pData) : _MD2(false),_bValid(
 		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
 		if(TryLoadHGEO(pData))
 		{
+			_bValid = true;
+			return;
+		}
+
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+		if(TryLoadWMO(pData))
+		{
+			_WMO = true;
 			_bValid = true;
 			return;
 		}
@@ -691,7 +699,7 @@ bool CMeshDataLoader::CMeshData::TryLoadHGEO(IDataStream* pData)
 	{
 		forceRead(pData,sizeof(Vector3<>),&pVertexData[i].position);
 		forceRead(pData,sizeof(Vector2<>),&pVertexData[i].texcoord0);
-		pVertexData[i].texcoord0 = pVertexData[i].texcoord0*2.0f/3.0f;
+		pVertexData[i].texcoord0 = pVertexData[i].texcoord0;
 		pVertexData[i].color = Vector3<>(1.0f,1.0f,1.0f);
 	}
 	forceRead(pData,sizeof(u32),&_nIndices);
@@ -717,7 +725,7 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 	static const char md2Magic[4] = {'M','D','2','0'};
 	if(memcmp(md2Magic,header.id,4) !=0)
 		return false;
-	ModelVertex* origVertices = new ModelVertex[header.ofsVertices];
+	ModelVertex* origVertices = new ModelVertex[header.nVertices];
 	pData->Seek(header.ofsVertices,IDataStream::ORIGIN_BEGINNING);
 	forceRead(pData,sizeof(ModelVertex)*header.nVertices,origVertices);
 	
@@ -759,33 +767,393 @@ bool CMeshDataLoader::CMeshData::TryLoadM2(IDataStream* pData)
 			pData->Seek(def[i].nameOfs,IDataStream::ORIGIN_BEGINNING);
 			forceRead(pData,def[i].nameLen,tmp);
 			tmp[def[i].nameLen] = '\0';
-			_textureNames.push_back(std::string("@art.mpq\\")+std::string(tmp));
+			std::string texName = std::string("@art.mpq\\")+std::string(tmp);
+			_textureNames.push_back(texName);
+			_depencancies.push_back(std::make_pair(texName,guid_of<IImageData>::Get()));
 		}
 	return true;
+}
+
+bool CMeshDataLoader::CMeshData::TryLoadWMO(IDataStream* pData)
+{/*
+	WMOHeader header;
+	if(pData->Read(sizeof(header),(u8*)&header)!=sizeof(header))
+		return false;*/
+	WMOChunk_MOHD wmoHeader;
+	WMO_MVER	mver;
+	WMOChunkHeader cheader;
+	std::vector<char> textureFilenameData;
+	bool bLoadFail = false;
+	do
+	{
+		//read chunk header
+		if(pData->Read(sizeof(cheader),(u8*)&cheader)!=sizeof(cheader))
+			break;
+		switch(cheader.fourcc_code)
+		{
+		case WMO_MVERMagic:
+			{
+				forceRead(pData,sizeof(WMO_MVER),&mver);
+				assert(cheader.size == sizeof(WMO_MVER));
+				printf("MVer Chunk version: %08x\n",mver.version);
+			}
+			break;
+		case  WMO_MOHDMagic:
+			{
+				forceRead(pData,sizeof(WMOChunk_MOHD),&wmoHeader);
+				assert(cheader.size == sizeof(WMOChunk_MOHD));
+			}
+			break;
+		case  WMO_MOTXMagic:
+			{
+				textureFilenameData.resize(cheader.size);
+				forceRead(pData,cheader.size,textureFilenameData.data());
+			}
+			break;
+		case  WMO_MOMTMagic:
+			{
+				WMO_MatHeader mat;
+				for(int i = 0; i < wmoHeader.nTextures; ++i)
+				{
+					//only loading first texture per material
+					forceRead(pData,sizeof(WMO_MatHeader),&mat);
+					std::string textureName = "@art.mpq\\" + std::string(&textureFilenameData[mat.nameStart]);
+					_depencancies.push_back(std::make_pair(textureName,guid_of<IImageData>::Get()));
+					_textureNames.push_back(textureName);
+				}
+				assert(cheader.size == sizeof(WMO_MatHeader)*wmoHeader.nTextures);
+			}
+			break;
+		case  WMO_MOGNMagic:
+		case  WMO_MOGIMagic:
+		case  WMO_MOSBMagic:
+		case  WMO_MOPVMagic:
+		case  WMO_MOPTMagic:
+		case  WMO_MOPRMagic:
+		case  WMO_MOVVMagic:
+		case  WMO_MOVBMagic:
+		case  WMO_MOLTMagic:
+		case  WMO_MODSMagic:
+		case  WMO_MODNMagic:
+		case  WMO_MODDMagic:
+		case  WMO_MFOGMagic:
+			//skip
+			pData->Seek(cheader.size,IDataStream::ORIGIN_CURRENT);
+			break;
+		default:
+			printf("Unknown chunk: %c%c%c%c in WMO\n",cheader.fourcc[3],cheader.fourcc[2],cheader.fourcc[1],cheader.fourcc[0]);
+			pData->Seek(cheader.size,IDataStream::ORIGIN_CURRENT);
+			break;
+		}
+	}
+	while(!bLoadFail);
+
+	for(int i = 0; i < wmoHeader.nGroups; ++i)
+	{
+		std::string wmoName = pData->GetIdentifierString();
+		char temp[256];
+		sprintf(temp,"_%03i.wmo",i);
+		std::string groupName = wmoName.substr(0,wmoName.length()-4) + std::string(temp);
+		_depencancies.push_back(std::make_pair(groupName,guid_of<IRawData>::Get()));
+	}
+
+	if(bLoadFail)
+		return false;
 }
 
 void CMeshDataLoader::CMeshData::FinalizeLoadM2(const ResourceAccess* dependanciesIn,u32 nDependanciesIn)
 {
 	assert(nDependanciesIn == _depencancies.size());
-	TResourceAccess<IRawData> pSkinData = dependanciesIn[0];
-	assert(pSkinData->GetSize() >= sizeof(ModelView));
-	const u8* p;
-	u64 size = pSkinData->GetData(&p);
-	const ModelView* view=(const ModelView*)p;
+	{
+		TResourceAccess<IRawData> pSkinData = dependanciesIn[0];
+		assert(pSkinData->GetSize() >= sizeof(ModelView));
+		const u8* p;
+		u64 size = pSkinData->GetData(&p);
+		const ModelView* view=(const ModelView*)p;
 
-	static const char skinMagic[4] = {'S','K','I','N'};
-	assert(memcmp(skinMagic,view->id,4) ==0);
+		static const char skinMagic[4] = {'S','K','I','N'};
+		assert(memcmp(skinMagic,view->id,4) ==0);
 
-	const u16* indexLookup = (const u16*)(p + view->ofsIndex);
-	const u16* triangles = (const u16*)(p + view->ofsTris);
-	_nIndices = view->nTris;
-	u32* indices = new u32[_nIndices];
-	for(u32 i =0;i<_nIndices;++i)
-		indices[i] = indexLookup[triangles[i]];
+		const u16* indexLookup = (const u16*)(p + view->ofsIndex);
+		const u16* triangles = (const u16*)(p + view->ofsTris);
+		_nIndices = view->nTris;
+		u32* indices = new u32[_nIndices];
+		for(u32 i =0;i<_nIndices;++i)
+			indices[i] = indexLookup[triangles[i]];
 
-	_pIndexData = (u8*)indices;
+		_pIndexData = (u8*)indices;
+	}
+	{
+		for(int i = 0; i < _depencancies.size() -1 ; ++i)
+			_textures.push_back(dependanciesIn[i+1]);
+	}
 }
 
+template<class _C> static bool getFromData(const _C*& target,u64& pos,const u8* data,const u64& size)
+{
+	if(pos+sizeof(_C) > size)
+	{
+		target = nullptr;
+		return false;
+	}
+	else
+	{
+		target = reinterpret_cast<const _C*>(&data[pos]);
+		pos+=sizeof(_C);
+		return true;
+	}
+}
+
+void CMeshDataLoader::CMeshData::FinalizeLoadWMO(const ResourceAccess* dependanciesIn,u32 nDependanciesIn)
+{
+
+	assert(_depencancies.size() == nDependanciesIn);
+
+	std::vector<Vector3<>>		vertexPositions;
+	std::vector<Vector3<>>		vertexNormals;
+	std::vector<Vector2<>>		vertexTexcoords;
+	std::vector<u32>			triangleMaterial;
+	std::vector<u32>			triangleMaterialSkip;
+	std::vector<Vector3<u32>>	triangleIndices;
+	u32							vertexOffset;
+	u32							triangleOffset;
+
+	//get textures
+	_textures.resize(_textureNames.size());
+	for(int i = 0; i < _textureNames.size(); ++i )
+		_textures[i] = dependanciesIn[i];
+
+	for(int i = _textureNames.size(); i < _depencancies.size(); ++i)
+	{
+		const u8* pData;
+		u64 size = ((TResourceAccess<IRawData>)dependanciesIn[i])->GetData(&pData);
+		u64 pos = 0;
+
+		const WMOChunkHeader* cheader;
+		const WMO_MVER* mver;
+		bool bLoadFail = false;
+		do
+		{
+			if(!getFromData(cheader,pos,pData,size))
+				break;
+			switch(cheader->fourcc_code)
+			{	
+			case WMO_MVERMagic:
+				{
+					if(!getFromData(mver,pos,pData,size))
+					{
+						bLoadFail = true;
+						break;
+					}
+					assert(cheader->size == sizeof(WMO_MVER));
+					printf("MVer Wmo Group Chunk version: %08x\n",mver->version);
+				}
+				break;
+			case WMO_MOGPMagic:
+				{
+					u64 end = cheader->size + pos;
+
+					const WMO_GroupHeader* gHeader;
+					
+					if(!getFromData(gHeader,pos,pData,size))
+					{
+						bLoadFail = true;
+						break;
+					}
+
+					vertexOffset = vertexPositions.size();
+					triangleOffset = triangleIndices.size();
+					triangleMaterialSkip.clear();
+
+					while(pos < end)
+					{
+						const WMOChunkHeader* sheader;
+						if(!getFromData(sheader,pos,pData,size))
+						{
+							bLoadFail = true;
+							break;
+						}
+
+						switch(sheader->fourcc_code)
+						{
+						case WMO_MOPYMagic:
+							{
+								struct matRef
+								{
+									u8	flags;
+									u8	matId;
+								};
+								const matRef* pRef;
+								u32 nTriangles = sheader->size / sizeof(matRef);
+								pRef = (const matRef*)&pData[pos];
+
+								for(int i = 0; i < nTriangles; ++i)
+								{
+									triangleMaterialSkip.push_back(pRef[i].matId);
+									if(pRef[i].matId != 0xff)
+										triangleMaterial.push_back(pRef[i].matId);
+								}
+
+								pos += sheader->size;
+							}
+							break;
+						case WMO_MOVIMagic:
+							{
+								struct triIndex
+								{
+									u16 index1;
+									u16 index2;
+									u16 index3;
+								};
+								const triIndex* pRef;
+								u32 nTriangles = sheader->size / sizeof(triIndex);
+								assert(nTriangles == triangleMaterialSkip.size());
+								pRef = (const triIndex*)&pData[pos];
+
+								for(int i = 0; i < nTriangles; ++i)
+									if(triangleMaterialSkip[i] != 0xff)
+										triangleIndices.push_back(Vector3<u32>(pRef[i].index1 + vertexOffset,pRef[i].index2 + vertexOffset,pRef[i].index3 + vertexOffset));
+
+								pos += sheader->size;
+							}
+							break;
+						case WMO_MOVTMagic:
+							{
+								const Vector3<f32>* pRef;
+								pRef = (const Vector3<f32>*)&pData[pos];
+								u32 nVertices = sheader->size / sizeof(Vector3<f32>);
+								for(int i = 0; i < nVertices; ++i)
+									vertexPositions.push_back(fixCoordSystem(pRef[i]));
+								pos += sheader->size;
+							}
+							break;
+						case WMO_MONRMagic:
+							{
+								const Vector3<f32>* pRef;
+								pRef = (const Vector3<f32>*)&pData[pos];
+								u32 nVertices = sheader->size / sizeof(Vector3<f32>);
+								for(int i = 0; i < nVertices; ++i)
+									vertexNormals.push_back(fixCoordSystem(pRef[i]));
+								pos += sheader->size;
+							}
+							break;
+						case WMO_MOTVMagic:
+							{
+								const Vector2<f32>* pRef;
+								pRef = (const Vector2<f32>*)&pData[pos];
+								u32 nVertices = sheader->size / sizeof(Vector2<f32>);
+								for(int i = 0; i < nVertices; ++i)
+									vertexTexcoords.push_back(pRef[i]);
+								pos += sheader->size;
+							}
+							break;
+						case WMO_MOBAMagic:
+							{
+								struct render_batch
+								{
+									u16 dunno[6];
+									u32 start;
+									u32	num;
+									u32 something;
+								};
+								
+								const render_batch* pRef;
+								pRef = (const render_batch*)&pData[pos];
+								u32 nBatches = sheader->size / sizeof(render_batch);
+								pos += sheader->size;
+
+								for(int i = 0; i < nBatches; ++i)
+								{
+									printf("Render Batch: %08x %08x %08x\n",pRef[i].start,pRef[i].num,pRef[i].something);
+								}
+							}
+							break;
+						case WMO_MOLRMagic:
+						case WMO_MOBSMagic:
+						case WMO_MODRMagic:
+						case WMO_MOBNMagic:
+						case WMO_MOBRMagic:
+						case WMO_MOBVMagic:
+						case WMO_MOBPMagic:
+						case WMO_MOBIMagic:
+						case WMO_MOBGMagic:
+						case WMO_MOCVMagic:
+						case WMO_MLIQMagic:
+						case WMO_MORIMagic:
+						case WMO_MORBMagic:
+							pos += cheader->size;
+							break;
+						default:
+							printf("Unknown Subchunk in WMO Group!\n");
+							bLoadFail = true;
+							pos += cheader->size;
+							break;
+						}
+					}
+				}
+				break;
+			default:
+				printf("Unknown Chunk in WMO Group!\n");
+				bLoadFail = true;
+				pos += cheader->size;
+				break;
+			}
+		}
+		while(!bLoadFail);
+
+
+		assert(!bLoadFail);
+	}
+	
+	assert( vertexNormals.size() == vertexPositions.size());
+	assert( vertexPositions.size() == vertexTexcoords.size());
+
+	_vertexSize = sizeof(DefaultVertexFormat);
+	_nVertices = vertexPositions.size();
+
+	DefaultVertexFormat* pVertices = new DefaultVertexFormat[_nVertices];
+
+	for(u32 i = 0;i<_nVertices;++i)
+	{
+		pVertices[i].color = Vector3<>(1.0f,1.0f,1.0f);
+		pVertices[i].normal = vertexNormals[i];
+		pVertices[i].position = vertexPositions[i];
+		pVertices[i].texcoord0 = vertexTexcoords[i];
+	}
+
+	_pVertexData = (u8*)pVertices; 
+
+
+	assert( triangleMaterial.size() == triangleIndices.size());
+
+	_nIndices = triangleIndices.size() *3 ;
+
+	u32* indices = new u32[_nIndices];
+	for(u32 i =0;i<triangleIndices.size();++i)
+	{
+		indices[i*3+0] = triangleIndices[i].x;
+		indices[i*3+1] = triangleIndices[i].y;
+		indices[i*3+2] = triangleIndices[i].z;
+	}
+
+	_pIndexData = (u8*)indices;
+
+	u32* matRefs = new u32[triangleIndices.size()];
+	
+	for(u32 i =0;i<triangleIndices.size();++i)
+		matRefs[i] = triangleMaterial[i];
+
+	_pMaterialData = (u8*)matRefs;
+
+	_depencancies.clear();
+}
+
+const TResourceAccess<IImageData>* CMeshDataLoader::CMeshData::GetTexture(u32 index) const
+{
+	if(index >= _textures.size())
+		return nullptr;
+	return &_textures[index];
+}
 
 IResource* CMeshDataLoader::CMeshData::Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut)
 {
@@ -805,6 +1173,8 @@ IResource* CMeshDataLoader::CMeshData::Finalize(const ResourceAccess* dependanci
 	{
 		if(_MD2)
 			FinalizeLoadM2(dependanciesIn,nDependanciesInOut);
+		else if(_WMO)
+			FinalizeLoadWMO(dependanciesIn,nDependanciesInOut);
 
 		_depencancies.clear();
 		_pData = nullptr;
@@ -815,7 +1185,12 @@ IResource* CMeshDataLoader::CMeshData::Finalize(const ResourceAccess* dependanci
 
 CMeshDataLoader::CMeshData::~CMeshData()
 {
-	
+	if(_pVertexData)
+		delete _pVertexData;
+	if(_pIndexData)
+		delete _pIndexData;
+	if(_pMaterialData)
+		delete _pMaterialData;
 }
 u32 CMeshDataLoader::CMeshData::GetNumVertices() const
 {
@@ -873,6 +1248,8 @@ const char* CMeshDataLoader::CMeshData::GetTextureName(u32 index) const
 
 const void* CMeshDataLoader::CMeshData::GetExtendedData(EXTENDED_DATA_TYPE type) const
 {
+	if(type == EXTENDED_DATA_TYPE::TRIANGLE_MATERIAL_INFO && _pMaterialData)
+		return _pMaterialData;
 	return nullptr;
 }
 

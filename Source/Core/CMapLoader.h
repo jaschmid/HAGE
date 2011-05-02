@@ -11,11 +11,6 @@
 
 namespace HAGE {
 	
-	struct WMOHeader
-	{
-		u8 fourcc[4]; // Magic
-	};
-
 	struct ChunkHeader
 	{
 		union {
@@ -24,148 +19,6 @@ namespace HAGE {
 		};
 		u32 size;
 	};
-
-	struct WMOBoundingBox
-	{
-		Vector3<> Corner1; // Bounding box corner 1
-		Vector3<> Corner2; // Bounding box corner 2
-	};
-
-	struct WMOChunk_MOHD
-	{
-		u32 nTextures; // number of materials
-		u32 nGroups; // number of WMO groups
-		u32 nPortals; // number of portals
-		u32 nLights; // number of lights
-		u32 nModels; // number of M2 models imported
-		u32 nDoodads; // number of dedicated files (*see below this table!) 
-		u32 nDoodadSets; // number of doodad sets
-		u32 AmbientColor; // ambient color?
-		u32 nWMOId; // WMO ID (column 2 in WMOAreaTable.dbc)
-		WMOBoundingBox bound;
-		u32 LiquidType; // LiquidType related, see below in the MLIQ chunk.
-	};
-
-	struct WMO_MatHeader
-	{		
-		u32 flags;
-		u32 specular;
-		u32 transparent; // Blending: 0 for opaque, 1 for transparent
-		u32 nameStart; // Start position for the first texture filename in the MOTX data block	
-		u32 col1; // color
-		u32 d3; // flag
-		u32 nameEnd; // Start position for the second texture filename in the MOTX data block
-		u32 col2; // color
-		u32 d4; // flag
-		u32 col3;
-		f32 f2;
-		Vector3<f32> diffColor;
-		u32 texture1; // this is the first texture object. of course only in RAM. leave this alone. :D
-		u32 texture2; // this is the second texture object.
-	};
-
-	struct WMO_GroupInfoHeader
-	{
-		u32 flags;
-		WMOBoundingBox bound;
-		u32 ofName;
-	};
-
-	struct WMO_PortalRect
-	{
-		Vector3<f32> Rect[4];
-	};
-
-	struct WMO_PortalInformation
-	{
-		u16 BaseVertexIndex;
-		u16 nVertices;
-		Vector3<f32> Normal;
-		f32	unknown;
-	};
-
-	struct PortalIdentifier
-	{
-		u16 nPortalIndex;
-		u16 nGroupIndex;
-		i16 iSide;
-		u16 filler;
-	};
-
-	struct WMO_PortalRelationships
-	{
-		PortalIdentifier	relationships[2];
-	};
-
-	typedef enum _WMO_LIGHT_TYPE
-	{
-		WMO_OMNI_LGT = 0,
-		WMO_SPOT_LGT = 1,
-		WMO_DIRECT_LGT = 2,
-		WMO_AMBIENT_LGT = 3
-	} WMO_LIGHT_TYPE;
-
-	struct WMO_Light
-	{
-		u8 LightType;
-		u8 type;
-		u8 useAtten;
-		u8 pad;
-		u32 color;
-		Vector3<f32> position;
-		f32 intensity;
-		f32 attenStart;
-		f32 attenEnd;
-		f32 unk[4];//direction?
-	};
-
-	struct WMO_DoodadSet
-	{
-		char name[20];
-		u32 firstInstanceIndex;
-		u32 numDoodads;
-		u32 nulls;
-	};
-
-	struct WMO_DoodadInstance
-	{
-		u32 nameIndex;
-		Vector3<f32> pos;
-		f32 rot[4];//quaternion
-		f32 scale;
-		u32 color;
-	};
-
-	struct WMO_Fog
-	{
-		u32 flags;
-		Vector3<f32> pos;
-		f32 rad_min;
-		f32 rad_max;
-		f32 fog_end;
-		f32 fog_start;
-		u32 fog_color;
-		f32 unk1;
-		f32 unk2;
-		u32 color2;
-	};
-
-	static const u8 WMO_MOHDMagic[4] = {'M','O','H','D'};
-	static const u8 WMO_MOTXMagic[4] = {'M','O','T','X'};
-	static const u8 WMO_MOMTMagic[4] = {'M','O','M','T'};
-	static const u8 WMO_MOGNMagic[4] = {'M','O','G','N'};
-	static const u8 WMO_MOGIMagic[4] = {'M','O','G','I'};
-	static const u8 WMO_MOSBMagic[4] = {'M','O','S','B'};
-	static const u8 WMO_MOPVMagic[4] = {'M','O','P','V'};
-	static const u8 WMO_MOPTMagic[4] = {'M','O','P','T'};
-	static const u8 WMO_MOPRMagic[4] = {'M','O','P','R'};
-	static const u8 WMO_MOVVMagic[4] = {'M','O','V','V'};
-	static const u8 WMO_MOVBMagic[4] = {'M','O','V','B'};
-	static const u8 WMO_MOLTMagic[4] = {'M','O','L','T'};
-	static const u8 WMO_MODSMagic[4] = {'M','O','D','S'};
-	static const u8 WMO_MODNMagic[4] = {'M','O','D','N'};
-	static const u8 WMO_MODDMagic[4] = {'M','O','D','D'};
-	static const u8 WMO_MFOGMagic[4] = {'M','F','O','G'};
 
 	/// WDT are actually more important than WMO
 
@@ -190,10 +43,6 @@ namespace HAGE {
 
 	// ADT stuff
 
-	struct ADT_REVM
-	{
-		u32 version;
-	};
 
 	struct ADT_MVER
 	{
@@ -238,6 +87,18 @@ namespace HAGE {
 		Vector3<f32> rot;
 		u16 scale;
 		u16 flags;
+	};
+	struct ADT_MODF_Entry
+	{
+		u32 nameId;
+		u32 uniqueId;
+		Vector3<f32> pos;
+		Vector3<f32> rot;
+		Vector3<f32> extents[2];
+		u16 flags;
+		u16 doodadSet;
+		u16 nameSet;
+		u16 padding;
 	};
 
 	struct ADT_MH2O_HEADER_Entry
@@ -342,6 +203,7 @@ namespace HAGE {
 	static const u32 ADT_MWMOMagic = ADT_FourCC<'M','W','M','O'>::value;
 	static const u32 ADT_MWIDMagic = ADT_FourCC<'M','W','I','D'>::value;
 	static const u32 ADT_MDDFMagic = ADT_FourCC<'M','D','D','F'>::value;
+	static const u32 ADT_MODFMagic = ADT_FourCC<'M','O','D','F'>::value;
 	static const u32 ADT_MH2OMagic = ADT_FourCC<'M','H','2','O'>::value;
 	static const u32 ADT_MCNKMagic = ADT_FourCC<'M','C','N','K'>::value;
 	static const u32 ADT_MCCVMagic = ADT_FourCC<'M','C','C','V'>::value;//sub
@@ -356,12 +218,12 @@ namespace HAGE {
 	static const u32 ADT_MCMTMagic = ADT_FourCC<'M','C','M','T'>::value;//sub
 	
 
-	static const f32 fADT_CellXSize = 1.0f/64.0f;
-	static const f32 fADT_CellZSize = 1.0f/64.0f;
-	static const f32 fADT_TileXSize = fADT_CellXSize*8;
-	static const f32 fADT_TileZSize = fADT_CellZSize*8;
-	static const f32 fADT_ChunkXSize = fADT_TileXSize*16;
-	static const f32 fADT_ChunkZSize = fADT_TileZSize*16;
+	static const f32 fADT_TileXSize = 100.0f/3.0f;
+	static const f32 fADT_TileZSize = 100.0f/3.0f;
+	static const f32 fADT_CellXSize = fADT_TileXSize / 8.0f;
+	static const f32 fADT_CellZSize = fADT_TileZSize / 8.0f;
+	static const f32 fADT_ChunkXSize = fADT_TileXSize*16.0f;
+	static const f32 fADT_ChunkZSize = fADT_TileZSize*16.0f;
 
 	class CMapDataLoader : public IResourceLoader
 	{
@@ -377,20 +239,26 @@ namespace HAGE {
 		IDataStream* _pData;
 	private:
 
+
 		class CMapData : public IMeshData
 		{
 		public:
 			virtual ~CMapData();
-			CMapData(IDataStream* pData);
+			CMapData();
 			virtual u32 GetNumVertices() const;
 			virtual u32 GetVertexData(const u8** pDataOut,u32& pOutStride,VERTEX_DATA_TYPE type) const;
 			virtual u32	GetNumIndices() const;
 			virtual u32 GetIndexData(const u8** pDataOut) const;
 			virtual const void* GetExtendedData(EXTENDED_DATA_TYPE type) const;
 			virtual const char* GetTextureName(u32 index) const;
+			virtual const TResourceAccess<IImageData>* GetTexture(u32 index) const;
 			
-			IResource* Finalize(const ResourceAccess* dependanciesIn,const std::pair<std::string,guid>** pDependanciesOut,u32& nDependanciesInOut);
 			bool IsValid(){return isValid;}
+
+			bool LoadInit(IDataStream* pADT,std::vector<std::pair<std::string,guid>>& dependanciesOut);
+			bool LoadStep(const ResourceAccess* dependanciesIn,std::vector<std::pair<std::string,guid>>& dependanciesInOut);
+			bool LoadObj(const TResourceAccess<IRawData>& data,std::vector<std::pair<std::string,guid>>& dependanciesOut);
+
 		private:
 			static const u32 nCellTriangles = 4;
 			
@@ -420,9 +288,16 @@ namespace HAGE {
 			std::array<Vector3<>,nVertices> _vertexColorData;
 			std::array<u32,nIndices>		_indexData;
 
+			std::string						_textureName;
+			TResourceAccess<IImageData>		_texture;
+			
+			std::vector<ChildObject>		_childObjects;
+			u32								_nChildObjects;
+
 			bool	isValid;
 		};
-
+		
+		std::vector<std::pair<std::string,guid>> dependancies;
 		CMapData* _pMapData;
 	};
 

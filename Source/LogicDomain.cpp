@@ -46,7 +46,7 @@ namespace HAGE {
 			boxinit.rotation_axis = Vector3<>(0.0f,1.0f,0.0f);
 			boxinit.rotation_speed = 0.0f;
 			strcpy(boxinit.mesh,"Box");
-			boxinit.initial_position = Vector3<>(0.0f,19.0f,0.0f);
+			boxinit.initial_position = Vector3<>(0.0f,0.0f,0.0f);
 			boxinit.scale = Vector3<>(20.0f,20.0f,20.0f);
 			GetFactory().CreateObject<LogicActor>(boxinit);
 

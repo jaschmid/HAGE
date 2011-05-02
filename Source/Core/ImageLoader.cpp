@@ -221,7 +221,7 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 			return;
 		
 		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
-		
+		/*
 		SparseVirtualTextureFile hsvt;
 		if(hsvt.Open(pData))
 		{
@@ -238,7 +238,7 @@ CImageDataLoader::CImageData::CImageData(IDataStream* pData)
 			return;
 		}
 		
-		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);
+		pData->Seek(0,IDataStream::ORIGIN_BEGINNING);*/
 
 
 	}

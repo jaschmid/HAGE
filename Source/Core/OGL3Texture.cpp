@@ -94,6 +94,30 @@ public:
 	typedef float SrcChannelType;
 };
 
+template<> class _OGLPixelTransferBufferInfo<HAGE::R10G10B10A2_UNORM>
+{
+public:
+	const static HAGE::APIWFormat	SourceFormat = HAGE::R10G10B10A2_UINT;
+	const static GLenum				DestFormat = GL_UNSIGNED_INT_2_10_10_10_REV ;
+	const static GLenum				DestChannel = GL_UNSIGNED_INT;
+	const static int				nSrcChannels = 4;
+	const static int				nDestChannels = 4;
+	
+	typedef float DestChannelType;
+	typedef float SrcChannelType;
+};
+template<> class _OGLPixelTransferBufferInfo<HAGE::R10G10B10A2_UINT>
+{
+public:
+	const static HAGE::APIWFormat	SourceFormat = HAGE::R10G10B10A2_UINT;
+	const static GLenum				DestFormat = GL_UNSIGNED_INT_2_10_10_10_REV ;
+	const static GLenum				DestChannel = GL_UNSIGNED_INT;
+	const static int				nSrcChannels = 4;
+	const static int				nDestChannels = 4;
+	
+	typedef float DestChannelType;
+	typedef float SrcChannelType;
+};
 template<> class _OGLPixelTransferBufferInfo<HAGE::R8G8B8A8_UNORM>
 {
 public:
@@ -196,6 +220,9 @@ public:
 			break;
 		case HAGE::R16G16B16A16_UNORM:
 			SetValues<HAGE::R16G16B16A16_UNORM>(width,height,pData);
+			break;
+		case HAGE::R10G10B10A2_UNORM:
+			SetValues<HAGE::R10G10B10A2_UNORM>(width,height,pData);
 			break;
 		case HAGE::R8G8B8A8_UNORM:
 			SetValues<HAGE::R8G8B8A8_UNORM>(width,height,pData);

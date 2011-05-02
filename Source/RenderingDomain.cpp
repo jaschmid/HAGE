@@ -124,6 +124,9 @@ namespace HAGE {
 	"    float ambient_factor;\n"
 	"    float diffuse_factor;\n"
 	"H_CONSTANT_BUFFER_END\n"
+	"H_CONSTANT_BUFFER_BEGIN(VTSettings)\n"
+	"	 float4 tex_inner_cache_page_size__tex_cache_border_size;\n"
+	"H_CONSTANT_BUFFER_END\n"
 	"\n"
 	"H_TEXTURE_2D(VT_Cache);\n"
 	"H_TEXTURE_2D(VT_Redirection);\n"
@@ -133,6 +136,8 @@ namespace HAGE {
 	"#define Modelview               modelview\n"
 	"#define InverseModelview        inverse_modelview\n"
 	"#define ModelviewProjection     modelview_projection\n"
+	"#define CacheInnerPageSize		 (tex_inner_cache_page_size__tex_cache_border_size.xy)\n"
+	"#define CacheBorderSize		 (tex_inner_cache_page_size__tex_cache_border_size.zw)\n"
 	"\n"
 	"VS_IN_BEGIN\n"
 	"  DECL_VS_IN(float3,position);\n"
@@ -169,19 +174,13 @@ namespace HAGE {
 	"  DECL_FS_COLOR;\n"
 	"FS_OUT_END\n"
 	"\n"
-	"float mipmapLevel(float2 tex)\n"
-	"{ \n"
-	"  float2 dx = ddx(tex);\n"
-	"  float2 dy = ddy(tex);\n"
-	"  float d = max(dot(dx,dx), dot(dy,dy));\n"
-	"  return max(0.0f, ceil(-0.5f*log2(d) -7.0f));\n"
-	"} \n"
 	"FRAGMENT_SHADER\n"
 	"{\n"
-	"	float mip = 10.0f-mipmapLevel(FS_IN(tex));\n"
-	"	float3 redir = H_SAMPLE_2D_LOD(VT_Redirection,FS_IN(tex),mip).xyz;\n"
-	"	float2 cache_coord = (FS_IN(tex).xy*redir.z+redir.xy);\n"
-	"  FS_OUT_COLOR = saturate(H_SAMPLE_2D(VT_Cache,cache_coord ) );\n"
+	"	float2 dx = ddx(FS_IN(tex));\n"
+	"	float2 dy = ddy(FS_IN(tex));\n"
+	"	float4 redir = round(H_SAMPLE_2D(VT_Redirection,FS_IN(tex))*1023.0f);\n"
+	"	float2 cache_coord = frac( FS_IN(tex).xy * exp2(redir.z)) *CacheInnerPageSize+redir.xy/1024.0f+CacheBorderSize;\n"
+	"	FS_OUT_COLOR = saturate(H_SAMPLE_2D_GRAD(VT_Cache,cache_coord,dx*4.0f,dy*4.0f) );\n"
 	"}\n";
 
 	static const char* cel_program =
@@ -490,7 +489,9 @@ namespace HAGE {
 			c.model	=					Matrix4<>::One();
 			c.modelview =				GetViewMatrix().Transpose();
 			c.inverse_modelview =		GetInvViewMatrix().Transpose();
-			c.modelview_projection =	(GetProjectionMatrix()*c.modelview.Transpose()).Transpose();
+			c.modelview_projection =	(pWrapper->GenerateRenderTargetProjection(0.1f,200000.0f,1.3f,1.3f)*c.modelview.Transpose()).Transpose();
+			
+			pEffect->SetConstant("TransformGlobal",_pConstants);
 
 			EffectContainer effect(pWrapper,pEffect);
 			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(&effect,c,_pConstants,true,false);} , guid_of<RenderingActor>::Get() ,true);
@@ -594,6 +595,7 @@ namespace HAGE {
 		
 		_pVTEffect->SetTexture("VT_Cache",_VT->GetCurrentVTCache());
 		_pVTEffect->SetTexture("VT_Redirection",_VT->GetCurrentVTRedirection());
+		_pVTEffect->SetConstant("VTSettings",_VT->GetSettings());
 
 		if(bToonShading)
 		{
@@ -607,6 +609,8 @@ namespace HAGE {
 		}
 
 		_pPostprocessFilter->EndSceneRendering();
+		
+		pInterface->Draw();
 
 		pWrapper->PresentFrame();
 	}
@@ -669,8 +673,11 @@ namespace HAGE {
 		strcpy(VT_Samplers[0].SamplerName,"VT_Cache");
 		strcpy(VT_Samplers[1].SamplerName,"VT_Redirection");
 		VT_Samplers[0].State = DefaultSamplerState;
+		VT_Samplers[0].State.FilterFlags = FILTER_ANISOTROPIC;
+		VT_Samplers[0].State.MaxAnisotropy = 8.0f;
 		VT_Samplers[1].State = DefaultSamplerState;
 		VT_Samplers[1].State.FilterFlags = FILTER_MIN_POINT | FILTER_MAG_POINT | FILTER_MIP_POINT;
+		VT_Samplers[1].State.MipLODBias = 6;
 
 		_pEffect = new EffectContainer(pWrapper,default_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);
 		_pCelEffect = new EffectContainer(pWrapper,cel_program,&wireframe,&DefaultBlendState,1,false,Samplers,3);

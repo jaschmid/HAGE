@@ -1,394 +1,376 @@
 #include <HAGE.h>
 
 namespace HAGE {
-
-	// create a new sparse virtual texture file, virtualsize is in # of pages per dimension (pixel size = ((2<<(pagedepth-1)) * virtualsize) ^2 )
-	SparseVirtualTextureFile::SparseVirtualTextureFile() :
-		bOpen(false),
-		tempFile(nullptr),
-		dataStream(nullptr)
-	{
-	}
-			
-	SparseVirtualTextureFile::~SparseVirtualTextureFile()
-	{
-		if(tempFile)
-			fclose(tempFile);
-	}
-
-	bool SparseVirtualTextureFile::New(char* FileName, u32 pagesize,u32 pagedepth, u32 bordersize)
-	{
-
-		fileHeader.fourCC[0] = 'H';
-		fileHeader.fourCC[1] = 'S';
-		fileHeader.fourCC[2] = 'V';
-		fileHeader.fourCC[3] = 'T';
-		fileHeader.bordersize = bordersize;
-		fileHeader.pagedepth = pagedepth;
-		fileHeader.majorVersion = 1;
-		fileHeader.minorVersion = 0;
-		fileHeader.pagesize = pagesize;
-		u64 nPages = GetTotalNumPagesUntilDepth(fileHeader.pagedepth);
-		pageHeaders.resize(nPages);
-		for(int i = 0; i<nPages; ++i)
-		{
-			pageHeaders[i].file_offset = 0;
-			pageHeaders[i].page_flags = 0;
-		}
-
-		tempFile = fopen(FileName,"w+b");
-		if(!tempFile)
-		{
-			bOpen = false;
-			return false;
-		}
-
-		fwrite(&fileHeader,sizeof(FileHeader),1,tempFile);
-		fwrite(pageHeaders.data(),sizeof(PageHeader),pageHeaders.size(),tempFile);
-		fflush(tempFile);
-		bOpen = true;
-		return true;
-	}
-
-	void SparseVirtualTextureFile::Commit()
-	{
-		if(!tempFile)
-			return;
-
-		_fseeki64(tempFile,0,SEEK_SET);
-		fwrite(&fileHeader,sizeof(FileHeader),1,tempFile);
-		fwrite(pageHeaders.data(),sizeof(PageHeader),pageHeaders.size(),tempFile);
-		fflush(tempFile);
-	}
-
-	bool SparseVirtualTextureFile::Open(char* FileName)
-	{
-		bOpen = false;
-		tempFile = fopen(FileName,"r+b");
-		if(!tempFile)
-			return false;
-
-		size_t nRead = fread(&fileHeader,sizeof(FileHeader),1,tempFile);
-		if(!nRead)
-		{
-			fclose(tempFile);
-			return false;
-		}
-
-		if( fileHeader.fourCC[0] != 'H' ||
-			fileHeader.fourCC[1] != 'S' ||
-			fileHeader.fourCC[2] != 'V' ||
-			fileHeader.fourCC[3] != 'T')
-		{
-			fclose(tempFile);
-			return false;
-		}
-
-			
-		u64 nPages = GetTotalNumPagesUntilDepth(fileHeader.pagedepth);
-		pageHeaders.resize(nPages);
-		nRead = fread(pageHeaders.data(),sizeof(PageHeader),pageHeaders.size(),tempFile);
-
-		if(nRead != nPages)
-		{
-			fclose(tempFile);
-			return false;
-		}
-
-		fflush(tempFile);
-		bOpen = true;
-		return true;
-	}
-		
-	bool SparseVirtualTextureFile::Open(IDataStream* pDataStream)
-	{
-		bOpen = false;
-		dataStream = pDataStream;
-		if(!dataStream)
-			return false;
-
-		size_t nRead = dataStream->Read(sizeof(FileHeader),(u8*)&fileHeader);
-		if(nRead != sizeof(FileHeader))
-		{
-			return false;
-		}
-
-		if( fileHeader.fourCC[0] != 'H' ||
-			fileHeader.fourCC[1] != 'S' ||
-			fileHeader.fourCC[2] != 'V' ||
-			fileHeader.fourCC[3] != 'T')
-		{
-			return false;
-		}
-
-			
-		u64 nPages = GetTotalNumPagesUntilDepth(fileHeader.pagedepth);
-		pageHeaders.resize(nPages);
-		nRead = dataStream->Read(sizeof(PageHeader)*pageHeaders.size(),(u8*)pageHeaders.data());
-
-		if(nRead != sizeof(PageHeader)*pageHeaders.size())
-		{
-			return false;
-		}
-
-		bOpen = true;
-		return true;
-	}
-		
-	void SparseVirtualTextureFile::WritePage(u64 PageIndex,const void* pData, u32 flags)
-	{
-		if(!tempFile)
-			return;
-
-		if(!bLastWrite)
-		{
-			bLastWrite = true;
-			fflush(tempFile);
-		}
-
-		pageHeaders[PageIndex].page_flags = flags;
-
-		u32 bytes,padding;
-
-		if(flags& PAGE_FINAL)
-		{
-			bytes = GetPageOuterPixelCount()*sizeof(u32);
-			padding = 0;
-		}
-		else
-		{
-			bytes = sizeof(u32)*GetPageInnerPixelCount();
-			padding = GetPageOuterPixelCount()*sizeof(u32) - bytes;
-		}
-
-		if(pageHeaders[PageIndex].file_offset != 0)
-		{
-			//already in tempfile overwrite
-			_fseeki64(tempFile,pageHeaders[PageIndex].file_offset,SEEK_SET);
-			pageHeaders[PageIndex].page_size = bytes;
-			size_t written = fwrite(pData,bytes,1,tempFile);
-			assert(written == 1);
-			if(padding)
-			{
-				written = fwrite(pData,padding,1,tempFile);
-				assert(written == 1);
-			}
-		}
-		else
-		{
-			_fseeki64(tempFile,1,SEEK_END);
-			pageHeaders[PageIndex].file_offset = _ftelli64(tempFile);
-			pageHeaders[PageIndex].page_size = bytes;
-			assert(pageHeaders[PageIndex].file_offset!= 0);
-			size_t written = fwrite(pData,bytes,1,tempFile);
-			assert(written == 1);
-			if(padding)
-			{
-				written = fwrite(pData,padding,1,tempFile);
-				assert(written == 1);
-			}
-		}
-	}
-
-	bool SparseVirtualTextureFile::ReadPage(u64 PageIndex,void* pDataOut,u32 flags)
-	{
-		if(!bOpen)
-			return false;
-
-		if(bLastWrite)
-		{
-			bLastWrite = false;
-			fflush(tempFile);
-		}
-
-		u32 bytes,padding;
-		void* pWriteTarget = pDataOut;
-
-		if(pageHeaders[PageIndex].page_flags & PAGE_FINAL)
-		{
-			bytes = GetPageOuterPixelCount()*sizeof(u32);
-			padding = 0;
-
-			if(!(flags & PAGE_FINAL))
-				pWriteTarget = new u32[bytes/sizeof(u32)];
-			else
-				pWriteTarget = pDataOut;
-
-		}
-		else
-		{
-			bytes = sizeof(u32)*GetPageInnerPixelCount();
-			padding = GetPageOuterPixelCount()*sizeof(u32) - bytes;
-
-			if(flags & PAGE_FINAL)
-				pWriteTarget = new u32[bytes/sizeof(u32)];
-			else
-				pWriteTarget = pDataOut;
-		}
-
-		bool bResult = true;
-
-		if(pageHeaders[PageIndex].file_offset != 0)
-		{
-			if(tempFile)
-			{
-				_fseeki64(tempFile,pageHeaders[PageIndex].file_offset,SEEK_SET);
-				size_t read=fread(pWriteTarget,1,bytes,tempFile);
-				assert(read == (size_t)bytes);
-				bResult = true;
-			}
-			else if(dataStream)
-			{
-				dataStream->Seek(pageHeaders[PageIndex].file_offset,IDataStream::ORIGIN_BEGINNING);
-				u64 read = dataStream->Read(bytes,(u8*)pWriteTarget);
-				assert(read == bytes);
-				bResult = true;
-			}
-			else
-				assert(!"Neither tempFile nor dataStream open");
-		}
-		else
-		{
-			memset(pWriteTarget,0,bytes);
-			bResult = false;
-		}
-
-		if(pWriteTarget != pDataOut)
-		{
-				
-			if(!(flags & PAGE_FINAL))
-				stripBorder((const u32*)pWriteTarget,(u32*)pDataOut);
-			else if(flags & PAGE_FINAL)
-				blackBorder((const u32*)pWriteTarget,(u32*)pDataOut);
-			else
-				assert(!"Huh?");
-
-			delete pWriteTarget;
-		}
-
-		return bResult;
-	}
-
 	
-		
-	void SparseVirtualTextureFile::WriteImageToVirtualTexture(u64 vtXOffset, u64 vtYOffset,u64 ImageX,u64 ImageY,const void* DataIn,int level)
+SparseVirtualTextureFile::SparseVirtualTextureFile() : _dataCache(nullptr),_dataStream(nullptr),_dataSource(nullptr)
+{
+	_bOpen = false;
+}
+SparseVirtualTextureFile::~SparseVirtualTextureFile()
+{
+	if(_dataCache)
+		delete _dataCache;
+}
+
+void SparseVirtualTextureFile::Open(const ISVTFileDataSource* source)
+{
+	_bOpen = false;
+	if(_dataCache)
+		delete _dataCache;
+	_dataSource = source;
+	ISVTFileDataSource::SVTSettings settings;
+	source->GetSettings(&settings);
+	_fileHeader.fourCC[0] = 'H';
+	_fileHeader.fourCC[1] = 'S';
+	_fileHeader.fourCC[2] = 'V';
+	_fileHeader.fourCC[3] = 'T';
+	_fileHeader.bordersize = settings.borderSize;
+	_fileHeader.pagedepth = settings.pageDepth;
+	_fileHeader.majorVersion = 1;
+	_fileHeader.minorVersion = 0;
+	_fileHeader.pagesize = settings.pageSize;
+	_fileHeader.nSharedDataHeaders = settings.nSharedDataEntries;
+	u32 nPages = GetTotalNumPagesUntilDepth(_fileHeader.pagedepth-1);
+	_fileHeader.nPageHeaders = nPages;
+	_pageHeaders.resize(nPages);
+
+	_dataCache = new SharedDataCache(source);
+	_bOpen = true;
+}
+
+void SparseVirtualTextureFile::Open(IDataStream* pDataStream)
+{
+	_bOpen = false;
+	_dataStream = pDataStream;
+	if(!_dataStream)
+		return;
+
+	size_t nRead = _dataStream->Read(sizeof(FileHeader),(u8*)&_fileHeader);
+	if(nRead != sizeof(FileHeader))
+		return;
+
+	if( _fileHeader.fourCC[0] != 'H' ||
+		_fileHeader.fourCC[1] != 'S' ||
+		_fileHeader.fourCC[2] != 'V' ||
+		_fileHeader.fourCC[3] != 'T')
 	{
-		const u32* pData = (u32*) DataIn;
-		const u64 vtPageSize = GetPageInnerSize();
-		const u64 vtXPageBegin = vtXOffset / vtPageSize;
-		const u64 vtYPageBegin = vtYOffset / vtPageSize;
-		const u64 vtXPageEnd = (vtXOffset + ImageX -1)/ vtPageSize + 1;
-		const u64 vtYPageEnd = (vtYOffset + ImageY -1)/ vtPageSize + 1;
-		const u64 vtXPixelBegin = vtXOffset % vtPageSize;
-		const u64 vtYPixelBegin = vtYOffset % vtPageSize;
-		const u64 vtXPixelEnd = (vtXOffset+ImageX -1) % vtPageSize +1;
-		const u64 vtYPixelEnd = (vtYOffset+ImageY -1) % vtPageSize +1;
-		if(level == -1)
-			level = GetMaxDepth();
-
-		std::vector<u32> tempBuffer;
-		tempBuffer.resize(vtPageSize*vtPageSize);
-
-		for(u64 iYPage = vtYPageBegin; iYPage < vtYPageEnd ; ++ iYPage)
-			for(u64 iXPage = vtXPageBegin; iXPage < vtXPageEnd ; ++ iXPage)
-			{
-				const u64 pXPixelBegin = (iXPage==vtXPageBegin)?(vtXPixelBegin):0;
-				const u64 pYPixelBegin = (iYPage==vtYPageBegin)?(vtYPixelBegin):0;
-				const u64 pXPixelEnd = (iXPage==vtXPageEnd-1)?(vtXPixelEnd):vtPageSize;
-				const u64 pYPixelEnd = (iYPage==vtYPageEnd-1)?(vtYPixelEnd):vtPageSize;
-				const u64 ImageXOffset = iXPage*vtPageSize - vtXOffset;
-				const u64 ImageYOffset = iYPage*vtPageSize - vtYOffset;
-				const u64 nPage = GetPageIndex(iXPage,iYPage,level);
-
-				if( (pXPixelEnd-pXPixelBegin)*(pYPixelEnd-pYPixelBegin) < vtPageSize*vtPageSize )
-					ReadPage(nPage,tempBuffer.data());
-
-				for(u64 iYPixel = pYPixelBegin; iYPixel < pYPixelEnd; ++iYPixel)
-					for(u64 iXPixel = pXPixelBegin; iXPixel < pXPixelEnd; ++iXPixel)
-						tempBuffer[iYPixel*vtPageSize + iXPixel] =
-							pData[(ImageYOffset+iYPixel)*ImageX + (ImageXOffset+iXPixel)];
-
-				WritePage(nPage,tempBuffer.data());
-			}
+		return;
 	}
 
-	void SparseVirtualTextureFile::ReadImageFromVirtualTexture(u64 vtXOffset, u64 vtYOffset,u64 ImageX,u64 ImageY,void* pDataOut,int level)
+	//read page headers
+	if(_fileHeader.nPageHeaders)
 	{
-		u32* pData = (u32*) pDataOut;
-		const u64 vtPageSize = GetPageInnerSize();
-		const u64 vtXPageBegin = vtXOffset / vtPageSize;
-		const u64 vtYPageBegin = vtYOffset / vtPageSize;
-		const u64 vtXPageEnd = (vtXOffset + ImageX -1)/ vtPageSize + 1;
-		const u64 vtYPageEnd = (vtYOffset + ImageY -1)/ vtPageSize + 1;
-		const u64 vtXPixelBegin = vtXOffset % vtPageSize;
-		const u64 vtYPixelBegin = vtYOffset % vtPageSize;
-		const u64 vtXPixelEnd = (vtXOffset+ImageX - 1) % vtPageSize + 1;
-		const u64 vtYPixelEnd = (vtYOffset+ImageY - 1) % vtPageSize + 1;
-		if(level == -1)
-			level = GetMaxDepth();
+		_dataStream->Seek(_fileHeader.offsetPageHeaders,IDataStream::ORIGIN_BEGINNING);
+		u64 nPages = _fileHeader.nPageHeaders;
+		_pageHeaders.resize(nPages);
+		nRead = _dataStream->Read(sizeof(PageHeader)*_pageHeaders.size(),(u8*)_pageHeaders.data());
 
-		std::vector<u32> tempBuffer;
-		tempBuffer.resize(vtPageSize*vtPageSize);
-
-		for(u64 iYPage = vtYPageBegin; iYPage < vtYPageEnd ; ++ iYPage)
-			for(u64 iXPage = vtXPageBegin; iXPage < vtXPageEnd ; ++ iXPage)
-			{
-				const u64 pXPixelBegin = (iXPage==vtXPageBegin)?(vtXPixelBegin):0;
-				const u64 pYPixelBegin = (iYPage==vtYPageBegin)?(vtYPixelBegin):0;
-				const u64 pXPixelEnd = (iXPage==vtXPageEnd-1)?(vtXPixelEnd):vtPageSize;
-				const u64 pYPixelEnd = (iYPage==vtYPageEnd-1)?(vtYPixelEnd):vtPageSize;
-				const u64 ImageXOffset = iXPage*vtPageSize - vtXOffset;
-				const u64 ImageYOffset = iYPage*vtPageSize - vtYOffset;
-				const u64 nPage = GetPageIndex(iXPage,iYPage,level);
-
-				ReadPage(nPage,tempBuffer.data());
-
-				for(u64 iYPixel = pYPixelBegin; iYPixel < pYPixelEnd; ++iYPixel)
-					for(u64 iXPixel = pXPixelBegin; iXPixel < pXPixelEnd; ++iXPixel)
-							pData[(ImageYOffset+iYPixel)*ImageX + (ImageXOffset+iXPixel)] = 
-								tempBuffer[iYPixel*vtPageSize + iXPixel];
-			}
-	}
-		
-	void SparseVirtualTextureFile::stripBorder(const u32* pIn,u32* pOut) const
-	{
-		u32 sizeIn = GetPageOuterSize();
-		u32 sizeOut = GetPageInnerSize();
-		u32 borderSize = (sizeIn-sizeOut)/2;
-
-		for(u32 iy = 0; iy < sizeOut; iy++)
-			for(u32 ix = 0; ix < sizeOut; ix++)
-				pOut[iy*sizeOut+ix] = pIn[(iy+borderSize)*sizeIn+ix+borderSize];
+		if(nRead != sizeof(PageHeader)*_pageHeaders.size())
+			return;
 	}
 
-	void SparseVirtualTextureFile::blackBorder(const u32* pIn,u32* pOut) const
+	//read shared data headers
+	if(_fileHeader.nSharedDataHeaders)
 	{
-		u32 sizeIn = GetPageInnerSize();
-		u32 sizeOut = GetPageOuterSize();
-		u32 borderSize = (sizeOut-sizeIn)/2;
+		_dataStream->Seek(_fileHeader.offsetSharedDataHeaders,IDataStream::ORIGIN_BEGINNING);
+		u64 nHeaders = _fileHeader.nSharedDataHeaders;
+		std::vector<SharedDataHeader> dataHeaders(nHeaders);
+		nRead = _dataStream->Read(sizeof(SharedDataHeader)*dataHeaders.size(),(u8*)dataHeaders.data());
 
-		u32 Black = 0;
+		if(nRead != sizeof(SharedDataHeader)*dataHeaders.size())
+			return;
 
-		for(u32 iy = 0; iy < borderSize; iy++)
-			for(u32 ix = 0; ix < sizeOut; ix++)
-				pOut[iy*sizeOut+ix] = Black;
+		_dataCache = new SharedDataCache(dataHeaders,pDataStream);
+	}
+	else
+		_dataCache = nullptr;
+
+
+	_bOpen = true;
+}
+
+void SparseVirtualTextureFile::Save(const char* destFile) const
+{
+	assert(_dataStream == nullptr);
+	assert(_dataSource != nullptr);
+
+	FILE* target = fopen(destFile,"w+b");
+
+	assert(target);
 			
-		for(u32 iy = borderSize; iy < sizeOut-borderSize; iy++)
+	FileHeader fileHeader = _fileHeader;
+	std::vector<PageHeader> pageHeaders(_pageHeaders.size());
+	std::vector<SharedDataHeader> sharedHeaders;
+
+	/*temporary space for file header*/
+	size_t written = fwrite(&fileHeader,sizeof(FileHeader),1,target);
+	assert(written == 1);
+
+
+	/*temporary space for page headers*/
+	if(pageHeaders.size())
+	{
+		fileHeader.nPageHeaders = pageHeaders.size();
+		fileHeader.offsetPageHeaders = _ftelli64(target);
+
+		size_t written = fwrite(pageHeaders.data(),sizeof(PageHeader),pageHeaders.size(),target);
+		assert(written == pageHeaders.size());
+	}
+	else
+	{
+		fileHeader.nPageHeaders= 0;
+		fileHeader.offsetPageHeaders = 0;
+	}
+
+	/*temporary space for shared data headers*/
+	if(_dataCache)
+	{
+		fileHeader.offsetSharedDataHeaders = _ftelli64(target);
+		fileHeader.nSharedDataHeaders = _dataCache->writeHeaders(target,sharedHeaders);
+	}
+	else
+	{
+		fileHeader.offsetSharedDataHeaders = 0;
+		fileHeader.nSharedDataHeaders= 0;
+	}
+
+	// write pages
+	if(pageHeaders.size())
+	{
+		std::vector<u8> tempBuffer(maxPageSize);
+		SVTPage page(fileHeader.pagesize);
+		for(size_t i = 0; i < pageHeaders.size(); ++i)
 		{
-			for(u32 ix = 0; ix < borderSize; ix++)
-				pOut[iy*sizeOut+ix] = Black;
-				
-			for(u32 ix = borderSize; ix < sizeOut-borderSize; ix++)
-				pOut[iy*sizeOut+ix] = pIn[(iy-borderSize)*sizeIn+ix-borderSize];
-
-			for(u32 ix = sizeOut-borderSize; ix < sizeOut; ix++)
-				pOut[iy*sizeOut+ix] = Black;
+			pageHeaders[i].file_offset =  _ftelli64(target);
+			getPage((u64)i,&page);
+			// LZMA here for much better compression ratio
+			pageHeaders[i].page_size = page.Serialize(maxPageSize,tempBuffer.data(),&pageHeaders[i].pageHeader,SVTPage::PAGE_COMPRESSED_LZMA);
+			written = fwrite(tempBuffer.data(),1,pageHeaders[i].page_size,target);
+			assert(written == pageHeaders[i].page_size);
 		}
-			
-		for(u32 iy = sizeOut-borderSize; iy < sizeOut; iy++)
-			for(u32 ix = 0; ix < sizeOut; ix++)
-				pOut[iy*sizeOut+ix] = Black;
-	}		
+	}
+	else
+		assert( fileHeader.nPageHeaders == 0 );
 
+	// write shared data
+	if(_dataCache)
+		assert( _dataCache->writeSharedData(target,sharedHeaders) == fileHeader.nSharedDataHeaders);
+	else
+		assert( fileHeader.nSharedDataHeaders == 0 );
+
+	assert( _fseeki64(target,0,SEEK_SET) == 0);
+			
+	/*final file header*/
+	written = fwrite(&fileHeader,sizeof(FileHeader),1,target);
+	assert(written == 1);
+
+	/*final page headers*/
+	if(pageHeaders.size())
+	{
+		assert( fileHeader.nPageHeaders == pageHeaders.size() );
+		assert( fileHeader.offsetPageHeaders == _ftelli64(target) );
+
+		size_t written = fwrite(pageHeaders.data(),sizeof(PageHeader),pageHeaders.size(),target);
+		assert(written == pageHeaders.size());
+	}
+	else
+		assert( fileHeader.nPageHeaders== 0);
+
+	/*final data headers*/
+	if(_dataCache)
+	{
+		assert( fileHeader.offsetSharedDataHeaders == _ftelli64(target) );
+		assert( fileHeader.nSharedDataHeaders == _dataCache->writeHeaders(target,sharedHeaders) );
+	}
+	else
+		assert( fileHeader.offsetSharedDataHeaders == 0 );
+
+	fclose(target);
+}
+		
+void SparseVirtualTextureFile::ReadImageFromVirtualTexture(u64 vtXOffset, u64 vtYOffset,ImageRect<R8G8B8A8>& pDataOut,int level) const
+{
+	const u32 vtBorderSize = (GetPageOuterSize() - GetPageInnerSize())/2;
+	const u32 vtPageSize = GetPageInnerSize();
+	const u32 vtXPageBegin = vtXOffset / vtPageSize;
+	const u32 vtYPageBegin = vtYOffset / vtPageSize;
+	const u32 vtXPageEnd = (vtXOffset + pDataOut.XSize() -1)/ vtPageSize + 1;
+	const u32 vtYPageEnd = (vtYOffset + pDataOut.YSize() -1)/ vtPageSize + 1;
+	const u32 vtXPixelBegin = vtXOffset % vtPageSize;
+	const u32 vtYPixelBegin = vtYOffset % vtPageSize;
+	const u32 vtXPixelEnd = (vtXOffset+ pDataOut.XSize() - 1) % vtPageSize + 1;
+	const u32 vtYPixelEnd = (vtYOffset+ pDataOut.YSize() - 1) % vtPageSize + 1;
+	if(level == -1)
+		level = GetMaxDepth();
+			
+	for(u64 iYPage = vtYPageBegin; iYPage < vtYPageEnd ; ++ iYPage)
+		for(u64 iXPage = vtXPageBegin; iXPage < vtXPageEnd ; ++ iXPage)
+		{
+			const u32 pXPixelBegin = (iXPage==vtXPageBegin)?(vtXPixelBegin):0;
+			const u32 pYPixelBegin = (iYPage==vtYPageBegin)?(vtYPixelBegin):0;
+			const u32 pXPixelEnd = (iXPage==vtXPageEnd-1)?(vtXPixelEnd):vtPageSize;
+			const u32 pYPixelEnd = (iYPage==vtYPageEnd-1)?(vtYPixelEnd):vtPageSize;
+			const u32 ImageXOffset = iXPage*vtPageSize - vtXOffset;
+			const u32 ImageYOffset = iYPage*vtPageSize - vtYOffset;
+			const u32 xSize = pXPixelEnd - pXPixelBegin;
+			const u32 ySize = pYPixelEnd - pYPixelBegin;
+			const u32 nPage = GetPageIndex(iXPage,iYPage,level);
+
+			ReadPage(nPage,Vector2<u32>(vtBorderSize+pXPixelBegin,vtBorderSize+pYPixelBegin),pDataOut.Rect(Vector4<u32>(ImageXOffset,ImageYOffset,ImageXOffset+xSize,ImageYOffset+ySize)));
+		}
+}
+		
+bool SparseVirtualTextureFile::ReadPage(u64 PageIndex,const Vector2<u32>& offset,ImageRect<R8G8B8A8>& pDataOut) const
+{
+	assert(offset.x + pDataOut.XSize() <= GetPageOuterSize());
+	assert(offset.y + pDataOut.YSize() <= GetPageOuterSize());
+	SVTPage page(GetPageOuterSize());
+	getPage(PageIndex,&page);
+	const ISVTDataLayer* pLayer = page.GetLayer(SVTLAYER_DIFFUSE_COLOR);
+	if(pLayer)
+	{
+		assert(pLayer);
+		pLayer->GetImageData(offset,SVTLAYER_DIFFUSE_COLOR,pDataOut);
+		return true;
+	}
+	else
+		return false;
+}
+
+void SparseVirtualTextureFile::getPage(u64 index,SVTPage* pPageOut) const
+{
+	assert(_bOpen);
+	if(_dataSource)
+		_dataSource->ReadPage(index,pPageOut);
+	else
+	{
+		_dataStream->Seek( _pageHeaders[index].file_offset , IDataStream::ORIGIN_BEGINNING );
+		std::vector<u8> dataBuffer( _pageHeaders[index].page_size );
+		u64 read = _dataStream->Read(dataBuffer.size(), dataBuffer.data());
+		assert(read == dataBuffer.size());
+		pPageOut->Deserialize(_fileHeader.pagesize,&_pageHeaders[index].pageHeader,read,dataBuffer.data(),_dataCache);
+	}
+}
+
+		
+SparseVirtualTextureFile::SharedDataCache::SharedDataCache(const ISVTFileDataSource* source)
+{
+	_dataSource = source;
+	_dataStream = nullptr;
+
+	ISVTFileDataSource::SVTSettings settings;
+	source->GetSettings(&settings);
+	_sharedDataHeaders.resize( settings.nSharedDataEntries );
+}
+
+SparseVirtualTextureFile::SharedDataCache::SharedDataCache(const std::vector<SharedDataHeader>& sharedEntries,IDataStream* dataStream)
+{
+	_dataSource = nullptr;
+	_sharedDataHeaders = sharedEntries;
+	_dataStream = dataStream;
+}
+
+SparseVirtualTextureFile::SharedDataCache::~SharedDataCache()
+{
+	for(auto it = _dataCache.begin(); it != _dataCache.end(); ++it)
+	{
+		assert(it->second.refCount == 0);
+		delete it->second.pData;
+	}
+}
+
+u32 SparseVirtualTextureFile::SharedDataCache::SharedDataSize(u32 index) const
+{
+	if(_dataSource)
+		return _dataSource->SharedDataSize(index);
+	else
+		return _sharedDataHeaders[index].data_size;
+}
+
+const void* SparseVirtualTextureFile::SharedDataCache::AccessSharedData(u32 index) const
+{
+	if(_dataSource)
+		return _dataSource->AccessSharedData(index);
+
+			
+	auto found = _dataCache.find(index);
+
+	if(found != _dataCache.end())
+	{
+		found->second.refCount = found->second.refCount +1;
+		return found->second.pData;
+	}
+
+	if(_dataCache.size() > max_items)
+		garbageCollect();
+
+	dataEntry new_entry;
+	new_entry.refCount = 1;
+	new_entry.pData = new u8[SharedDataSize(index)];
+
+	_dataStream->Seek( _sharedDataHeaders[index].file_offset , IDataStream::ORIGIN_BEGINNING );
+	_dataStream->Read( SharedDataSize(index),(u8*)new_entry.pData);
+
+	_dataCache.insert(std::make_pair(index,new_entry));
+
+	return new_entry.pData;
+}
+
+void SparseVirtualTextureFile::SharedDataCache::ReleaseSharedData(u32 index) const
+{
+	if(_dataSource)
+		return _dataSource->ReleaseSharedData(index);
+			
+	auto found = _dataCache.find(index);
+
+	assert(found != _dataCache.end());
+
+	--found->second.refCount;
+}
+
+u32 SparseVirtualTextureFile::SharedDataCache::writeHeaders(FILE* file,std::vector<SharedDataHeader>& headers) const
+{
+	if(headers.size() != _sharedDataHeaders.size())
+		headers.resize(_sharedDataHeaders.size());
+	size_t written = fwrite(headers.data(),sizeof(SharedDataHeader),headers.size(),file);
+	assert(written == headers.size());
+	return written;
+}
+
+u32 SparseVirtualTextureFile::SharedDataCache::writeSharedData(FILE* file,std::vector<SharedDataHeader>& headers) const
+{
+	for(size_t i = 0; i < headers.size(); ++i)
+	{
+		headers[i].importance = 0;
+		headers[i].data_flags = 0;
+		headers[i].file_offset = _ftelli64(file);
+		headers[i].data_size = SharedDataSize(i);
+
+		const void* data = AccessSharedData(i);
+
+		size_t written = fwrite(data,headers[i].data_size,1,file);
+
+		assert(written == 1);
+
+		ReleaseSharedData(i);
+	}
+	return headers.size();
+}
+		
+void SparseVirtualTextureFile::SharedDataCache::garbageCollect() const
+{
+	for(auto it = _dataCache.begin(); it != _dataCache.end();)
+	{
+		if(it->second.refCount == 0)
+		{
+			auto last = it;
+			delete last->second.pData;
+			++it;
+			_dataCache.erase(last);
+		}
+		else
+			++it;
+	}
+}
 
 }

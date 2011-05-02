@@ -190,6 +190,7 @@
     <ClInclude Include="Headers\SDK\CoreFactory.h" />
     <ClInclude Include="Headers\SDK\DomainBase.h" />
     <ClInclude Include="Headers\SDK\DomainMemory.h" />
+    <ClInclude Include="Headers\SDK\EditableImage.h" />
     <ClInclude Include="Headers\SDK\EditableMesh.h" />
     <ClInclude Include="Headers\SDK\EffectContainer.h" />
     <ClInclude Include="Headers\SDK\global_allocator.h" />
@@ -226,6 +227,25 @@
     <ClInclude Include="Source\Core\CMeshLoader.h" />
     <ClInclude Include="Source\Core\D3D11APIWrapper.h" />
     <ClInclude Include="Source\Core\DebugUI.h" />
+    <ClInclude Include="Source\Core\Dependancies\Deflate\deflate.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Alloc.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Bra.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzFind.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzFindMt.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzHash.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma2Dec.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma2Enc.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma86.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzmaDec.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzmaEnc.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\MtCoder.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Threads.h" />
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Types.h" />
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-internal.h" />
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-sinksource.h" />
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-stubs-internal.h" />
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-stubs-public.h" />
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy.h" />
     <ClInclude Include="Source\Core\FixedSizeKeyStorage.h" />
     <ClInclude Include="Source\Core\InputDomain.h" />
     <ClInclude Include="Source\Core\mpq_stormlib.h" />
@@ -234,8 +254,15 @@
     <ClInclude Include="Source\Core\ResourceDomain.h" />
     <ClInclude Include="Source\Core\SharedCoreFactory.h" />
     <ClInclude Include="Source\Core\SharedTaskManager.h" />
+    <ClInclude Include="Source\Core\SVTPageEncoding.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DXguids.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="ply\rply.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -252,6 +279,102 @@
     <ClCompile Include="Source\Core\D3D11VertexBuffer.cpp" />
     <ClCompile Include="Source\Core\D3DRenderingAPIWrapper.cpp" />
     <ClCompile Include="Source\Core\DebugUI.cpp" />
+    <ClCompile Include="Source\Core\Dependancies\Deflate\deflate.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Alloc.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Bra.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzFind.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzFindMt.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma2Dec.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma2Enc.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma86Dec.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma86Enc.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzmaDec.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzmaEnc.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\MtCoder.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Threads.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy-sinksource.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy-stubs-internal.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\Core\DomainBase.cpp" />
     <ClCompile Include="Source\Core\DomainMemory.cpp" />
     <ClCompile Include="Source\Core\EffectContainer.cpp" />
@@ -281,6 +404,8 @@
     <ClCompile Include="Source\Core\SharedCoreFactory.cpp" />
     <ClCompile Include="Source\Core\SharedTaskManager.cpp" />
     <ClCompile Include="Source\Core\SparseVirtualTextureFile.cpp" />
+    <ClCompile Include="Source\Core\SVTPage.cpp" />
+    <ClCompile Include="Source\Core\SVTPageEncoding.cpp" />
     <ClCompile Include="Source\Core\TaskManager.cpp" />
     <ClCompile Include="Source\Core\TLS.cpp" />
     <ClCompile Include="Source\Core\VirtualTextureManager.cpp" />

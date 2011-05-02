@@ -30,7 +30,7 @@ namespace HAGE {
 
 	private:
 
-		const static int DefaultCacheSize = 1024*1024*64;
+		const static int DefaultCacheSize = 1024*1024*128;
 
 		VirtualTextureManager();
 		~VirtualTextureManager();
@@ -44,6 +44,8 @@ namespace HAGE {
 			virtual const APIWTexture* GetCurrentVTRedirection() const {return _redirection;}
 			virtual u32 GetCacheSize() const {return _currentCacheSize;}
 			virtual void AdjustCacheSize(u32 newSize) const {_requestedCacheSize=newSize;}
+			virtual const APIWTexture* _Debug_GetFeedbackTexture() const {return _feedbackTexture;}
+			virtual const APIWConstantBuffer* GetSettings() const { _pVTSettings->UpdateContent(&_settings);return _pVTSettings;}
 
 			virtual u32 GetId() const;
 			virtual APIWEffect* BeginFeedback(RenderingAPIWrapper* pRenderer) const;
@@ -61,6 +63,14 @@ namespace HAGE {
 			bool GetFeedbackData(const void** ppDataOut);
 			bool HasFeedback(){return _bFeedbackProvided;}
 
+			struct VT_Settings
+			{
+				Vector2<>	cache_inner_page_size;
+				Vector2<>	cache_border_size;	
+			};
+
+			void UpdateSettings(const VT_Settings& settings);
+
 		private:
 			mutable	bool			_bFeedbackProvided;
 			mutable APIWTexture*	_feedbackTexture;
@@ -68,11 +78,14 @@ namespace HAGE {
 			mutable	u32				_requestedCacheSize;
 
 			u32						_currentCacheSize;
+			bool					_bFeedbackRecieved;
 			const u32				_index;
+			VT_Settings				_settings;
 			APIWTexture*			_cache;
 			APIWTexture*			_redirection;
 			VirtualTextureManager*	_parent;
 			APIWEffect*				_feedbackEffect;
+			APIWConstantBuffer*		_pVTSettings;
 		};
 
 		typedef std::pair<APIWTexture*,u32> UpdatableTexture;
@@ -105,33 +118,52 @@ namespace HAGE {
 
 			UpdatableTexture CreateCacheTexture();
 			void UpdateCacheTexture(UpdatableTexture& cacheTexture);
+			
+			Vector2<> GetCachePageInnerSize() 
+			{
+				return Vector2<>((f32)(nPageSizeX-2*_nBorderSize)/(f32)(nCacheX),(f32)(nPageSizeY-2*_nBorderSize)/(f32)(nCacheY));
+			}
+			Vector2<> GetCacheBorderSize() 
+			{
+				return Vector2<>((f32)(_nBorderSize)/(f32)nCacheX,(f32)(_nBorderSize)/(f32)nCacheY);
+			}
 
 			class PageRedirection
 			{
 			public:
 				PageRedirection()
-				{
+				{/*
 					OffsetX=0.0f;
 					OffsetY=0.0f;
-					Size=0.0f;
+					Exponent=0.0f;*/
+					data= 0;
 				}
 
-				static const HAGE::APIWFormat format = HAGE::APIWFormat::R32G32B32A32_FLOAT;
+				//static const HAGE::APIWFormat format = HAGE::APIWFormat::R32G32B32A32_FLOAT;
+				static const HAGE::APIWFormat format = HAGE::APIWFormat::R10G10B10A2_UNORM;
 
 			private:
-				PageRedirection(f32 xOff,f32 yOff,f32 Scale)
+				PageRedirection(u32 xOff,u32 yOff,u32 exponent)
 				{
+					
+					
+					assert(xOff < (1<<10));
+					assert(yOff < (1<<10));
+					assert(exponent < (1<<10));
+					data = (xOff) | (yOff<<10) | (exponent<<20) | (0x3<<30);
+					
+						/*
 					OffsetX=xOff;
 					OffsetY=yOff;
-					Size=Scale;
-					Padding= 1.0f;
+					Exponent= exponent;*/
 				}
-
-				f32 OffsetX;
+				/*
 				f32 OffsetY;
-				f32 Size;
-				f32 Padding;
-
+				f32 OffsetX;
+				f32 Exponent;
+				f32 _Padding;
+				*/
+				u32 data;
 				friend class PageCache;
 			};
 
@@ -179,7 +211,8 @@ namespace HAGE {
 				_redirectionTableIndices((1 << nLevel)*(1 << nLevel)),
 				_subPage(AllocateSubTable(nMaxXPages,nMaxYPages,Cache,nLevel)),
 				_cache(Cache),
-				_Level(nLevel)
+				_Level(nLevel),
+				_TotalLevels(std::max(FindLog2(nMaxXPages),FindLog2(nMaxYPages))+1)
 			{
 				for(int i = 0; i < _redirectionTable.size(); ++i)
 					_redirectionTableIndices[i].cacheIndex = 0xffffffff;
@@ -239,7 +272,7 @@ namespace HAGE {
 					assert(pAlloc);
 					pAlloc->BeginAllocation();
 					UpdatableTexture result;
-					result.first = pAlloc->CreateTexture(_nPagesX,_nPagesY,_Level+1,
+					result.first = pAlloc->CreateTexture(_nPagesX,_nPagesY,_TotalLevels,
 						typename _TCache::PageRedirection::format,TEXTURE_CPU_WRITE,
 						nullptr);
 					pAlloc->EndAllocation();
@@ -251,7 +284,7 @@ namespace HAGE {
 				RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
 				assert(pAlloc);
 				pAlloc->BeginAllocation();
-				pAlloc->UpdateTexture(redirectionTexture.first,0,0,_nPagesX,_nPagesY,10-_Level,_redirectionTable.data());
+				pAlloc->UpdateTexture(redirectionTexture.first,0,0,_nPagesX,_nPagesY,_TotalLevels-1-_Level,_redirectionTable.data());
 				pAlloc->EndAllocation();
 				if(_subPage)
 					return _subPage->UpdateRedirectionTexture(redirectionTexture);
@@ -262,7 +295,7 @@ namespace HAGE {
 		private:
 			static MipMappedPageRedirectionTable* AllocateSubTable(u32 nXPages,u32 nYPages,const PageCache* cache,u32 nLevel)
 			{
-				if( (((u32)1 << nLevel) > nXPages) &&  (((u32)1 << nLevel) > nYPages) )
+				if( (((u32)1 << nLevel) >= nXPages) &&  (((u32)1 << nLevel) >= nYPages) )
 					return nullptr;
 				return new MipMappedPageRedirectionTable(nXPages,nYPages,cache,nLevel+1);
 			}
@@ -293,6 +326,18 @@ namespace HAGE {
 				u16 cacheIndex;
 				u16 nSplit;
 			};
+			
+			static u32 FindLog2(u32 v)
+			{
+				u32 r = 0; // r will be lg(v)
+
+				while (v >>= 1) // unroll for more speed...
+				{
+					r++;
+				}
+
+				return r;
+			}
 
 			std::vector<typename _TCache::PageRedirection>	_redirectionTable;
 			std::vector<IndexInformation>				_redirectionTableIndices;
@@ -301,7 +346,13 @@ namespace HAGE {
 			MipMappedPageRedirectionTable * const	_subPage;
 			const u32						_nPagesX,_nPagesY;
 			const u32						_Level;
+			const u32						_TotalLevels;
 		};
+
+		void adjustPageDebug(void* pData,u32 level,u32 x,u32 y);
+
+
+		const static bool				_bDebugPage = false;
 
 		u32				nTextureX, nTextureY;
 		u32				nPageSizeX,nPageSizeY;

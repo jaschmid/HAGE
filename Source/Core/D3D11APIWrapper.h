@@ -507,6 +507,12 @@ static DXGI_FORMAT APIWFormatToD3DFormat(const HAGE::APIWFormat& format)
 	case HAGE::DXTC5_UNORM_SRGB:
 		return DXGI_FORMAT_BC3_UNORM_SRGB;
 		break;
+	case HAGE::R10G10B10A2_UNORM:
+		return DXGI_FORMAT_R10G10B10A2_UNORM;
+		break;
+	case HAGE::R10G10B10A2_UINT:
+		return DXGI_FORMAT_R10G10B10A2_UINT;
+		break;
 	default:
 		assert(!"Unknown Format!");
 		return DXGI_FORMAT_UNKNOWN;

@@ -280,7 +280,7 @@ namespace HAGE
 	// unsigned char b:		blue channel.
 	// unsigned char a:		alpha channel.
  
-	unsigned long PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+	static unsigned long PackRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 	{
 		return ((r << 24) | (g << 16) | (b << 8) | a);
 	}
@@ -294,7 +294,7 @@ namespace HAGE
 	// const unsigned char *blockStorage:	pointer to the block to decompress.
 	// unsigned long *image:				pointer to image where the decompressed pixel data should be stored.
  
-	void DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image)
+	static void DecompressBlockDXT1(unsigned long x, unsigned long y, unsigned long width, const unsigned char *blockStorage, unsigned long *image)
 	{
 		unsigned short color0 = *reinterpret_cast<const unsigned short *>(blockStorage);
 		unsigned short color1 = *reinterpret_cast<const unsigned short *>(blockStorage + 2);
@@ -374,7 +374,7 @@ namespace HAGE
 	// const unsigned char *blockStorage:	pointer to compressed DXT1 blocks.
 	// unsigned long *image:				pointer to the image where the decompressed pixels will be stored.
  
-	void BlockDecompressImageDXT1(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image)
+	static void BlockDecompressImageDXT1(unsigned long width, unsigned long height, const unsigned char *blockStorage, unsigned long *image)
 	{
 		unsigned long blockCountX = (width + 3) / 4;
 		unsigned long blockCountY = (height + 3) / 4;

@@ -27,6 +27,7 @@ namespace HAGE {
 			//art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp
 			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt
 			_mesh = GetResource()->OpenResource<IDrawableMesh>("t_landscape.hgeo");
+			scale = scale / 1000.0f;
 			//_texture = GetResource()->OpenResource<ITextureImage>("t_landscape.hsvt");
 		}
 		else
@@ -88,7 +89,7 @@ namespace HAGE {
 			if(!bShadow && _init.behavior == HAGE::ACTOR_BEHAVIOR_PLANET)
 			{
 				
-				pc.model =					(data.worldMatrix * (Matrix4<>::Scale(scale * 3.0f) * Matrix4<>::AngleRotation(Vector3<>(1.0f,0.0f,0.0f),3.14f/2.0f))).Transpose();
+				pc.model =					(data.worldMatrix * (Matrix4<>::AngleRotation(Vector3<>(1.0f,0.0f,0.0f),3.14f/2.0f) *Matrix4<>::Scale(scale * 3.0f))).Transpose();
 				pc.modelview =				(c.modelview.Transpose()*pc.model.Transpose()).Transpose();
 				pc.inverse_modelview =		(inv_world*c.inverse_modelview.Transpose()).Transpose();
 				pc.modelview_projection =	(c.modelview_projection.Transpose()*pc.model.Transpose()).Transpose();

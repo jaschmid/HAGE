@@ -12,6 +12,8 @@
 #define __MESH_EX_DECIMATOR_H__
 
 #include <cmath>
+#include <boost/intrusive/treap_set.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 namespace HAGE {
 
@@ -29,34 +31,42 @@ namespace HAGE {
 		Vector3<_Precision>	DecimationPosition;
 	};
 
-	const static f64 COST_EPSILON	= 0.0001;
+	const static f64 COST_EPSILON	= 0.000001;
 	
 	template<class _MeshType,class _Features,class _Precision> class ImplMeshDecimatorProcessor
 	{
 	private:
-
+		
 		typedef typename _Features::BaseMesh::Vertex Vertex;
 		typedef typename _Features::BaseMesh::Edge Edge;
 		typedef typename _Features::BaseMesh::Face Face;
 		typedef typename _Features::BaseMesh Base;
 		typedef typename Base::IndexType IndexType;
 	
-
-		struct costComparable
-		{
+		struct costItem
+		{	
 			_Precision	cost;
 			u32			edges;
-
-			bool operator < (const costComparable& other) const	
-			{
-				if( std::abs(other.cost - cost) < COST_EPSILON)
-					return edges < other.edges;
-				else
-					return cost < other.cost;
-			};
+			IndexType	index;
 		};
 
 	public:
+		
+		typedef std::function<typename Base::VertexType (typename const Base::VertexPair&,typename const Base::Edge&)> UpdateFunction;
+
+		static typename Base::VertexType DefaultMergeFunction(typename const Base::VertexPair& vp,typename const Base::Edge& e)
+		{
+			Base::VertexType result;
+			if(e != Base::nullEdge)
+				result.Position = e->DecimationPosition;
+			else
+				result.Position = (vp[0]->Position + vp[1]->Position) * 0.5f;
+
+			result.Quadric = vp[0]->Quadric + vp[1]->Quadric;
+			result.nQuadrics = (vp[0]->nQuadrics + vp[1]->nQuadrics) - 4;
+
+			return result;
+		}
 
 		ImplMeshDecimatorProcessor()
 		{
@@ -74,7 +84,7 @@ namespace HAGE {
 		{
 			Final()->Compact();
 			Final()->UpdateAllNormals();
-			  
+						  
 			for (unsigned int i = 0; i <  Final()->GetNumVertexIndices(); i++) 
 			{
 				Vertex v = Final()->GetVertex(i);
@@ -86,78 +96,81 @@ namespace HAGE {
 				v->Quadric = createQuadricForVert(v,&v->nQuadrics);
 			}
 			
-			lookup.resize((size_t)Final()->GetNumEdgeIndices());
+			data.prepare(Final()->GetNumEdgeIndices());
 
 			for (unsigned int i = 0; i <  Final()->GetNumEdgeIndices(); i++) 
 			{
 				Edge e = Final()->GetEdge(i);
 				
-				lookup[i] = collapseMap.end();
-
 				if(e == Base::nullEdge)
 					continue;
 
 				//Compute the cost and push it to the heap
 				u32 count;
 				if(count = computeCollapse(e))
-					updateEdgeCollapse(e,count);
-				else
-					lookup[i] = collapseMap.end();
+				{
+					costItem c;
+					c.index = e.Index();
+					c.cost = e->Cost;
+					c.edges = count;
+					data.push_back(c);
+				}
 			}
-
+			
 		}
 
-		IndexType DecimateFaces(IndexType nFaces)
+		
+
+		IndexType DecimateFaces(IndexType nFaces,const UpdateFunction& func = DefaultMergeFunction)
 		{
 			Base::IndexType n = 0;
-			while(n!=nFaces && decimate())
+			while(n!=nFaces && decimate(func))
 			{
 				n++;
 
 				
-				if(Final()->GetNumFaces() % 1000 == 0
-					|| Final()->GetNumFaces() % 1000 == 1)
+				if(Final()->GetNumFaces() % 10000 == 0
+					|| Final()->GetNumFaces() % 10000 == 1)
 				{
-					float fMin = collapseMap.begin()->first.cost;
-					float fMax = collapseMap.rbegin()->first.cost;
-					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)collapseMap.size(),fMin,fMax);
+					f32 fMin = (f32)data.getMinErr();
+					f32 fMax = (f32)data.getMaxErr();
+					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)data.size(),fMin,fMax);
 				}	
 			}
 			return Final()->GetNumFaces();
 		}
 
-		IndexType DecimateToFaceCount(IndexType nFaces)
+		IndexType DecimateToFaceCount(IndexType nFaces,const UpdateFunction& func = DefaultMergeFunction)
 		{
-			while(Final()->GetNumFaces() > nFaces && decimate())
+			while(Final()->GetNumFaces() > nFaces && decimate(func))
 			{
-				if(Final()->GetNumFaces() % 1000 == 0
-					|| Final()->GetNumFaces() % 1000 == 1)
+				if(Final()->GetNumFaces() % 10000 == 0
+					|| Final()->GetNumFaces() % 10000 == 1)
 				{
-					float fMin = collapseMap.begin()->first.cost;
-					float fMax = collapseMap.rbegin()->first.cost;
-					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)collapseMap.size(),fMin,fMax);
+					f32 fMin = (f32)data.getMinErr();
+					f32 fMax = (f32)data.getMaxErr();
+					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)data.size(),fMin,fMax);
 				}	
 			}
 			return Final()->GetNumFaces();
 		}
 
-		IndexType DecimateToError(f32 fError)
+		IndexType DecimateToError(f32 fError,const UpdateFunction& func = DefaultMergeFunction)
 		{
-			while(decimate(fError))
+			while(decimate(func,fError))
 			{
-				if(Final()->GetNumFaces() % 1000 == 0
-					|| Final()->GetNumFaces() % 1000 == 1)
+				if(Final()->GetNumFaces() % 10000 == 0
+					|| Final()->GetNumFaces() % 10000 == 1)
 				{
-					float fMin = collapseMap.begin()->first.cost;
-					float fMax = collapseMap.rbegin()->first.cost;
-					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)collapseMap.size(),fMin,fMax);
+					f32 fMin = (f32)data.getMinErr();
+					f32 fMax = (f32)data.getMaxErr();
+					printf("\t %i Faces remaining, %i Collapses, ErrMin(%e) ErrMax(%e)\n",(u32)Final()->GetNumFaces(),(u32)data.size(),fMin,fMax);
 				}	
 			}
 			return Final()->GetNumFaces();
 		}
 
 		void SetCustomWeightingFunction(const std::function<bool(Edge&)>& function) {_customEdgeWeightingFunction = function; }
-		
 
 	private:
 		
@@ -169,10 +182,141 @@ namespace HAGE {
 		typename std::function<bool(Edge&)> _customEdgeWeightingFunction;		
 
 		//multi map for edge collapses, not strictly required but speeds things up alot
-		typedef typename std::multimap<costComparable,IndexType> collapseType;
-		collapseType collapseMap;
-		std::vector<typename collapseType::iterator>	lookup;
 
+		class comparableContainer
+		{
+		private:
+
+			boost::mt19937				_rand_generator;
+			
+			class costComparable : public boost::intrusive::bs_set_base_hook<>
+			{
+			public:
+				costItem	item;
+				bool		used;
+				u32			prio;
+				
+			   unsigned int get_priority() const
+			   {  
+				   return this->prio;   
+			   }
+
+				friend bool operator < (const costComparable &a, const costComparable &b)	
+				{
+					if( std::abs(a.item.cost - b.item.cost) < COST_EPSILON)
+						return a.item.edges < b.item.edges;
+					else
+						return a.item.cost < b.item.cost;
+				};
+				friend bool operator > (const costComparable &a, const costComparable &b)	
+				{
+					if( std::abs(a.item.cost - b.item.cost) < COST_EPSILON)
+						return a.item.edges > b.item.edges;
+					else
+						return a.item.cost > b.item.cost;
+				};
+
+				friend bool priority_order (const costComparable &a, const costComparable &b)
+				{  
+					return a.prio < b.prio;
+				}  //Lower value means higher priority
+			
+				friend bool priority_inverse_order (const costComparable &a, const costComparable &b)
+				{  
+					return a.prio > b.prio;
+				}  //Lower value means higher priority
+			};
+
+		public:
+			comparableContainer() : collapseMap(),_rand_generator(0)
+			{
+			}
+
+			void prepare(typename Base::IndexType count)
+			{
+				collapseMap.clear();
+				memoryVector.clear();
+				memoryVector.resize(count);
+
+				for(typename Base::IndexType i = 0; i < count; ++i)
+				{
+					memoryVector[i].item.index = i;
+					memoryVector[i].used = false;
+					memoryVector[i].prio = _rand_generator();
+				}
+			}
+
+			void push_back(const costItem& c)
+			{
+				
+				memoryVector[c.index].item=c;
+				memoryVector[c.index].used = true;
+				collapseMap.insert(memoryVector[c.index]);
+			}
+			
+			void updateCollapse(const costItem& c)
+			{
+				if(memoryVector[c.index].used)
+					collapseMap.erase(collapseMap.iterator_to(memoryVector[c.index]));
+
+				memoryVector[c.index].item=c;
+				memoryVector[c.index].used = true;
+				collapseMap.insert(memoryVector[c.index]);
+			}
+
+			const costItem* pop()
+			{
+				if(collapseMap.empty())
+					return nullptr;
+				
+				costComparable* result = &(*collapseMap.begin());
+				collapseMap.erase(collapseMap.iterator_to(*result));
+				result->used = false;
+				return &(result->item);
+			}
+
+			void remove(typename Base::IndexType index)
+			{
+				if(memoryVector[index].used)
+				{
+					collapseMap.erase(collapseMap.iterator_to(memoryVector[index]));
+					memoryVector[index].used = false;
+				}
+			}
+
+			_Precision getMinErr() const
+			{
+				if(collapseMap.empty())
+					return 0.0;
+				return collapseMap.begin()->item.cost;
+			}
+
+			_Precision getMaxErr() const
+			{
+				if(collapseMap.empty())
+					return 0.0;
+				return collapseMap.rbegin()->item.cost;
+			}
+
+			IndexType size() const
+			{
+				return 0;
+			}
+
+			bool empty() const
+			{
+				return collapseMap.empty();
+			}
+		private:
+
+			typedef typename std::vector< costComparable >     memoryType;
+			memoryType memoryVector;
+			typedef typename boost::intrusive::treap_multiset< costComparable , boost::intrusive::compare< std::less<costComparable> > >     collapseType;
+			collapseType collapseMap;
+		};
+
+		comparableContainer	data;
+		
 		//private methods
 		
 		Matrix4<_Precision> createQuadricForVert(Vertex v,u32* nCount) const
@@ -195,12 +339,12 @@ namespace HAGE {
 			return Q;
 		}
 
-		bool decimate(f32 fMax = -1.0f)
+		bool decimate(const UpdateFunction& func,f32 fMax = -1.0f)
 		{
 			if (Final()->GetNumFaces()  == 2) return false;
 
   
-			while(!collapseMap.empty())
+			while(!data.empty())
 			{
 				Edge e = getNextCollapse(fMax);
 
@@ -210,15 +354,12 @@ namespace HAGE {
 				auto vp = Final()->GetEdgeVertices(e);
 				Vertex v = Base::nullVertex;
 		
-				Vector3<_Precision> pos = e->DecimationPosition;
-				Matrix4<_Precision> qNew = vp[0]->Quadric + vp[1]->Quadric;
-				u32 newCount = (vp[0]->nQuadrics + vp[1]->nQuadrics) - 4;
+				Base::VertexType newVert = func(vp,e);
+
 				//assert(vp[1].Index() != 2059);
 				if((v = Final()->MergeVertex(vp)) != Base::nullVertex)
 				{
-					v->Position = pos;
-					v->Quadric = qNew;
-					v->nQuadrics = newCount;
+					Final()->GetVertexData(v) = newVert;
 					
 					Edge e2 = Base::nullEdge;
 					u32 nEdges = 0;
@@ -227,11 +368,8 @@ namespace HAGE {
 						u32 count;
 						if(count = computeCollapse(e2))
 							updateEdgeCollapse(e2,count);
-						else if(lookup[(size_t)e2.Index()] != collapseMap.end())
-						{
-							collapseMap.erase(lookup[(size_t)e2.Index()]);
-							lookup[(size_t)e2.Index()] =  collapseMap.end();
-						}
+						else
+							removeEdgeCollapse(e2);
 
 						++nEdges;
 					}
@@ -265,15 +403,15 @@ namespace HAGE {
 
 				//sanity check, if we moved out point by more than 2 times the edge length, something is wrong
 				//prefer the other solution then
-				if( !(e->DecimationPosition - vp[0]->Position) < 4*!(vp[1]->Position - vp[0]->Position) )
+				if( !(e->DecimationPosition - vp[0]->Position) < 4.0*!(vp[1]->Position - vp[0]->Position) )
 					bValueAccepted = true;
 			}
 			
 			if(!bValueAccepted)
 			{
-				Vector4<_Precision> vM = Vector4<f64>((vp[0]->Position + vp[1]->Position)/2.0f,1.0f);
-				Vector4<_Precision> v1 = Vector4<f64>(vp[0]->Position,1.0f);
-				Vector4<_Precision> v2 = Vector4<f64>(vp[1]->Position,1.0f);
+				Vector4<_Precision> vM = Vector4<_Precision>((vp[0]->Position + vp[1]->Position)/2.0f,1.0f);
+				Vector4<_Precision> v1 = Vector4<_Precision>(vp[0]->Position,1.0f);
+				Vector4<_Precision> v2 = Vector4<_Precision>(vp[1]->Position,1.0f);
 				
 				_Precision eVM = vM*(QEdge*vM);
 				_Precision eV1 = v1*(QEdge*v1);
@@ -301,15 +439,20 @@ namespace HAGE {
 			//prevent normal flips
 
 			auto fp = Final()->GetEdgeFaces(e);
-
-			Face f = Base::nullFace;
-
+			
 			u32 nEdges = 0;
-
+			
+			typename Base::ElementTriple trip;
+  
 			for(int vertex = 0; vertex < 2; vertex++)
-				while((f=Final()->GetNextVertexFace(vp[0],f)) != Base::nullFace)
+				while(std::get<1>(trip=Final()->GetNextVertexElementTriple(vp[vertex],trip)) != Base::nullEdge)
 				{
 					//ignore edge faces
+					typename Base::Face f = std::get<2>(trip);
+
+					if(f == Base::nullFace)
+						return 0;//reject edge collapses on edge
+
 					if(f == fp[0] || f == fp[1])
 						continue;
 
@@ -319,9 +462,19 @@ namespace HAGE {
 					for(int i = 0; i <3; ++i)
 						pos[i] = (vt[i] == vp[vertex]) ? e->DecimationPosition : vt[i]->Position;
 
-					//if dotproduct < 0 then we have a normal flip
-					if( ((pos[1]-pos[0]) % (pos[2]-pos[0]))*((vt[1]->Position-vt[0]->Position) % (vt[2]->Position-vt[0]->Position)) < 0.0f)
-						return 0;
+					
+					Vector3<_Precision> d1 = (pos[1]-pos[0]);
+					Vector3<_Precision> d2 = (pos[2]-pos[0]);
+
+					Vector3<_Precision> normal_after = (d1 % d2);
+					Vector3<_Precision> normal_before = ((vt[1]->Position-vt[0]->Position) % (vt[2]->Position-vt[0]->Position));
+					if( normal_after*normal_before < 0.0f)
+						return 0;//reject normal flipping collapses
+
+					_Precision cos_angle = (d1*d2)/(d1.length()*d2.length());
+
+					if(cos_angle > 0.98 || cos_angle < -0.98)
+						return 0; //reject very thin triangle generating collapses
 
 					nEdges++;
 				}
@@ -331,24 +484,26 @@ namespace HAGE {
 
 		void updateEdgeCollapse(const Edge& e,u32 nCount)
 		{
-			if(lookup[(size_t)e.Index()] != collapseMap.end())
-				collapseMap.erase(lookup[(size_t)e.Index()]);
-			costComparable c;
-			c.edges = nCount;
+			costItem c;
+			c.index = e.Index();
 			c.cost = e->Cost;
-			lookup[(size_t)e.Index()] = collapseMap.insert(collapseType::value_type(c,(u32)e.Index()));
+			c.edges = nCount;
+			data.updateCollapse(c);
+		}
+		void removeEdgeCollapse(const Edge& e)
+		{
+			data.remove(e.Index());
 		}
 
 		Edge getNextCollapse(f32 fMax=-1.0f)
 		{
 			Edge e = Base::nullEdge;
-			while(!collapseMap.empty())
+			while(!data.empty())
 			{
-				Edge e = Final()->GetEdge(collapseMap.begin()->second);
-				_Precision cost = collapseMap.begin()->first.cost;
-				u32 count = collapseMap.begin()->first.edges;
-				lookup[(size_t)collapseMap.begin()->second] = collapseMap.end();
-				collapseMap.erase(collapseMap.begin());
+				const costItem* c = data.pop();
+				Edge e = Final()->GetEdge(c->index);
+				_Precision cost = c->cost;
+				u32 count = c->edges;
 
 				if(e == Base::nullEdge)
 					continue;

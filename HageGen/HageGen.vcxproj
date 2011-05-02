@@ -131,7 +131,10 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointModel>Strict</FloatingPointModel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -152,7 +155,10 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointModel>Strict</FloatingPointModel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,15 +170,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DataProcessor.cpp" />
+    <ClCompile Include="Dependancies\sqlite3.c" />
     <ClCompile Include="GenerationDomain.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="VirtualTextureGenerator.cpp" />
+    <ClCompile Include="VTPacker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataProcessor.h" />
+    <ClInclude Include="Dependancies\sqlite3.h" />
     <ClInclude Include="GenerationDomain.h" />
     <ClInclude Include="guids.h" />
     <ClInclude Include="header.h" />
     <ClInclude Include="VirtualTextureGenerator.h" />
+    <ClInclude Include="VTPacker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

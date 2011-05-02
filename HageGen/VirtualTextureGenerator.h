@@ -3,121 +3,185 @@
 
 #include "header.h"
 
+#include <SDK/EditableImage.h>
+
+#include "VTPacker.h"
+#include "dependancies\sqlite3.h"
+#include "boost/filesystem.hpp" 
+#include <stdio.h>
 #define FREEIMAGE_LIB
 #include <FreeImage.h>
+
 namespace HAGE {
 
 
-	class SparseVirtualTextureGenerator : public SparseVirtualTextureFile
+	class SparseVirtualTextureGenerator : private ISVTFileDataSource
 	{
 	public:
-
-		SparseVirtualTextureGenerator() 
-		{
-		}
 		
-		void Commit()
-		{
-			//make mipmaps
-			FinalizeDepthLayer(0);
-
-			//debug stuff
-			// without borders
-			for(int i = 0; i< std::min((int)GetNumLayers(),(int)5);++i)
-			{
-				std::vector<u32> buffer;
-				u32 xSize = GetPageInnerSize()*GetNumXPagesAtDepth(i);
-				buffer.resize(xSize*xSize);
-
-				MergePagesToImage(
-							0,GetNumXPagesAtDepth(i),
-							0,GetNumXPagesAtDepth(i),
-							i,(Color*)buffer.data(),0);
-
-				char temp[256];
-				sprintf(temp,"MipLevel%i.png",i);
-				
-				OutputImage(temp,(Color*)buffer.data(),xSize,xSize);
-			}
-
-			//with borders
-			for(int i = 0; i< std::min((int)GetNumLayers(),(int)5);++i)
-			{
-				std::vector<u32> buffer;
-				u32 xSize = GetPageOuterSize()*GetNumXPagesAtDepth(i);
-				buffer.resize(xSize*xSize);
-
-				MergePagesToImage(
-							0,GetNumXPagesAtDepth(i),
-							0,GetNumXPagesAtDepth(i),
-							i,(Color*)buffer.data(),nullptr,SparseVirtualTextureFile::PAGE_FINAL);
-
-				char temp[256];
-				sprintf(temp,"MipLevel_borders_%i.png",i);
-
-				OutputImage(temp,(Color*)buffer.data(),xSize,xSize);
-			}
-
-			//test image
-			{
-				std::vector<Color> buffer;
-				u32 xSize = 4096;
-				buffer.resize(xSize*xSize);
-
-				ReadImageFromVirtualTexture(0,0,xSize,xSize,buffer.data(),6);
-
-				OutputImage("Landscape.png",(Color*)buffer.data(),xSize,xSize);
-			}
-
-			SparseVirtualTextureFile::Commit();
-		}
-
-		
-		struct Rectangle
-		{
-			u32 xBegin,xSize;
-			u32 yBegin,ySize;
-		};
+		/* Public Types */
 
 		class PlacedTexture
 		{
 		public:
-			f32 GetUBegin() const{return (f32)location.xBegin / (float)base->GetSize();}
-			f32 GetUSize() const{return (f32)location.xSize / (float)base->GetSize();}
-			f32 GetVBegin() const{return (f32)location.yBegin / (float)base->GetSize();}
-			f32 GetVSize() const{return (f32)location.ySize / (float)base->GetSize();}
+			f32 GetUBegin() const{return (f32)packing.GetX() / (float)base->GetSize();}
+			f32 GetUSize() const{return (f32)packing.GetXSize() / (float)base->GetSize();}
+			f32 GetVBegin() const{return (f32)packing.GetY() / (float)base->GetSize();}
+			f32 GetVSize() const{return (f32)packing.GetYSize() / (float)base->GetSize();}
 		private:
-			PlacedTexture(const SparseVirtualTextureGenerator* parent,const Rectangle& rect,u32 i) : 
-			   base(parent),location(rect),index(i) {}
+			PlacedTexture(const SparseVirtualTextureGenerator* parent,const VTPacker::Packing& pack,u32 imageIndex) : 
+			   base(parent),packing(pack),savedImage(imageIndex) {}
 
-			u32 index;
 			const SparseVirtualTextureGenerator* base;
-			Rectangle location;
+			const VTPacker::Packing	packing;
+			const u32				savedImage;
+
+			friend class SparseVirtualTextureGenerator;
 		};
 
 		typedef const PlacedTexture& TextureReference;
 		typedef std::vector<std::pair<TextureReference,f32>> RelationArray;
 
-		TextureReference PlaceTexture(u32 xSize,u32 ySize,u32* pImageData,RelationArray relationArray);
+		/* Public Constructors */
+
+		SparseVirtualTextureGenerator();
+		~SparseVirtualTextureGenerator();
+
+		/* Public Functions */
 		
+		bool New(u32 pagesize,u32 pagedepth, u32 bordersize);
+		void FinalizePlacement();
+		void Commit();
+		void Save(const char* targetFilename);
+		TextureReference PlaceTexture(const ISVTDataLayer* pData,RelationArray relationArray);
+		void ResolveTexturePlacement();
+
+		inline u32 GetSize() const{
+			return (1<<(_settings.pageDepth-1))*getInnerPageSize();
+		}
+
+		/* Interface functions */
+
+		
+		void GetSettings(SVTSettings* pSettings) const{ *pSettings = _settings; }
+		void ReadPage(u64 index,SVTPage* out) const {_pageDataStorage->RetrievePage(index,out);}
+		u32 SharedDataSize(u32 index) const {return _sharedDataStorage->SharedDataSize(index);}
+		const void* AccessSharedData(u32 index) const {return _sharedDataStorage->AccessSharedData(index);}
+		void ReleaseSharedData(u32 index) const {return _sharedDataStorage->ReleaseSharedData(index);}
+
+		u32 AllocateSharedData(u32 size,const void* pData) {return _sharedDataStorage->AllocateSharedData(size,pData);}
+
 	private:
 
-		class FreeSquare : public Rectangle
+		/* Private Types */
+
+		class RandomTempStorage
 		{
 		public:
-			bool operator < (const FreeSquare& sq) const
-			{
-			}
-
+			RandomTempStorage();
+			~RandomTempStorage();
+			void SaveData(u32 index,u32 numBytes,const u8* pData);
+			u32 GetDataSize(u32 index) const;
+			u32 LoadData(u32 index,u32 maxNumBytes,u8* pDataOut) const;
+		private:
+			mutable sqlite3* storage;
+			mutable sqlite3_stmt* save_stmt;
+			mutable sqlite3_stmt* retrieve_stmt;
+			mutable sqlite3_stmt* get_size_stmt;
 		};
 
+		class SequentialTempStorage
+		{
+		public:
+			SequentialTempStorage();
+			~SequentialTempStorage();
+			u32 SaveData(u32 numBytes,const u8* pData);
+			u32 GetDataSize(u32 index) const;
+			u32 LoadData(u32 index,u32 maxNumBytes,u8* pDataOut) const;
+		private:
+			struct Entry
+			{
+				u64 offset;
+				u32 compressed_size;
+				u32 uncompressed_size;
+			};
+			mutable FILE*		_tempfile;
+			std::string			_tempfilename;
+			std::vector<Entry>	_entries;
+		};
+
+		class TempImageStorage : private SequentialTempStorage
+		{
+		public:
+			TempImageStorage(const ISVTSharedDataStorage* pShared);
+			~TempImageStorage();
+			u32 StoreImage(const ISVTDataLayer* pData);
+			ISVTDataLayer* RetrieveImage(u32 Index) const;
+		private:
+			struct metrics
+			{
+				u32 sizeX;
+				u32 sizeY;
+				u32 encoding;
+			};
+
+			std::vector<metrics> _metrics;
+			const ISVTSharedDataStorage* const _shared;
+		};
+					
+		class TempSharedStorage : private SequentialTempStorage, public ISVTSharedDataStorage
+		{
+		public:
+			TempSharedStorage();
+			~TempSharedStorage();
+
+			u32 SharedDataSize(u32 index) const;
+			const void* AccessSharedData(u32 index) const;
+			void ReleaseSharedData(u32 index) const;
+			u32 AllocateSharedData(u32 size,const void* pData);
+		private:
+
+			static const int max_items = 100;
+
+			void garbageCollect() const;
+						
+			struct dataEntry
+			{
+				void* pData;
+				u32 refCount;
+			};
+
+			mutable std::map<u32,dataEntry>			dataCache;
+		};
+
+		
+		class TempPageStorage : private RandomTempStorage
+		{
+		public:
+			TempPageStorage(u32 pageSize,u32 maxDepth,const ISVTSharedDataStorage* shared);
+			~TempPageStorage();
+			void StorePage(u32 pageIndex,const SVTPage* pData);
+			void RetrievePage(u32 Index,SVTPage* pDataOut) const;
+		private:
+			struct metrics
+			{
+				SVTPage::SVTPageHeader pageHeader;
+			};
+
+			static const u32 maxPageSize = 100*1024;
+
+			const u32 _pageSize;
+			const u32 _maxDepth;
+			std::vector<metrics> _metrics;
+			mutable std::array<u8,maxPageSize> _tempData;
+			const ISVTSharedDataStorage* const _shared;
+		};
 
 		struct Color
 		{
 			u8 r,g,b,a;
 		};
 		
-
 		static void OutputImage(char* filename,const Color* pData,u32 xSize,u32 ySize)
 		{
 			FIBITMAP* b =FreeImage_Allocate(xSize,ySize,24);
@@ -145,7 +209,7 @@ namespace HAGE {
 			{
 			}
 
-			const Color& GetPixelFromInner(u32 absX,u32 absY) const
+			inline const Color& GetPixelFromInner(u32 absX,u32 absY) const
 			{
 				u32 xPage = absX/_pageInnerSize;
 				u32 yPage = absY/_pageInnerSize;
@@ -154,7 +218,7 @@ namespace HAGE {
 				return GetPixelFromInner(xPage,yPage,xPixel,yPixel);
 			}
 
-			const Color& GetPixelFromInner(u32 xPage,u32 yPage,u32 xPixel,u32 yPixel) const
+			inline const Color& GetPixelFromInner(u32 xPage,u32 yPage,u32 xPixel,u32 yPixel) const
 			{
 				static const Color Black = {0,0,0,0};
 
@@ -165,29 +229,29 @@ namespace HAGE {
 
 				if(_pageStatus[_xInputPages*yPage + xPage])
 				{
-					u32 xAbsOut = xPage * _pageOuterSize + xPixel + _pageBorderSize;
-					u32 yAbsOut = yPage * _pageOuterSize + yPixel + _pageBorderSize;
+					const u32 xAbsOut = xPage * _pageOuterSize + xPixel + _pageBorderSize;
+					const u32 yAbsOut = yPage * _pageOuterSize + yPixel + _pageBorderSize;
 					return _data[yAbsOut*_rowStride + xAbsOut];
 				}
 				else
 					return Black;
 			}
 
-			const Color& GetPixelFromOuter(u32 absX,u32 absY) const
+			inline const Color& GetPixelFromOuter(u32 absX,u32 absY) const
 			{
-				u32 xPage = absX/_pageOuterSize;
-				u32 yPage = absY/_pageOuterSize;
-				u32 xPixel = absX%_pageOuterSize;
-				u32 yPixel = absY%_pageOuterSize;
+				const u32 xPage = absX/_pageOuterSize;
+				const u32 yPage = absY/_pageOuterSize;
+				const u32 xPixel = absX%_pageOuterSize;
+				const u32 yPixel = absY%_pageOuterSize;
 				return GetPixelFromOuter(xPage,yPage,xPixel,yPixel);
 			}
 
-			const Color& GetPixelFromOuter(u32 xPage,u32 yPage,u32 xPixel,u32 yPixel) const
+			inline const Color& GetPixelFromOuter(u32 xPage,u32 yPage,u32 xPixel,u32 yPixel) const
 			{
-				u32 yInPixel = (_pageInnerSize + yPixel - _pageBorderSize)% _pageInnerSize;
-				u32 xInPixel = (_pageInnerSize + xPixel - _pageBorderSize)% _pageInnerSize;
-				u32 yInPage = yPage + (_pageInnerSize + yPixel - _pageBorderSize)/ _pageInnerSize - 1;
-				u32 xInPage = xPage +(_pageInnerSize + xPixel - _pageBorderSize)/ _pageInnerSize - 1;
+				const u32 yInPixel = (_pageInnerSize + yPixel - _pageBorderSize)% _pageInnerSize;
+				const u32 xInPixel = (_pageInnerSize + xPixel - _pageBorderSize)% _pageInnerSize;
+				const u32 yInPage = yPage + (_pageInnerSize + yPixel - _pageBorderSize)/ _pageInnerSize - 1;
+				const u32 xInPage = xPage +(_pageInnerSize + xPixel - _pageBorderSize)/ _pageInnerSize - 1;
 				return GetPixelFromInner(xInPage,yInPage,xInPixel,yInPixel);
 			}
 
@@ -212,354 +276,82 @@ namespace HAGE {
 			const u32 _pageBorderSize;
 			const u32 _pageInnerSize;
 		};
-
-		static void applyBoxFilter(const BorderedImageReader& source,u32 InputBorder,
-			Color* pOutput,u32 xOutputSize,u32 yOutputSize)
-		{
-			static const u32 FilterSize = 2;
-			static const float base = 1.0f/4.0f;
-			static const float base_filter[FilterSize][FilterSize] = 
-			{
-				base,base,
-				base,base,
-			};
-
-			float trapez_filter[FilterSize+1][FilterSize+1];
-			u32 trapez_size;
-
-			//our trapez filter only supports even output sizes
-			assert(xOutputSize%2 == 0);
-			assert(yOutputSize%2 == 0);
-				
-			if(FilterSize%2 == 1)
-			{
-				trapez_size = FilterSize+1;
-				for(u32 fy = 0; fy < trapez_size; ++fy)
-					for(u32 fx = 0; fx < trapez_size; ++fx)
-						trapez_filter[fy][fx] = 0.0f;
-
-				for(u32 fy = 0; fy < FilterSize; ++fy)
-					for(u32 fx = 0; fx < FilterSize; ++fx)
-					{
-						trapez_filter[fy][fx] += 0.25f*base_filter[fy][fx];
-						trapez_filter[fy+1][fx] += 0.25f*base_filter[fy][fx];
-						trapez_filter[fy][fx+1] += 0.25f*base_filter[fy][fx];
-						trapez_filter[fy+1][fx+1] += 0.25f*base_filter[fy][fx];
-					}
-			}
-			else
-			{
-				trapez_size = FilterSize;
-				for(u32 fy = 0; fy < trapez_size; ++fy)
-					for(u32 fx = 0; fx < trapez_size; ++fx)
-						trapez_filter[fy][fx] = base_filter[fy][fx];
-			}
-			
-			/*
-			float Filter[xFilterSize][yFilterSize] = {
-				0.25f,0.25f,
-				0.25f,1.0f/9.0f,1.0f/9.0f,
-				base/2.0f,base,base,base/2.0f
-
-			};*/
-
-			assert( source.GetInnerX() == 2*InputBorder + 2*xOutputSize );
-			assert( source.GetInnerY() == 2*InputBorder + 2*yOutputSize );
-
-			for(u32 iy = 0; iy < yOutputSize; iy++)
-				for(u32 ix = 0; ix < xOutputSize; ix++)
-				{
-					u32 xInput = InputBorder - (trapez_size-1)/2 + ix*2;
-					u32 yInput = InputBorder - (trapez_size-1)/2 + iy*2;
-					float red=0.0f,green=0.0f,blue=0.0f,alpha=0.0f;
-					for(u32 fy = 0; fy < trapez_size; ++fy)
-						for(u32 fx = 0; fx < trapez_size; ++fx)
-						{
-							const Color& c = source.GetPixelFromInner(xInput+fx,yInput+fy);
-							float f= trapez_filter[fy][fx];
-							red += f*(float)c.r;
-							green += f*(float)c.g;
-							blue += f*(float)c.b;
-							alpha += f*(float)c.a;
-						}
-
-					Color out;
-					out.r = (u8)std::max(std::min(red,255.0f),0.0f);
-					out.g = (u8)std::max(std::min(green,255.0f),0.0f);
-					out.b = (u8)std::max(std::min(blue,255.0f),0.0f);
-					out.a = (u8)std::max(std::min(alpha,255.0f),0.0f);
-					pOutput[iy*xOutputSize + ix] = out;
-				}
-		}
-
-
-		void SplitPagesFromImage(i64 xPageBegin,u64 xPageEnd,u64 yPageBegin,i64 yPageEnd,u32 depth,const Color* pIn,const std::vector<bool>* pageStatus,u32 flags = 0,u64 inputOffset =0, u64 inputStride = 0)
-		{
-			i64 nPageSize = GetPageInnerSize();
-			if(flags & PAGE_FINAL)
-				nPageSize = GetPageOuterSize();
-
-
-			i64 nXPages = xPageEnd-xPageBegin;
-			i64 nYPages = yPageEnd-yPageBegin;
-			i64 nXPixels = nXPages*nPageSize;
-			if(inputStride)
-				nXPixels = inputStride;
-			i64 NumXPages =		GetNumXPagesAtDepth(depth);
-
-			std::vector<Color> tempBuffer;
-			tempBuffer.resize(nPageSize*nPageSize);
-			
-			for(i64 uYPage = 0; uYPage < nYPages; uYPage++)
-				for(i64 uXPage = 0; uXPage < nXPages; uXPage++)
-					if(pageStatus == nullptr || (*pageStatus)[uYPage*nXPages+uXPage])
-					{
-						i64 iXAbsolute = (i64)(uXPage + xPageBegin) ;
-						i64 iYAbsolute = (i64)(uYPage + yPageBegin) ;
-					
-						//copy tempBuffer to inputBuffer
-
-						for(int iYPixel = 0; iYPixel < (int)nPageSize; iYPixel++)
-							for(int iXPixel = 0; iXPixel < (int)nPageSize; iXPixel++)
-								tempBuffer[iYPixel * nPageSize + iXPixel] = pIn[inputOffset+(iYPixel+uYPage*nPageSize)*nXPixels + iXPixel + uXPage*nPageSize];
-					
-						WritePage(GetPageIndex(iXAbsolute,iYAbsolute,depth),tempBuffer.data(),flags);
-					}
-		}
-
-		bool MergePagesToImage(i32 xPageBegin,i32 xPageEnd,i32 yPageBegin,i32 yPageEnd,u32 depth,Color* pOut,std::vector<bool>* pageStatus,u32 flags = 0)
-		{
-			bool result = false;
-			i64 nPageSize = GetPageInnerSize();
-			if(flags & PAGE_FINAL)
-				nPageSize = GetPageOuterSize();
-			i64 nPagePixels = nPageSize*nPageSize;
-			i64 nXPages = xPageEnd-xPageBegin;
-			i64 nYPages = yPageEnd-yPageBegin;
-			i64 nXPixels = nXPages*nPageSize;
-			i64 TotalXPages =		GetNumXPagesAtDepth(depth);
-
-			std::vector<Color> tempBuffer;
-			tempBuffer.resize(nPagePixels);
-			
-			//read input pages
-			for(i64 uYPage = 0; uYPage < nYPages; uYPage++)
-				for(i64 uXPage = 0; uXPage < nXPages; uXPage++)
-				{
-					i64 iXAbsolute = (i64)(uXPage + xPageBegin) ;
-					i64 iYAbsolute = (i64)(uYPage + yPageBegin) ;
-
-					//magic wrap around
-
-					iXAbsolute = (iXAbsolute+TotalXPages)%TotalXPages;
-					iYAbsolute = (iYAbsolute+TotalXPages)%TotalXPages;
-
-					bool status=ReadPage(GetPageIndex(iXAbsolute,iYAbsolute,depth),tempBuffer.data(),flags);
-					
-					if(pageStatus)
-						(*pageStatus)[uYPage*nXPages+uXPage] = status;
-
-					//copy tempBuffer to inputBuffer
-					if(status)
-					{
-						result = true;
-						for(int iXPixel = 0; iXPixel < (int)nPageSize; iXPixel++)
-							for(int iYPixel = 0; iYPixel < (int)nPageSize; iYPixel++)
-								pOut[(iYPixel+uYPage*nPageSize)*nXPixels + iXPixel + uXPage*nPageSize] =
-									tempBuffer[iYPixel * nPageSize + iXPixel];
-					}
-				}
-			return result;
-		}
-
-		bool FinalizeDepthLayer(u32 depth) 
-		{
-			if(depth >= GetNumLayers())
-				return true;
-
-			
-			FinalizeDepthLayer(depth+1);
-			
-			printf("Finalizing Depth Layer %u ",depth);
-
-			static const u64 maxMemoryForFinalizing = 128*1024*1024; //512 MB for finalization
-			const u32 maxInputPages = (maxMemoryForFinalizing*4/5)/GetPageOuterPixelCount()/sizeof(Color)-1;
-			const u32 maxInputBlockDimension = ((u64)sqrt((float)maxInputPages))/2*2;
-			const u32 maxInputBlockInnerDimension = maxInputBlockDimension-2;
-			const u32 maxOutputBlockDimension = (maxInputBlockDimension-2)/2;
-			const u32 maxOutputPages = maxOutputBlockDimension * maxOutputBlockDimension;
-			const u32 InputDimension = GetNumXPagesAtDepth(depth);
-			const u32 OutputDimension = (depth != 0)?GetNumXPagesAtDepth(depth-1):0;
-			const u32 nXInputBlocks = ((InputDimension-1)/maxInputBlockDimension) +1;
-			const u32 nYInputBlocks = ((InputDimension-1)/maxInputBlockDimension) +1;
-
-			
-			const u64 nBlocksForTick= nYInputBlocks*nXInputBlocks/10+1;
-			u64 nCompletedBlocks = 0;
-			
-			std::vector<Color> inputBuffer;
-			std::vector<Color> outputBuffer;
-			std::vector<bool> inputPageStatus;
-			std::vector<bool> outputPageStatus;
-			inputBuffer.resize(maxInputPages*GetPageOuterPixelCount());
-			outputBuffer.resize(maxOutputPages*GetPageInnerPixelCount());
-			inputPageStatus.resize(maxInputPages);
-			outputPageStatus.resize(maxOutputPages);
-
-			
-			for(u32 uYBlock = 0; uYBlock < nYInputBlocks; uYBlock++)
-				for(u32 uXBlock = 0; uXBlock < nXInputBlocks; uXBlock++)
-				{
-					nCompletedBlocks++;
-					if(nCompletedBlocks % nBlocksForTick == 0)
-						printf(".");
-
-
-					const u32 nYInputPages = std::min((InputDimension - uYBlock*maxInputBlockInnerDimension),maxInputBlockInnerDimension) + 2;
-					const u32 nXInputPages = std::min((InputDimension - uXBlock*maxInputBlockInnerDimension),maxInputBlockInnerDimension) + 2;
-					const u32 nYOutputPages = (nYInputPages-2)/2;
-					const u32 nXOutputPages = (nXInputPages-2)/2;
-					const u32 nInputPages = nYInputPages*nXInputPages;
-					const u32 nOutputPages = nYOutputPages*nXOutputPages;
-					const u32 nYInputPixels = nYInputPages*GetPageOuterSize();
-					const u32 nXInputPixels = nXInputPages*GetPageOuterSize();
-					const u32 nYOutputPixels = nYOutputPages*GetPageInnerSize();
-					const u32 nXOutputPixels = nXOutputPages*GetPageInnerSize();
-					
-					//read input pages
-					i32 iXBegin = (i32)(uXBlock*maxInputBlockInnerDimension) - 1;
-					i32 iYBegin = (i32)(uYBlock*maxInputBlockInnerDimension) - 1;
-					if(MergePagesToImage(
-						iXBegin,iXBegin+nXInputPages,
-						iYBegin,iYBegin+nYInputPages,
-						depth,inputBuffer.data(),&inputPageStatus,PAGE_FINAL))
-					{
-						//char temp[256];
-						//sprintf(temp,"Input_%i_%i_%i.png",depth,uXBlock,uYBlock);
-						//OutputImage(temp,inputBuffer.data(),nXInputPages*GetPageOuterSize(),nYInputPages*GetPageOuterSize());
-
-
-						BorderedImageReader imageReader(inputBuffer.data(),inputPageStatus,nXInputPages,nYInputPages,GetPageOuterSize(),GetPageInnerSize());
-					
-						if(nOutputPages)
-						{
-							//downsample pageStatus
-							bool bHasOne = false;
-							for(u32 iy = 0; iy < nYOutputPages;iy++)
-								for(u32 ix = 0; ix < nXOutputPages;ix++)
-								{
-									outputPageStatus[iy*nXOutputPages+ix] = 
-										(inputPageStatus[(2*iy+0 +1)*nXInputPages + (2*ix+0 +1)]) ||
-										(inputPageStatus[(2*iy+0 +1)*nXInputPages + (2*ix+1 +1)]) ||
-										(inputPageStatus[(2*iy+1 +1)*nXInputPages + (2*ix+0 +1)]) ||
-										(inputPageStatus[(2*iy+1 +1)*nXInputPages + (2*ix+1 +1)]);
-									if(outputPageStatus[iy*nXOutputPages+ix])
-										bHasOne = true;
-								}
-
-							//process mipmaps
-							if(bHasOne)
-							{
-								applyBoxFilter(
-									imageReader,GetPageInnerSize(),
-									outputBuffer.data(),nXOutputPages*GetPageInnerSize(),nYOutputPages*GetPageInnerSize()
-									);
-								
-								//sprintf(temp,"Output_%i_%i_%i.png",depth,uXBlock,uYBlock);
-								//OutputImage(temp,outputBuffer.data(),nXOutputPages*GetPageInnerSize(),nYOutputPages*GetPageInnerSize());
-					
-								//write output pages
-								SplitPagesFromImage(
-									(i64)(uXBlock*maxOutputBlockDimension),(i64)(uXBlock*maxOutputBlockDimension)+nXOutputPages,
-									(i64)(uYBlock*maxOutputBlockDimension),(i64)(uYBlock*maxOutputBlockDimension)+nYOutputPages,
-									depth-1,outputBuffer.data(),&outputPageStatus);
-							}
-						}
-
-						//generate border
-						generateBorders(inputBuffer.data(),imageReader);
-
-						for(u32 iy = 0 ; iy < nYInputPages-2; iy++)
-								for(u32 ix = 0 ; ix < nXInputPages-2; ix++)
-									inputPageStatus[iy*(nXInputPages-2) + ix] = inputPageStatus[(iy+1)*nXInputPages + ix+1];
-						
-						//sprintf(temp,"Bordered_%i_%i_%i.png",depth,uXBlock,uYBlock);
-						//OutputImage(temp,inputBuffer.data(),nXInputPages*GetPageOuterSize(),nYInputPages*GetPageOuterSize());
-
-						//write input (with borders) back to file
-						u64 stride = nXInputPixels;
-						u64 offset = GetPageOuterSize()*stride + GetPageOuterSize();
-						SplitPagesFromImage(
-								iXBegin+1,iXBegin+(i64)nXInputPages-1,
-								iYBegin+1,iYBegin+(i64)nYInputPages-1,
-								depth,inputBuffer.data(),&inputPageStatus,PAGE_FINAL,offset,stride);
-
-						/*MergePagesToImage(
-							iXBegin,iXBegin+(i64)nXInputPages,
-							iYBegin,iYBegin+(i64)nYInputPages,
-							depth,inputBuffer.data(),&inputPageStatus,PAGE_FINAL);
-
-						
-						sprintf(temp,"Check_%i_%i_%i.png",depth,uXBlock,uYBlock);
-						OutputImage(temp,inputBuffer.data(),(nXInputPages)*GetPageOuterSize(),(nYInputPages)*GetPageOuterSize());*/
-					}
-				}
-				
-			printf("done\n",depth);
-			return true;
-		}
-
 		
-		static void generateBorders(
-			Color* pDataOut,	const BorderedImageReader& imageReader)
+		/* Private Functions */
+
+		void writePlacedTextures();
+		/*
+		static void applyBoxFilter(const BorderedImageReader& source,u32 InputBorder,Color* pOutput,u32 xOutputSize,u32 yOutputSize);
+		void splitPagesFromImage(i64 xPageBegin,u64 xPageEnd,u64 yPageBegin,i64 yPageEnd,u32 depth,const Color* pIn,const std::vector<bool>* pageStatus,std::vector<Color>& tempBuffer,u32 flags = 0,u64 inputOffset =0, u64 inputStride = 0);
+		bool mergePagesToImage(i32 xPageBegin,i32 xPageEnd,i32 yPageBegin,i32 yPageEnd,u32 depth,Color* pOut,std::vector<bool>* pageStatus,std::vector<Color>& tempBuffer,u32 flags = 0);
+		*/
+		bool finalizeDepthLayer(u32 depth);
+		//static void generateBorders(Color* pDataOut,	const BorderedImageReader& imageReader);
+
+		void writeImageToMipLayer(const ISVTDataLayer* data,u32 data_layer,u32 mip_layer,Vector2<u32> offset);
+
+		inline u32 getNumXPagesAtDepth(u32 depth) const {return 1 << depth;}
+		inline u32 getXPages() const {return 1 << (_settings.pageDepth-1);}
+		inline u32 getYPages() const {return getXPages();}
+		inline u32 getNumLayers() const {return _settings.pageDepth;}
+		inline u32 getInnerPageSize() const {return _settings.pageInnerSize;}
+		inline u32 getOuterPageSize() const {return _settings.pageSize;}
+		inline u32 getPageBorderSize() const {return _settings.borderSize;}
+		inline u32 getPageInnerPixelCount() const {return getInnerPageSize()*getInnerPageSize();}
+		inline u32 getPageOuterPixelCount() const {return getOuterPageSize()*getOuterPageSize();}
+		
+		inline static u32 Exp2SquaredSeries(u32 n)
 		{
-			Color Red;
-			Red.r = 0xff;
-			Red.g=0;
-			Red.b=0;
-			Red.a=0;
-
-			for(u32 yPage = 1; yPage<imageReader.GetPagesY()-1;yPage++)
-				for(u32 xPage = 1; xPage<imageReader.GetPagesX()-1;xPage++)
-				{
-					for(u32 yPixel = 0; yPixel < imageReader.GetPageBorder(); yPixel++)
-						for(u32 xPixel = 0; xPixel < imageReader.GetPageOuter(); xPixel++)
-							{
-								u32 yOut = (yPixel+yPage*imageReader.GetPageOuter());
-								u32 xOut = (xPixel+xPage*imageReader.GetPageOuter());
-
-								pDataOut[(u64)yOut*(u64)imageReader.GetOuterX()+(u64)xOut] = imageReader.GetPixelFromOuter(xPage,yPage,xPixel,yPixel);
-							}
-
-					for(u32 yPixel = imageReader.GetPageBorder(); yPixel < imageReader.GetPageOuter()-imageReader.GetPageBorder(); yPixel++)
-					{
-						for(u32 xPixel = 0; xPixel < imageReader.GetPageBorder(); xPixel++)
-						{
-							u32 yOut = (yPixel+yPage*imageReader.GetPageOuter());
-							u32 xOut = (xPixel+xPage*imageReader.GetPageOuter());
-
-							pDataOut[(u64)yOut*(u64)imageReader.GetOuterX()+(u64)xOut] = imageReader.GetPixelFromOuter(xPage,yPage,xPixel,yPixel);
-						}
-						for(u32 xPixel = imageReader.GetPageOuter()-imageReader.GetPageBorder(); xPixel < imageReader.GetPageOuter(); xPixel++)
-						{
-							u32 yOut = (yPixel+yPage*imageReader.GetPageOuter());
-							u32 xOut = (xPixel+xPage*imageReader.GetPageOuter());
-
-							pDataOut[(u64)yOut*(u64)imageReader.GetOuterX()+(u64)xOut] = imageReader.GetPixelFromOuter(xPage,yPage,xPixel,yPixel);
-						}
-					}
-					
-					for(u32 yPixel = imageReader.GetPageOuter()-imageReader.GetPageBorder(); yPixel < imageReader.GetPageOuter(); yPixel++)
-						for(u32 xPixel = 0; xPixel < imageReader.GetPageOuter(); xPixel++)
-							{
-								u32 yOut = (yPixel+yPage*imageReader.GetPageOuter());
-								u32 xOut = (xPixel+xPage*imageReader.GetPageOuter());
-
-								pDataOut[(u64)yOut*(u64)imageReader.GetOuterX()+(u64)xOut] = imageReader.GetPixelFromOuter(xPage,yPage,xPixel,yPixel);
-							}
-				}
+			const static u32 base = 0x55555555;
+			return base & ((1 << ((u64)n<<1))-1);
 		}
-				
+
+		inline static u32 bitShuffle8bit(u8 low,u8 high)
+		{
+					
+			static const u16 bitShuffleLookup[256] = 
+			{
+				0x0000,0x0001,0x0004,0x0005,0x0010,0x0011,0x0014,0x0015,0x0040,0x0041,0x0044,0x0045,0x0050,0x0051,0x0054,0x0055,
+				0x0100,0x0101,0x0104,0x0105,0x0110,0x0111,0x0114,0x0115,0x0140,0x0141,0x0144,0x0145,0x0150,0x0151,0x0154,0x0155,
+				0x0400,0x0401,0x0404,0x0405,0x0410,0x0411,0x0414,0x0415,0x0440,0x0441,0x0444,0x0445,0x0450,0x0451,0x0454,0x0455,
+				0x0500,0x0501,0x0504,0x0505,0x0510,0x0511,0x0514,0x0515,0x0540,0x0541,0x0544,0x0545,0x0550,0x0551,0x0554,0x0555,
+				0x1000,0x1001,0x1004,0x1005,0x1010,0x1011,0x1014,0x1015,0x1040,0x1041,0x1044,0x1045,0x1050,0x1051,0x1054,0x1055,
+				0x1100,0x1101,0x1104,0x1105,0x1110,0x1111,0x1114,0x1115,0x1140,0x1141,0x1144,0x1145,0x1150,0x1151,0x1154,0x1155,
+				0x1400,0x1401,0x1404,0x1405,0x1410,0x1411,0x1414,0x1415,0x1440,0x1441,0x1444,0x1445,0x1450,0x1451,0x1454,0x1455,
+				0x1500,0x1501,0x1504,0x1505,0x1510,0x1511,0x1514,0x1515,0x1540,0x1541,0x1544,0x1545,0x1550,0x1551,0x1554,0x1555,
+				0x4000,0x4001,0x4004,0x4005,0x4010,0x4011,0x4014,0x4015,0x4040,0x4041,0x4044,0x4045,0x4050,0x4051,0x4054,0x4055,
+				0x4100,0x4101,0x4104,0x4105,0x4110,0x4111,0x4114,0x4115,0x4140,0x4141,0x4144,0x4145,0x4150,0x4151,0x4154,0x4155,
+				0x4400,0x4401,0x4404,0x4405,0x4410,0x4411,0x4414,0x4415,0x4440,0x4441,0x4444,0x4445,0x4450,0x4451,0x4454,0x4455,
+				0x4500,0x4501,0x4504,0x4505,0x4510,0x4511,0x4514,0x4515,0x4540,0x4541,0x4544,0x4545,0x4550,0x4551,0x4554,0x4555,
+				0x5000,0x5001,0x5004,0x5005,0x5010,0x5011,0x5014,0x5015,0x5040,0x5041,0x5044,0x5045,0x5050,0x5051,0x5054,0x5055,
+				0x5100,0x5101,0x5104,0x5105,0x5110,0x5111,0x5114,0x5115,0x5140,0x5141,0x5144,0x5145,0x5150,0x5151,0x5154,0x5155,
+				0x5400,0x5401,0x5404,0x5405,0x5410,0x5411,0x5414,0x5415,0x5440,0x5441,0x5444,0x5445,0x5450,0x5451,0x5454,0x5455,
+				0x5500,0x5501,0x5504,0x5505,0x5510,0x5511,0x5514,0x5515,0x5540,0x5541,0x5544,0x5545,0x5550,0x5551,0x5554,0x5555
+			};
+			assert((bitShuffleLookup[low] & (bitShuffleLookup[high]<<1)) == 0);
+			return bitShuffleLookup[low] | (bitShuffleLookup[high]<<1);
+		}
+		inline static u32 bitShuffle16bit(u16 low,u16 high)
+		{
+			return bitShuffle8bit(low&0xff,high&0xff) | (bitShuffle8bit((low&0xff00)>>8,(high&0xff00)>>8) << 16);
+		}
+
+		inline static u32 getPageIndex(u16 x,u16 y,u8 l)
+		{
+			return bitShuffle16bit(x,y) + (u32)Exp2SquaredSeries(l);
+		}
+
+		/* Private Members */
+		
+		TempImageStorage*			_sourceDataStorage;
+		std::list<PlacedTexture>	_textureList;
+		VTPacker*					_vtPacker;
+
+		SVTSettings				_settings;
+		TempSharedStorage*		_sharedDataStorage;
+		TempPageStorage*		_pageDataStorage;
+
+		friend class TempPageStorage;
 	};
 
 	}

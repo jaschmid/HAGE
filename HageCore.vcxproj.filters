@@ -22,6 +22,18 @@
     <Filter Include="Header Files\Utility">
       <UniqueIdentifier>{9fd7f1af-c286-481c-a694-f26e6b997ca6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dependancies">
+      <UniqueIdentifier>{5515987d-a186-4077-b3ec-2f95cd8ef7ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependancies\LZMA">
+      <UniqueIdentifier>{2f887a77-1493-420b-af3d-be7eb75b8728}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependancies\Deflate">
+      <UniqueIdentifier>{3841ea99-f98a-4c9d-adf3-0c634a734ad0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependancies\Snappy">
+      <UniqueIdentifier>{481b4dde-20ae-4347-845e-e35301e437a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers\SDK\types.h">
@@ -99,9 +111,6 @@
     <ClInclude Include="Source\Core\InputDomain.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="Headers\SDK\CoreFactory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Headers\SDK\DomainBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -163,6 +172,72 @@
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Headers\SDK\VTFeedbackAnalyzer.h">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\CoreFactory.h">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\EditableImage.h">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzmaEnc.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Alloc.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzFind.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzFindMt.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzHash.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma2Dec.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma2Enc.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Lzma86.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\LzmaDec.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Types.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Deflate\deflate.h">
+      <Filter>Dependancies\Deflate</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy.h">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-internal.h">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-sinksource.h">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-stubs-internal.h">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\Snappy\snappy-stubs-public.h">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Bra.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\MtCoder.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Dependancies\LZMA\Threads.h">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\SVTPageEncoding.h">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>
@@ -286,6 +361,63 @@
     </ClCompile>
     <ClCompile Include="Source\Core\VirtualTextureManager.cpp">
       <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="DXguids.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\SVTPage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Alloc.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzFind.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzFindMt.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma2Dec.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma2Enc.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma86Dec.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Lzma86Enc.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzmaDec.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\LzmaEnc.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Deflate\deflate.c">
+      <Filter>Dependancies\Deflate</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy.cc">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy-sinksource.cc">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\Snappy\snappy-stubs-internal.cc">
+      <Filter>Dependancies\Snappy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Bra.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\MtCoder.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Dependancies\LZMA\Threads.c">
+      <Filter>Dependancies\LZMA</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\SVTPageEncoding.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

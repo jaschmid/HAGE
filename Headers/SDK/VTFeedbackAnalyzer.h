@@ -186,7 +186,13 @@ namespace HAGE {
 
 				for(u32 i = 0; i<nElements;++i)
 				{
-					const element& e = pElements[i];
+					const element& e = pElements[i];	
+					assert(e.level < _nLayers);
+					assert(e.x < (1<<e.level));
+					assert(e.y < (1<<e.level));
+					u32 x = e.x;
+					u32 y = e.y;
+					u32 l = e.level;
 					u32 n = GetNodeLocation(e.x,e.y,e.level);
 					assert(n < _nNodes);
 					
@@ -194,8 +200,13 @@ namespace HAGE {
 
 					while(n != 0)
 					{
+						u32 check = GetNodeLocation(x,y,l);
+						assert(n == check);
 						safeIncrement(_pNodes[n].count_children);
 						n = GetParentNode(n);
+						x /= 2;
+						y /= 2;
+						l--;
 					}
 
 					safeIncrement(_pNodes[n].count_children);
@@ -217,7 +228,7 @@ namespace HAGE {
 				element e;
 				e.index = n;
 				e.level = 0;
-				e.priority = _pNodes[n].count_children;
+				e.priority = _pNodes[n].count_this;
 				out.push_back(e);
 				std::push_heap(out.begin(),out.end(),prio_compare);
 
@@ -262,12 +273,12 @@ namespace HAGE {
 					0x5400,0x5401,0x5404,0x5405,0x5410,0x5411,0x5414,0x5415,0x5440,0x5441,0x5444,0x5445,0x5450,0x5451,0x5454,0x5455,
 					0x5500,0x5501,0x5504,0x5505,0x5510,0x5511,0x5514,0x5515,0x5540,0x5541,0x5544,0x5545,0x5550,0x5551,0x5554,0x5555
 				};
-
+				assert((bitShuffleLookup[low] & (bitShuffleLookup[high]<<1)) == 0);
 				return bitShuffleLookup[low] | (bitShuffleLookup[high]<<1);
 			}
 			inline static u32 bitShuffle16bit(u32 low,u32 high)
 			{
-				return bitShuffle8bit(low&0xff,high&0xff) | bitShuffle8bit((low&0xff00)>>8,(high&0xff00)>>8);
+				return bitShuffle8bit(low&0xff,high&0xff) | (bitShuffle8bit((low&0xff00)>>8,(high&0xff00)>>8) << 16);
 			}
 
 			inline static u32 GetNodeLocation(u32 x,u32 y,u32 l)

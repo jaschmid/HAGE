@@ -1,5 +1,6 @@
 #include <HAGE.h>
 #include "VirtualTextureManager.h"
+#include "math.h"
 
 namespace HAGE {
 	
@@ -28,12 +29,22 @@ namespace HAGE {
 		"  DECL_VS_POSITION;\n"
 		"VS_OUT_END\n"
 		"\n"
+		"static const float PI =  3.14159265f;\n"
 		"VERTEX_SHADER\n"
 		"{	\n"
 		"\n"
-		"  VS_OUT_POSITION = mul( ModelviewProjection, float4( VS_IN(position), 1.0f ) );\n "
-		"  VS_OUT(proj_position) = VS_OUT_POSITION;\n "
-		"  VS_OUT(tex) = VS_IN(texcoord);\n"
+		"   float4 proj_vertex = mul( ModelviewProjection, float4( VS_IN(position), 1.0f ) );\n "
+		"	float4 view_vertex = mul( Modelview, float4(VS_IN(position),1.0f) );\n"
+		"	float lenxy = length(view_vertex.xy);\n"
+		"	float phi = atan2(lenxy, view_vertex.z);\n"
+		"	float r = sin( phi );\n"
+		"	view_vertex.xy = (normalize(view_vertex.xy) * r);\n"
+		"	VS_OUT_POSITION.xy = view_vertex.xy;\n"
+		"	float sqlen = dot(view_vertex.xyz,view_vertex.xyz);\n"
+		"	VS_OUT(proj_position) = float4(view_vertex.x,view_vertex.y,sqlen,1.0f);\n "
+		"	VS_OUT_POSITION.z = 1.0f-1.0f/(1.01f+(sqlen*sign(view_vertex.z)));\n"
+		"	VS_OUT_POSITION.w = 1.0f;\n"
+		"	VS_OUT(tex) = VS_IN(texcoord);\n"
 		"\n"
 		"}"
 		"FS_IN_BEGIN\n"
@@ -51,15 +62,28 @@ namespace HAGE {
 		"  float d = max(dot(dx,dx), dot(dy,dy));\n"
 		"  return max(0.0f, ceil(-0.5f*log2(d) -5.0f));\n"
 		"} \n"
+		"float mipmapLevelAni(float2 tex)\n"
+		"{ \n"
+		"  float2 dx = ddx(tex);\n"
+		"  float2 dy = ddy(tex);\n"
+		"  float Pmax = max(dot(dx,dx), dot(dy,dy));\n"
+		"  float Pmin = min(dot(dx,dx), dot(dy,dy));\n"
+		"  float N = min(ceil(Pmax/Pmin), 8.0f);\n"
+		"  return min(max(0.0f, ceil(-0.5f*log2(Pmax/N) -5.0f)),16.0f);\n"
+		"} \n"
+		"float distanceEstimate(float dist)\n"
+		"{ \n"
+		"  return max(0.0f, 11-0.5*log2(dist));\n"
+		"} \n"
 		"\n"
 		"FRAGMENT_SHADER\n"
 		"{\n"
 		"  float dist = FS_IN(proj_position).z/FS_IN(proj_position).w;\n"
-		"  FS_OUT_COLOR = float4( FS_IN(tex).x, FS_IN(tex).y, mipmapLevel(FS_IN(tex)) / 65535.0f , 1.0f);\n"
+		"  FS_OUT_COLOR = float4( FS_IN(tex).x, FS_IN(tex).y, mipmapLevelAni(FS_IN(tex).xy) / 16.0f , 1.0f);\n"
 		"}\n";
 
-	static const int FeedbackXSize = 320;
-	static const int FeedbackYSize = 240;
+	static const int FeedbackXSize = 256;
+	static const int FeedbackYSize = 256;
 
 	class NullVirtualTexture : public IVirtualTexture
 	{
@@ -72,6 +96,10 @@ namespace HAGE {
 		{
 			return redirectionTexture;
 		}
+		virtual const APIWConstantBuffer* GetSettings() const
+		{
+			return nullptr;
+		}
 		virtual u32 GetCacheSize() const
 		{
 			return 0;
@@ -80,6 +108,10 @@ namespace HAGE {
 		virtual u32 GetId() const {return 0xffffffff;}
 		virtual APIWEffect* BeginFeedback(RenderingAPIWrapper* pRenderer) const  {return nullptr;}
 		virtual void EndFeedback(RenderingAPIWrapper* pRenderer) const {return;}
+		virtual const APIWTexture* _Debug_GetFeedbackTexture() const
+		{
+			return redirectionTexture;
+		}
 
 		virtual void AdjustCacheSize(u32 newSize) const
 		{
@@ -170,10 +202,10 @@ namespace HAGE {
 					if(v.w == 0)
 						continue;
 					auto& e = pElementBuffer[nElements];
-					e.level = std::min(v.z,(u16)_pTextureSource->GetMaxDepth());
-					u32 nPages =  _pTextureSource->GetNumXPagesAtDepth(e.level) -1;
-					e.x = ((u32)v.x)*nPages/0xffff ;
-					e.y = ((u32)v.y)*nPages/0xffff ;
+					e.level = std::min((u16)(floorf((f32)(v.z*16)/(f32)0xffff+0.5f)),(u16)_pTextureSource->GetMaxDepth());
+					f32 nPages =  (f32)_pTextureSource->GetNumXPagesAtDepth(e.level);
+					e.x = (u32)(floorf((f32)(v.x)*nPages/(f32)0xffff)+0.5f) ;
+					e.y = (u32)(floorf((f32)(v.y)*nPages/(f32)0xffff)+0.5f) ;
 					
 					++nElements;
 				}
@@ -198,8 +230,13 @@ namespace HAGE {
 			{
 				u32 pageX,pageY,level;
 				_pTextureSource->GetPageLocation(it->page_index,pageX,pageY,level);
+				u32 pageSize = _pTextureSource->GetPageOuterSize();
 				PageData* p = _pageCache->UpdatePage(it->cache_index);
-				_pTextureSource->ReadPage(it->page_index,p->pData,SparseVirtualTextureFile::PAGE_FINAL);
+				_pTextureSource->ReadPage(it->page_index,Vector2<u32>(0,0),ImageRect<R8G8B8A8>((void*)p->pData,Vector2<u32>(pageSize,pageSize),pageSize));
+
+				if(_bDebugPage)
+					adjustPageDebug(p->pData,level,pageX,pageY);
+
 				_redirectionTable->LoadPage(pageX,pageY,level,it->cache_index);
 			}
 
@@ -258,7 +295,11 @@ namespace HAGE {
 				_feedbackElements[i].cache.first,
 				_feedbackElements[i].redirection.first,
 				_cacheSize,	i, this);
+			FeedbackBuffer::VT_Settings settings;
+			settings.cache_inner_page_size = _pageCache->GetCachePageInnerSize();
+			settings.cache_border_size = _pageCache->GetCacheBorderSize();
 
+			_feedbackElements[i].buffer->UpdateSettings(settings);
 			accesses.push_back(_feedbackElements[i].buffer);
 		}
 	}
@@ -288,13 +329,14 @@ namespace HAGE {
 	{
 		_pStreamSource = stream;
 		_pTextureSource = new SparseVirtualTextureFile();
-		if(!_pTextureSource->Open(stream))
+		_pTextureSource->Open(stream);
+		/*
 		{
 			delete _pTextureSource;
 			_pTextureSource= nullptr;
 			return false;
 		}
-
+		*/
 		_cacheSize = VirtualTextureManager::DefaultCacheSize;
 
 		nPagesX = _pTextureSource->GetNumXPagesAtDepth(_pTextureSource->GetMaxDepth());
@@ -330,7 +372,8 @@ namespace HAGE {
 	}
 
 	VirtualTextureManager::FeedbackBuffer::FeedbackBuffer(APIWTexture* Cache,APIWTexture* Redirection,u32 CacheSize,u32 InternalIndex,VirtualTextureManager* Parent)
-		: _bFeedbackProvided(false),_requestedCacheSize(CacheSize),_currentCacheSize(CacheSize),_index(InternalIndex),_cache(Cache),_redirection(Redirection),_parent(Parent)
+		: _bFeedbackProvided(false),_requestedCacheSize(CacheSize),_currentCacheSize(CacheSize),_index(InternalIndex),_cache(Cache),_redirection(Redirection),_parent(Parent),
+		_bFeedbackRecieved(false)
 	{
 		RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
 		assert(pAlloc);
@@ -339,6 +382,7 @@ namespace HAGE {
 		_feedbackTexture = pAlloc->CreateTexture(FeedbackXSize,FeedbackYSize,1,R16G16B16A16_UNORM,TEXTURE_CPU_READ | TEXTURE_GPU_WRITE,nullptr);
 		_feedbackDepth = pAlloc->CreateTexture(FeedbackXSize,FeedbackYSize,1,R16_UNORM,TEXTURE_GPU_DEPTH_STENCIL,nullptr);
 		_feedbackEffect = pAlloc->CreateEffect(feedback_program);
+		_pVTSettings = pAlloc->CreateConstantBuffer(sizeof(VT_Settings));
 
 		pAlloc->EndAllocation();
 	}
@@ -351,7 +395,11 @@ namespace HAGE {
 		_parent->NotifyFeedbackBufferDeleted(_index);
 	}
 
-	
+	void VirtualTextureManager::FeedbackBuffer::UpdateSettings(const VT_Settings& settings)
+	{
+		_settings = settings;
+	}
+
 	u32 VirtualTextureManager::FeedbackBuffer::GetId() const
 	{
 		return _index;
@@ -359,7 +407,7 @@ namespace HAGE {
 
 	APIWEffect* VirtualTextureManager::FeedbackBuffer::BeginFeedback(RenderingAPIWrapper* pRenderer) const
 	{
-		assert(!_bFeedbackProvided);
+		//assert(!_bFeedbackProvided);
 		_bFeedbackProvided = true;
 		_feedbackTexture->Clear(Vector4<>(0.0f,0.0f,0.0f,0.0f));
 		_feedbackDepth->Clear(true,1.0f);
@@ -371,14 +419,19 @@ namespace HAGE {
 	{
 		assert(_bFeedbackProvided);
 		pRenderer->SetRenderTarget(RENDER_TARGET_DEFAULT,RENDER_TARGET_DEFAULT);
-
-		_feedbackTexture->StreamForReading(0,0,FeedbackXSize,FeedbackYSize);
+		
+		/*if(!_bFeedbackRecieved)
+		{*/
+			_feedbackTexture->StreamForReading(0,0,FeedbackXSize,FeedbackYSize);
+			//_bFeedbackRecieved=true;
+		//}
 	}
 			
 	bool VirtualTextureManager::FeedbackBuffer::GetFeedbackData(const void** ppDataOut)
 	{
 		if(!_bFeedbackProvided)
 			return false;
+		
 
 		RenderingAPIAllocator* pAlloc = RenderingAPIAllocator::QueryAPIAllocator();
 		assert(pAlloc);
@@ -389,7 +442,10 @@ namespace HAGE {
 		pAlloc->EndAllocation();
 
 		if(res)
+		{
 			_bFeedbackProvided = false;
+			_bFeedbackRecieved = false;
+		}
 
 		return res;
 	}
@@ -534,7 +590,7 @@ namespace HAGE {
 	
 	VirtualTextureManager::PageCache::PageRedirection VirtualTextureManager::PageCache::CreateRedirection(u32 CacheIndex,f32 xOff,f32 yOff,f32 scale) const
 	{
-		
+		/*
 		u32 xCBegin,xCEnd;
 		u32 yCBegin,yCEnd;
 
@@ -548,9 +604,105 @@ namespace HAGE {
 		f32 yfSize = (f32)(yCEnd-yCBegin) / (f32)nCacheY - 2.0f*borderSize;
 
 		f32 compScale = xfSize/scale;
+
+		f32 xFIndex = (f32)(CacheIndex % nCachePagesX) /(f32)(nCachePagesX);
+		f32 yFIndex = (f32)(CacheIndex / nCachePagesX) /(f32)(nCachePagesY);*/
+
+		f32 exponent = -(std::logf(scale)/std::logf(2));
+
+		u32 xLoc = (u32)((CacheIndex % nCachePagesX) * 1024/nCachePagesX);
+		u32 yLoc = (u32)((CacheIndex / nCachePagesX) * 1024/nCachePagesY);
+		u32 Exp = ((u32)floorf(exponent+0.5f));
 		
-		PageRedirection redirection(xfBegin-xOff*compScale,yfBegin-yOff*compScale,compScale);
+		PageRedirection redirection(xLoc,yLoc,Exp);
 
 		return redirection;
+	}
+
+	void VirtualTextureManager::adjustPageDebug(void* pData,u32 level,u32 x,u32 y)
+	{
+		static const u32 level_colors[] = 
+		{
+			0xffC46210,// level 0
+			0xff2E5894,// level 1
+			0xff9C2542,// level 2
+			0xffBF4F51,// level 3
+			0xffA57164,// level 4
+			0xff58427C,// level 5
+			0xff4A646C,// level 6
+			0xff85754E,// level 7
+			0xff319177,// level 8
+			0xff0A7E8C,// level 9
+			0xff9C7C38,// level 10
+			0xff8D4E85,// level 11
+			0xff8FD400,// level 12
+			0xffD98695,// level 13
+			0xff757575,// level 14
+			0xff0081AB// level 15
+		};
+		struct Pixel
+		{
+			u8 b,g,r,a;
+		};
+		static const Pixel* pixel_colors = (const Pixel*)level_colors;
+
+
+		Pixel* pPix = (Pixel*)pData;
+
+		for(u32 iy = 0; iy < nPageSizeY; ++iy)
+			for(u32 ix = 0; ix < nPageSizeX; ++ix)
+			{
+				u32 min_dist = std::min(std::min(std::min(iy,ix),(u32)(nPageSizeY-1-iy)),(u32)(nPageSizeX-1-ix));
+				Pixel& cur = pPix[iy*nPageSizeX+ix];
+				
+				if(min_dist < 3)
+				{
+					cur.a = pixel_colors[level].a;
+					cur.r = pixel_colors[level].r;
+					cur.g = pixel_colors[level].g;
+					cur.b = pixel_colors[level].b;
+				}
+				else if(ix <4 || iy < 4)
+				{
+					cur.r = 0x00;
+					cur.g = 0x00;
+					cur.b = 0xff;
+					cur.a = 0xff;
+				}
+				else if(ix > nPageSizeX-5 || iy > nPageSizeY-5 )
+				{
+					cur.r = 0x00;
+					cur.g = 0xff;
+					cur.b = 0x00;
+					cur.a = 0xff;
+				}
+				else if(ix <5 || iy < 5)
+				{
+					cur.r = 0x00;
+					cur.g = 0xff;
+					cur.b = 0x00;
+					cur.a = 0xff;
+				}
+				else if(ix > nPageSizeX-6 || iy > nPageSizeY-6 )
+				{
+					cur.r = 0x00;
+					cur.g = 0x00;
+					cur.b = 0xff;
+					cur.a = 0xff;
+				}
+				else if(min_dist < 8)
+				{
+					cur.a = pixel_colors[level].a;
+					cur.r = pixel_colors[level].r;
+					cur.g = pixel_colors[level].g;
+					cur.b = pixel_colors[level].b;
+				}
+				else
+				{
+					cur.r /= 2;
+					cur.g /= 2;
+					cur.b /= 2;
+				}
+			}
 	}
 }

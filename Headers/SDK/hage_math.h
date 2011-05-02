@@ -306,7 +306,7 @@ public:
 
 	float length() const
 	{
-		return sqrtf(!(*this));
+		return (float)sqrtf((float)!(*this));
 	}
 
 	float sqLength() const

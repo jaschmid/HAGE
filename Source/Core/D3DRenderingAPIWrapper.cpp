@@ -1,5 +1,4 @@
 #include <HAGE.h>
-#define INITGUID
 
 #include "D3D11APIWrapper.h"
 #include "ResourceDomain.h"
@@ -117,7 +116,7 @@ void D3D11APIWrapper::_Initialize_RemoteCall()
 
 	HRESULT hr = S_OK;
 	
-    UINT createDeviceFlags = 0;// D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS|D3D11_CREATE_DEVICE_SINGLETHREADED;
+    UINT createDeviceFlags =  D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS;//|D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -350,6 +349,8 @@ void D3D11APIWrapper::BeginFrame()
 
 void D3D11APIWrapper::PresentFrame()
 {
+	EnterDeviceCritical();
+
 	_CheckFences();
 	/*
 	m_pContext->OMSetBlendState( myBlendState_NoBlend, 0, 0xffffffff );
@@ -403,6 +404,8 @@ void D3D11APIWrapper::PresentFrame()
 	
 	const HAGE::Message* pMessage;
 		
+	HAGE::u32 nLoaded = 0;
+
 	while((pMessage = _allocQueue.GetTopMessage()))
 	{
 		switch(pMessage->GetMessageCode())
@@ -413,6 +416,7 @@ void D3D11APIWrapper::PresentFrame()
 				const CPUTextureWriteSettings& settings = pRequest->GetSettings();
 				settings.pDest->StreamFromSystem(settings);
 				settings.pSource->Release();
+				++nLoaded;
 			}
 			break;
 		case MESSAGE_D3DRENDERING_SET_FENCE:
@@ -434,6 +438,8 @@ void D3D11APIWrapper::PresentFrame()
 	}
 
 	_CheckFences();
+
+	LeaveDeviceCritical();
 }
 
 void D3D11APIWrapper::_CheckFences()

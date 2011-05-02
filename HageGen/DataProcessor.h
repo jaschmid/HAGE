@@ -16,12 +16,12 @@ namespace HAGE
 		DataProcessor(u32 xStart,u32 xEnd,u32 yStart,u32 yEnd);
 		~DataProcessor();
 
-		const static bool bProcessMesh = false;
+		const static bool bProcessMesh = true;
 		const static bool bProcessTexture = true;
 
 		bool Process();
 	private:
-
+		
 		
 		class DataItem
 		{
@@ -31,14 +31,12 @@ namespace HAGE
 			bool IsReady() const {return _bDone;}
 			void TryLoad();
 			const TResourceAccess<IMeshData>& GetMeshData() const {return _mesh;}
-			const TResourceAccess<IImageData>& GetTextureData() const{return _texture;}
 			u32 GetX() const{return _x;}
 			u32 GetY() const{return _y;}
 		private:
 			bool _bDone;
 			bool _bLoading;
 			TResourceAccess<IMeshData> _mesh;
-			TResourceAccess<IImageData> _texture;
 			u32	_x,_y;
 		};
 		
@@ -52,11 +50,12 @@ namespace HAGE
 
 		u32 _xBegin,_xEnd,_yBegin,_yEnd;
 		
-		typedef HAGE::set<HAGE::MeshGeometryFeature,HAGE::MeshDecimatorFeature<f32>> MeshFeatures;
+		typedef HAGE::set<HAGE::MeshGeometryFeature,HAGE::MeshDecimatorFeature<f64>> MeshFeatures;
 
-		
 		struct VertexData : public HAGE::MinVertexType<MeshFeatures>::type
 		{
+			Vector2<f32>	TexCoord;
+			u32				Material;
 			operator Vector3<>&()
 			{
 				return Position;
@@ -67,14 +66,21 @@ namespace HAGE
 			}
 		};
 
+		std::vector<SparseVirtualTextureGenerator::PlacedTexture> materials;
+
 		typedef HAGE::HageMeshEx< MeshFeatures , VertexData> MeshType;
+		
+		void loadMesh(MeshType& mesh,const TResourceAccess<IMeshData>& data,const Matrix4<>&);
+
+		std::array<Vector2<>,2> packTexture(Vector2<> mincoord,Vector2<> maxcoord,u32 xSize,u32 ySize,const u32* pData,const SparseVirtualTextureGenerator::RelationArray& arr);
+
+		static MeshType::VertexType DecimateUpdate(const MeshType::VertexPair& vp,const MeshType::Edge& e);
 
 		MeshType	_mesh;
 		SparseVirtualTextureGenerator hsvt;
-		Vector3<> min,max;//extents of the mesh
 		
 		void writeOutputMesh();
-		void mergeMeshVertices();
+		static void mergeMeshVertices(MeshType& mesh);
 	};
 
 }

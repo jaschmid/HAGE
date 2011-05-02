@@ -26,6 +26,7 @@ private:
 	APIWVertexArray*		m_pVASquare;
 	APIWConstantBuffer*		m_pConstants;
 	APIWEffect*				m_pEffect2D;
+	TResourceAccess<IVirtualTexture>			_VT;
 };
 
 }

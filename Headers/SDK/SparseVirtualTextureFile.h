@@ -12,31 +12,159 @@
 #ifndef __SPARSE_VIRTUAL_TEXTURE_FILE__
 #define __SPARSE_VIRTUAL_TEXTURE_FILE__
 
+#include "EditableImage.h"
 
 namespace HAGE {
 
+
+	enum SVTLAYERS
+	{
+		SVTLAYER_UNDEFINED			= 0x00000000,
+		SVTLAYER_DIFFUSE_COLOR		= 0x00000001,
+		SVTLAYER_ALPHA				= 0x00000002,
+		SVTLAYER_SPECULAR_COLOR	= 0x00000004,
+		SVTLAYER_SPECULAR_POWER	= 0x00000008,
+		SVTLAYER_EMISSIVE_COLOR	= 0x00000010,
+		SVTLAYER_NORMAL_MAP		= 0x00000040,
+	};
+	
+	class ISVTSharedDataStorage
+	{
+	public:
+		virtual u32 SharedDataSize(u32 index) const = 0;
+		virtual const void* AccessSharedData(u32 index) const = 0;
+		virtual void ReleaseSharedData(u32 index) const = 0;
+		virtual u32 AllocateSharedData(u32 size,const void* pData) = 0;
+	};
+
+	class ISVTDataLayer
+	{
+	public:
+
+		virtual ~ISVTDataLayer() {}
+
+		virtual Vector2<u32> GetSize() const = 0;
+
+		virtual u32	GetEncodingId() const = 0;
+		virtual bool GetImageData(const Vector2<u32>& offset,u32 LayerId,ImageRect<R8G8B8A8>& dataOut) const = 0;
+		virtual u32 Serialize(u32 maxBytes,u8* pOutBytes) const = 0; 
+		virtual u32 EstimateSerializeSize() const = 0;
+
+		//initialization functions
+		virtual void Empty(const Vector2<u32>& size) = 0;
+		virtual void GenerateMipmap(const Vector2<u32>& size,const std::array<const ISVTDataLayer*,16>& parents,u32 borderSize) = 0;
+		virtual u32 Deserialize(const Vector2<u32>& size,u32 numBytes,const u8* pInBytes,const ISVTSharedDataStorage* pShared) = 0;
+
+		//update function
+		virtual ISVTDataLayer* WriteRect(Vector2<i32> offset,u32 layer,const ISVTDataLayer* data) = 0;
+
+		static ISVTDataLayer* CreateLayer(u32 encodingId);
+	};
+
+	enum
+	{
+		LAYER_ENCODING_UNCOMPRESSED_RAW	= 0,
+		LAYER_ENCODING_PNGISH_RAW		= 1,
+		LAYER_ENDOCING_JPEG_XR_RAW		= 2,
+		LAYER_ENCODING_COMPOSITE		= 3,
+		LAYER_ENCODING_BLENDED			= 4
+	};
+	
+	class SVTPage
+	{
+	public:
+
+		enum PAGE_FLAGS
+		{
+			PAGE_COMPRESSED_NONE		= 0,
+			PAGE_COMPRESSED_DEFLATE		= 1,
+			PAGE_COMPRESSED_LZMA		= 2,
+			PAGE_COMPRESSED_SNAPPY		= 4,
+		};
+
+		struct SVTPageHeader
+		{
+			u16 flags;
+			u16 layers;
+		};
+		
+		SVTPage(u32 pageSize);
+		~SVTPage();
+
+		u32 LayerMask();
+		const ISVTDataLayer* GetLayer(u32 Layer) const;
+		bool UpdateLayer(u32 Layer,ISVTDataLayer*);
+		u32 Serialize(u32 maxBytes,u8* pOutBytes,SVTPageHeader* headerOut,PAGE_FLAGS requested_compression = PAGE_COMPRESSED_DEFLATE) const;
+
+		//initialization functions
+		void Empty();
+		void GenerateMipmap(const std::array<const SVTPage*,16>& parents,u32 borderSize);
+		void WriteRect(Vector2<i32> offset,u32 layer,const ISVTDataLayer* data);
+		bool Deserialize(u32 pageSize,const SVTPageHeader* header, u32 numBytes,const u8* pInBytes,const ISVTSharedDataStorage* pShared);
+	private:
+		const u32 _pageSize;
+		u32 _layerMask;
+
+		static u32 getLayerIndex(u32 Layer);
+		static u32 getLayerMask(u32 Layer);
+
+		void reset(); // clears current contents
+
+		enum
+		{
+			LAYER_INDEX_DIFFUSE = 0,
+			LAYER_INDEX_ALPHA = 1,
+			LAYER_INDEX_SPECULAR_COLOR = 2,
+			LAYER_INDEX_SPECULAR_POWER = 3,
+			LAYER_INDEX_EMISSIVE_COLOR = 4,
+			LAYER_INDEX_NORMAL_MAP = 5
+		};
+
+		static const u32 nNumLayers = 6;
+
+		static const u32 defaultMixedEncoding = LAYER_ENCODING_UNCOMPRESSED_RAW;
+
+		std::array<ISVTDataLayer*,nNumLayers> _layers;
+	};
+
+
+	class ISVTFileDataSource : public ISVTSharedDataStorage
+	{
+	public:
+		
+		struct SVTSettings
+		{
+			u32 pageSize;
+			u32 pageInnerSize;
+			u32 borderSize;
+			u32 pageDepth;
+			u32 nSharedDataEntries;
+		};
+
+		virtual void GetSettings(SVTSettings* pSettings) const = 0;
+		virtual void ReadPage(u64 index,SVTPage* out) const = 0;
+		virtual u32 SharedDataSize(u32 index) const = 0;
+		virtual const void* AccessSharedData(u32 index) const = 0;
+		virtual void ReleaseSharedData(u32 index) const = 0;
+
+		virtual u32 AllocateSharedData(u32 size,const void* pData) = 0;
+	};
+	
 	class SparseVirtualTextureFile
 	{
 	public:
-		typedef enum _PageFlags
-		{
-			PAGE_FINAL = 0x10000000
-		} PAGE_FLAGS;
-
-		// create a new sparse virtual texture file, virtualsize is in # of pages per dimension (pixel size = ((2<<(pagedepth-1)) * virtualsize) ^2 )
 		SparseVirtualTextureFile();
 		~SparseVirtualTextureFile();
-		bool New(char* FileName, u32 pagesize,u32 pagedepth, u32 bordersize);
-		bool Open(char* FileName);
-		bool Open(IDataStream* pDataStream);
-		void WritePage(u64 PageIndex,const void* pData, u32 flags = 0);
-		bool ReadPage(u64 PageIndex,void* pDataOut,u32 flags = 0);
-		void WriteImageToVirtualTexture(u64 vtXOffset, u64 vtYOffset,u64 ImageX,u64 ImageY,const void* DataIn,int level = -1);
-		void ReadImageFromVirtualTexture(u64 vtXOffset, u64 vtYOffset,u64 ImageX,u64 ImageY,void* pDataOut,int level = -1);
-		void Commit();
 
-		//some simple inline functions
+		void Open(const ISVTFileDataSource* source);
+		void Open(IDataStream* dataStream);
 
+		void Save(const char* destFile) const;
+		
+		bool ReadPage(u64 PageIndex,const Vector2<u32>& offset,ImageRect<R8G8B8A8>& pDataOut) const;
+		void ReadImageFromVirtualTexture(u64 vtXOffset, u64 vtYOffset,ImageRect<R8G8B8A8>& pDataOut,int level = -1) const;
+
+		//inline functions
 		u64 GetPageIndex(u64 xLocation,u64 yLocation,u32 depth) const
 		{
 			if(depth == 0)
@@ -58,12 +186,12 @@ namespace HAGE {
 
 		inline u32 GetSize() const
 		{
-			return GetPageInnerSize() * GetNumXPagesAtDepth(fileHeader.pagedepth-1);
+			return GetPageInnerSize() * GetNumXPagesAtDepth(_fileHeader.pagedepth-1);
 		}
 
 		inline u64 GetTotalNumPages() const
 		{
-			return pageHeaders.size();
+			return _pageHeaders.size();
 		}
 
 		inline u64 GetMaxDepthPages() const
@@ -73,7 +201,7 @@ namespace HAGE {
 
 		inline u32 GetPageInnerSize() const
 		{
-			return fileHeader.pagesize-2*fileHeader.bordersize;
+			return _fileHeader.pagesize-2*_fileHeader.bordersize;
 		}
 		inline u32 GetPageInnerPixelCount() const
 		{
@@ -82,7 +210,7 @@ namespace HAGE {
 
 		inline u32 GetPageOuterSize() const
 		{
-			return fileHeader.pagesize;
+			return _fileHeader.pagesize;
 		}
 
 		inline u32 GetPageOuterPixelCount() const
@@ -92,19 +220,14 @@ namespace HAGE {
 
 		inline u32 GetNumLayers() const
 		{
-			return fileHeader.pagedepth;
+			return _fileHeader.pagedepth;
 		}
 
 		inline u32 GetMaxDepth() const
 		{
 			return GetNumLayers()-1;
 		}
-
-		inline bool IsWriteEnabled() const
-		{
-			return (tempFile != nullptr);
-		}
-		
+				
 		inline static u64 GetFirstSubPage(u64 page)
 		{
 			return page*4+1;
@@ -166,37 +289,85 @@ namespace HAGE {
 				return 0;
 			return GetTotalNumPagesUntilDepth(pagedepth -1);
 		}
-
 	private:
-	
-		void stripBorder(const u32* pIn,u32* pOut) const;
-		void blackBorder(const u32* pIn,u32* pOut) const;
 
 		struct FileHeader
 		{
 			char fourCC[4];//HSVT
 			u16 majorVersion; // 0 currently
-			u16 minorVersion; // 1 currently
+			u16 minorVersion; // 2 currently
 			u32 pagesize;
 			u32 bordersize;
 			u32 pagedepth; // how deep does the rabbit hole go?
+
+			u32 nPageHeaders;
+			u64 offsetPageHeaders;
+			u32 nSharedDataHeaders;
+			u64 offsetSharedDataHeaders;
 		};
 
 		struct PageHeader
 		{
-			u32 page_flags;
+			u64 file_offset;			
 			u32 page_size;
-			u64 file_offset;
+			SVTPage::SVTPageHeader pageHeader;
 		};
 
-		FILE* tempFile;
-		IDataStream* dataStream;
+		struct SharedDataHeader
+		{
+			u64 file_offset;
+			u32 data_size;
+			u16 data_flags;
+			u16 importance;//number of pages that reference the shared data not implemented
+		};
 
-		bool bOpen;
-		bool bLastWrite;
+		class SharedDataCache : public ISVTSharedDataStorage
+		{
+		public:
+			SharedDataCache(const ISVTFileDataSource* source);
+			SharedDataCache(const std::vector<SharedDataHeader>& sharedEntries,IDataStream* dataStream);
+			~SharedDataCache();
 
-		FileHeader fileHeader;
-		std::vector<PageHeader> pageHeaders;
+			u32 SharedDataSize(u32 index) const;
+			const void* AccessSharedData(u32 index) const;
+			void ReleaseSharedData(u32 index) const;
+			u32 AllocateSharedData(u32 size,const void* pData)
+			{ 
+				return -1;//not implemented for this one 
+			}
+		private:
+			u32 writeHeaders(FILE* file,std::vector<SharedDataHeader>& headers) const;
+			u32 writeSharedData(FILE* file,std::vector<SharedDataHeader>& headers) const;
+			void garbageCollect() const;
+
+			static const u32 max_items = 100;
+
+			struct dataEntry
+			{
+				void* pData;
+				u32 refCount;
+			};
+
+			std::vector<SharedDataHeader>			_sharedDataHeaders;
+			mutable std::map<u32,dataEntry>			_dataCache;
+			mutable IDataStream*					_dataStream;
+			const ISVTFileDataSource*				_dataSource;
+
+			friend class SparseVirtualTextureFile;
+		};
+
+		const static int maxPageSize = 128*1024;
+
+		void getPage(u64 index,SVTPage* pPageOut) const;
+
+		const ISVTFileDataSource* _dataSource;
+		IDataStream* _dataStream;
+
+		bool _bOpen;
+
+		FileHeader _fileHeader;
+		std::vector<PageHeader> _pageHeaders;
+		SharedDataCache* _dataCache;
 	};
 }
 

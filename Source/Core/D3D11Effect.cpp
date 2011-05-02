@@ -73,11 +73,14 @@ static const char* preproc =
 	"	#define LINE_OUT LineStream\n"
 	"	#define POINT_OUT PointStream\n"
 	"	#define H_TEXTURE_2D(x) Texture2D x;SamplerState _Sampler##x\n"
+	"	#define H_TEXTURE_2D_INT(x) Texture2D<int4> x;SamplerState _Sampler##x\n"
+	"	#define H_TEXTURE_2D_UINT(x) Texture2D<uint4> x;SamplerState _Sampler##x\n"
 	"	#define H_TEXTURE_CUBE(x) TextureCube x;SamplerState _Sampler##x\n"
 	"	#define H_TEXTURE_2D_CMP(x) Texture2D x;SamplerComparisonState _Sampler##x\n"
 	"	#define H_TEXTURE_CUBE_CMP(x) TextureCube x;SamplerComparisonState _Sampler##x\n"
 	"	#define H_SAMPLE_2D(x,y) (x.Sample( _Sampler##x,(y)))\n"
 	"	#define H_SAMPLE_2D_LOD(x,y,z) (x.SampleLevel( _Sampler##x,(y),(z)))\n"
+	"	#define H_SAMPLE_2D_GRAD(x,y,z,w) (x.SampleGrad( _Sampler##x,(y),(z),(w)))\n"
 	"	#define H_SAMPLE_CUBE(x,y) (x.Sample( _Sampler##x,(y)))\n"
 	"	#define H_SAMPLE_CUBE_LOD(x,y,z) (x.SampleLevel( _Sampler##x,(y),(z)))\n"
 	"	#define H_SAMPLE_2D_CMP(x,y,z) (x.SampleCmp( _Sampler##x,(y),(z)))\n"
@@ -125,10 +128,10 @@ D3D11Effect::D3D11Effect(D3D11APIWrapper* pWrapper,const char* pProgram,ID3D11Ra
 	for(int isampler = 0;isampler<nSamplers;++isampler)
 	{
 		auto bindpoint=_samplerBinds.find(global_string("_Sampler") + global_string(pSamplers[isampler].Name));
-		assert(bindpoint != _samplerBinds.end());
-		for(int istage = 0; istage< 3;++istage)
-			if(bindpoint->second._ShaderStages[istage] != -1)
-				_boundSamplers[istage][bindpoint->second._ShaderStages[istage]] = pSamplers[isampler].pSampler;
+		if(bindpoint != _samplerBinds.end())
+			for(int istage = 0; istage< 3;++istage)
+				if(bindpoint->second._ShaderStages[istage] != -1)
+					_boundSamplers[istage][bindpoint->second._ShaderStages[istage]] = pSamplers[isampler].pSampler;
 	}
 
 	delete tBuffer;

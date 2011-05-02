@@ -64,48 +64,16 @@ namespace HAGE {
 		virtual const APIWTexture* GetCurrentVTCache() const = 0;
 		virtual const APIWTexture* GetCurrentVTRedirection() const = 0;
 		virtual u32 GetCacheSize() const = 0; //returns current cache size (in bytes), note that adjusting it will not immediately change this
+
+		//debug
+		virtual const APIWTexture* _Debug_GetFeedbackTexture() const = 0;
+		virtual const APIWConstantBuffer* GetSettings() const = 0;
 		
 		//various functions to provide feedback
 		virtual void AdjustCacheSize(u32 newSize) const = 0; //enters a request to adjust the cache size
 		virtual u32 GetId() const = 0;
 		virtual APIWEffect* BeginFeedback(RenderingAPIWrapper* pRenderer) const =0;
 		virtual void EndFeedback(RenderingAPIWrapper* pRenderer) const = 0;
-	};
-
-	class IMeshData : public IResource
-	{
-	public:
-		typedef enum _VERTEX_DATA_TYPE
-		{
-			POSITION,
-			NORMAL,
-			COLOR,
-			TEXCOORD0,
-			TEXCOORD1,
-			TEXCOORD2,
-			TEXCOORD3,
-			BLEND_WEIGHTS_VEC3
-		} VERTEX_DATA_TYPE;
-		typedef enum _EXTENDED_DATA_TYPE
-		{
-			RESERVED
-		} EXTENDED_DATA_TYPE;
-
-		virtual ~IMeshData(){}
-		virtual u32 GetNumVertices() const =0;
-		virtual u32 GetVertexData(const u8** pDataOut,u32& pOutStride,VERTEX_DATA_TYPE type) const =0;
-		virtual u32	GetNumIndices() const =0;
-		virtual u32 GetIndexData(const u8** pDataOut) const =0;
-		virtual const void* GetExtendedData(EXTENDED_DATA_TYPE type) const = 0;
-		virtual const char* GetTextureName(u32 index) const = 0;
-	};
-
-	class IRawData: public IResource
-	{
-	public:
-		virtual ~IRawData(){}
-		virtual u64 GetSize() const = 0;
-		virtual u64 GetData(const u8** pDataOut) const = 0;
 	};
 
 	class IImageData : public IResource
@@ -126,6 +94,54 @@ namespace HAGE {
 		virtual u32 GetImageFormat() const =0;
 		virtual u32 GetImageLevels() const =0;
 		virtual const void*	GetImageData() const =0;
+	};
+
+	class IMeshData : public IResource
+	{
+	public:
+		typedef enum _VERTEX_DATA_TYPE
+		{
+			POSITION,
+			NORMAL,
+			COLOR,
+			TEXCOORD0,
+			TEXCOORD1,
+			TEXCOORD2,
+			TEXCOORD3,
+			BLEND_WEIGHTS_VEC3
+		} VERTEX_DATA_TYPE;
+		typedef enum _EXTENDED_DATA_TYPE
+		{
+			TRIANGLE_MATERIAL_INFO,
+			CHILD_COUNT,
+			CHILD_LIST,
+			RESERVED
+		} EXTENDED_DATA_TYPE;
+		
+		struct ChildObject
+		{
+			TResourceAccess<IMeshData>	childMesh;
+			Matrix4<>					transformation;
+			//Vector3<>					scale;
+			//Quaternion<>				rotation;
+		};
+
+		virtual ~IMeshData(){}
+		virtual u32 GetNumVertices() const =0;
+		virtual u32 GetVertexData(const u8** pDataOut,u32& pOutStride,VERTEX_DATA_TYPE type) const =0;
+		virtual u32	GetNumIndices() const =0;
+		virtual u32 GetIndexData(const u8** pDataOut) const =0;
+		virtual const void* GetExtendedData(EXTENDED_DATA_TYPE type) const = 0;
+		virtual const char* GetTextureName(u32 index) const = 0;
+		virtual const TResourceAccess<IImageData>* GetTexture(u32 index) const = 0;
+	};
+
+	class IRawData: public IResource
+	{
+	public:
+		virtual ~IRawData(){}
+		virtual u64 GetSize() const = 0;
+		virtual u64 GetData(const u8** pDataOut) const = 0;
 	};
 
 	class IDrawableMesh : public IResource
