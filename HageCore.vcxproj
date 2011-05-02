@@ -199,6 +199,13 @@
     <ClInclude Include="Headers\SDK\interlocked_functions.h" />
     <ClInclude Include="Headers\SDK\IObject.h" />
     <ClInclude Include="Headers\SDK\MainClass.h" />
+    <ClInclude Include="Headers\SDK\Math\Binary.h" />
+    <ClInclude Include="Headers\SDK\Math\MathTypes.h" />
+    <ClInclude Include="Headers\SDK\Math\Matrix4.h" />
+    <ClInclude Include="Headers\SDK\Math\Quaternion.h" />
+    <ClInclude Include="Headers\SDK\Math\Vector2.h" />
+    <ClInclude Include="Headers\SDK\Math\Vector3.h" />
+    <ClInclude Include="Headers\SDK\Math\Vector4.h" />
     <ClInclude Include="Headers\SDK\MeshExCurvature.h" />
     <ClInclude Include="Headers\SDK\MeshExDecimator.h" />
     <ClInclude Include="Headers\SDK\MeshExGeometry.h" />
