@@ -109,6 +109,7 @@ namespace HAGE
 		
 		u32 pos = 0;
 
+		/*
 		SumType redSum; memset(&redSum,0,sizeof(redSum));
 		SumType greenSum; memset(&greenSum,0,sizeof(greenSum));
 		SumType blueSum; memset(&blueSum,0,sizeof(blueSum));
@@ -120,14 +121,14 @@ namespace HAGE
 			for(u32 x=1;x<_imageData->XSize();++x)
 				filterColorSum(redSum,greenSum,blueSum,(*_imageData)(x,0),(*_imageData)(x-1,0),border,border);
 
-			u8 RedFilter = getBestFilter(redSum);
-			u8 GreenFilter = getBestFilter(greenSum);
-			u8 BlueFilter = getBestFilter(blueSum);
+			u8 RedFilter = 4;//getBestFilter(redSum);
+			u8 GreenFilter = 4;//getBestFilter(greenSum);
+			u8 BlueFilter = 4;//getBestFilter(blueSum);
 			
 			//pOutBytes[pos++] = 0;
-			pOutBytes[pos++] = RedFilter;
-			pOutBytes[pos++] = GreenFilter;
-			pOutBytes[pos++] = BlueFilter;
+			//pOutBytes[pos++] = RedFilter;
+			//pOutBytes[pos++] = GreenFilter;
+			//pOutBytes[pos++] = BlueFilter;
 
 			writeFilteredPixel(RedFilter,GreenFilter,BlueFilter,pOutBytes,pos,(*_imageData)(0,0),border,border,border);
 		
@@ -146,20 +147,42 @@ namespace HAGE
 			for(u32 x=1;x<_imageData->XSize();++x)
 				filterColorSum(redSum,greenSum,blueSum,(*_imageData)(x,y),(*_imageData)(x-1,y),(*_imageData)(x,y-1),(*_imageData)(x-1,y-1));
 
-			u8 RedFilter = getBestFilter(redSum);
-			u8 GreenFilter = getBestFilter(greenSum);
-			u8 BlueFilter = getBestFilter(blueSum);
+			u8 RedFilter = 4;//getBestFilter(redSum);
+			u8 GreenFilter = 4;//getBestFilter(greenSum);
+			u8 BlueFilter = 4;//getBestFilter(blueSum);
 
 			//pOutBytes[pos++] = 0;
-			pOutBytes[pos++] = RedFilter;
-			pOutBytes[pos++] = GreenFilter;
-			pOutBytes[pos++] = BlueFilter;
+			//pOutBytes[pos++] = RedFilter;
+			//pOutBytes[pos++] = GreenFilter;
+			//pOutBytes[pos++] = BlueFilter;
 
 			writeFilteredPixel(RedFilter,GreenFilter,BlueFilter,pOutBytes,pos,(*_imageData)(0,y),border,(*_imageData)(0,y-1),border);
 		
 			for(u32 x=1;x<_imageData->XSize();++x)
 				writeFilteredPixel(RedFilter,GreenFilter,BlueFilter,pOutBytes,pos,(*_imageData)(x,y),(*_imageData)(x-1,y),(*_imageData)(x,y-1),(*_imageData)(x-1,y-1));
-		}
+		}*/
+
+		//red
+		for(u32 y = 0; y < _imageData->YSize(); ++y)
+			for(u32 x = 0; x < _imageData->XSize(); ++x)
+				pOutBytes[pos++] = filterByte(4,(*_imageData)(x,y).Red(),
+					(x>0)?((*_imageData)(x-1,y).Red()):(border.Red()),
+					(y>0)?((*_imageData)(x,y-1).Red()):(border.Red()),
+					(y>0 && x>0)?((*_imageData)(x-1,y-1).Red()):(border.Red()));
+				/*
+		for(u32 y = 0; y < _imageData->YSize(); ++y)
+			for(u32 x = 0; x < _imageData->XSize(); ++x)
+				pOutBytes[pos++] = filterByte(4,(*_imageData)(x,y).Green(),
+					(x>0)?((*_imageData)(x-1,y).Green()):(border.Green()),
+					(y>0)?((*_imageData)(x,y-1).Green()):(border.Green()),
+					(y>0 && x>0)?((*_imageData)(x-1,y-1).Green()):(border.Green()));
+
+		for(u32 y = 0; y < _imageData->YSize(); ++y)
+			for(u32 x = 0; x < _imageData->XSize(); ++x)
+				pOutBytes[pos++] = filterByte(4,(*_imageData)(x,y).Blue(),
+					(x>0)?((*_imageData)(x-1,y).Blue()):(border.Blue()),
+					(y>0)?((*_imageData)(x,y-1).Blue()):(border.Blue()),
+					(y>0 && x>0)?((*_imageData)(x-1,y-1).Blue()):(border.Blue()));*/
 		
 		//debug
 		/*
@@ -213,9 +236,9 @@ namespace HAGE
 
 		{
 			//pos++;
-			u8 RedFilter = pInBytes[pos++];
-			u8 GreenFilter = pInBytes[pos++];
-			u8 BlueFilter = pInBytes[pos++];
+			u8 RedFilter = 4;//pInBytes[pos++];
+			u8 GreenFilter = 4;//pInBytes[pos++];
+			u8 BlueFilter = 4;//pInBytes[pos++];
 
 			(*_imageData)(0,0) = readFilteredPixel(RedFilter,GreenFilter,BlueFilter,pInBytes,pos,border,border,border);
 		
@@ -226,9 +249,9 @@ namespace HAGE
 		for(u32 y=1;y<_imageData->YSize();++y)
 		{
 			//pos++;
-			u8 RedFilter = pInBytes[pos++];
-			u8 GreenFilter = pInBytes[pos++];
-			u8 BlueFilter = pInBytes[pos++];
+			u8 RedFilter = 4;//pInBytes[pos++];
+			u8 GreenFilter = 4;//pInBytes[pos++];
+			u8 BlueFilter = 4;//pInBytes[pos++];
 			
 			(*_imageData)(0,y) = readFilteredPixel(RedFilter,GreenFilter,BlueFilter,pInBytes,pos,border,(*_imageData)(0,y-1),border);
 		
@@ -342,17 +365,16 @@ namespace HAGE
 			return getPaeth(left,top,top_left);
 		case 4:
 			return getPaethX(left,top,top_left);
-			/*
-		case 3:
-			return avg;
-		case 4:
-			return ((grad>>2) + ((avg*3)>>2));
 		case 5:
-			return ((grad>>1) + (avg>>1));
+			return avg;
 		case 6:
-			return ((avg>>2) + ((grad*3)>>2));
+			return ((grad>>2) + ((avg*3)>>2));
 		case 7:
-			return grad;*/
+			return ((grad>>1) + (avg>>1));
+		case 8:
+			return ((avg>>2) + ((grad*3)>>2));
+		case 9:
+			return grad;
 		default:
 			assert(!"Unknown filter method for PNGish layer");
 			return 0xff;
@@ -371,7 +393,6 @@ namespace HAGE
 
 	u32 SVTDataLayer_PNGish::predDiff(u8 method,u8 current,u8 left,u8 top,u8 top_left)
 	{
-		u32 v =(u32)(current - predict(method,left,top,top_left));
-		return (v < 128) ? v : 256 - v;
+		return (u32)std::abs((i32)current - (i32)predict(method,left,top,top_left));
 	}
 }

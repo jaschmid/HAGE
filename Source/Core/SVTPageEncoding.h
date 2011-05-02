@@ -44,7 +44,7 @@ namespace HAGE {
 		virtual u32 EstimateSerializeSize() const {return (4*(_size.x+1)*_size.y);}
 
 	private:
-		static const u8 numFilterMethods = 5;
+		static const u8 numFilterMethods = 10;
 
 		typedef std::array<u32,numFilterMethods> SumType;
 
