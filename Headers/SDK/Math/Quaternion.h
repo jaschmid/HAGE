@@ -92,10 +92,41 @@ public:
 
 	// math operations
 
+	Quaternion<_T> operator - () const
+	{
+		return Quaternion<_T>(-r,i,j,k);
+	}
+
+	Quaternion<_T> conjugate() const
+	{
+		return Quaternion<_T>(r,-i,-j,-k);
+	}
+
+	Quaternion<_T> operator ~ () const
+	{
+		return conjugate();
+	}
+
+	_T sqMagnitude() const
+	{
+		return r*r + i*i + j*j + k*k;
+	}
+
+	_T operator !() const
+	{
+		return sqMagnitude();
+	}
+
+	_T magnitude() const
+	{
+		return sqrt(sqMagnitude());
+	}
+
 	Quaternion<_T> operator + (const Quaternion<_T>& _1) const
 	{
 		return Quaternion<_T>(r+_1.r,i+_1.i,j+_1.j,k+_1.k);
 	}
+
 	Quaternion<_T> operator - (const Quaternion<_T>& _1) const
 	{
 		return Quaternion<_T>(r-_1.r,i-_1.i,j-_1.j,k-_1.k);
