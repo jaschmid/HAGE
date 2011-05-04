@@ -208,7 +208,7 @@ namespace HAGE
 						ChildObject o;
 						const ADT_MODF_Entry& current = pEntries[i];
 						f32 scaleFactor = 1.0f;
-						Matrix4<> rotation = Matrix4<>::AngleRotation(Vector3<>(0.0f,1.0f,0.0f),current.rot.y / 360.0f * 2* 3.14159265);
+						Matrix4<> rotation = Matrix4<>::AngleRotation(Vector3<>(0.0f,1.0f,0.0f),(current.rot.y + 180.0f) / 360.0f * 2* 3.14159265);
 						Vector3<> pos = Vector3<>(-(pEntries[i].pos.z - 17066.6666666f) , pEntries[i].pos.y, (pEntries[i].pos.x - 17066.6666666f));
 						o.transformation = Matrix4<>::Translate( pos ) * (rotation*Matrix4<>::Scale( Vector3<>(scaleFactor,scaleFactor,scaleFactor)));
 						_childObjects.push_back(o);

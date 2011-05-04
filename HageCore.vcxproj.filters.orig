@@ -22,6 +22,7 @@
     <Filter Include="Header Files\Utility">
       <UniqueIdentifier>{9fd7f1af-c286-481c-a694-f26e6b997ca6}</UniqueIdentifier>
     </Filter>
+<<<<<<< HEAD
     <Filter Include="Dependancies">
       <UniqueIdentifier>{5515987d-a186-4077-b3ec-2f95cd8ef7ec}</UniqueIdentifier>
     </Filter>
@@ -33,12 +34,10 @@
     </Filter>
     <Filter Include="Dependancies\Snappy">
       <UniqueIdentifier>{481b4dde-20ae-4347-845e-e35301e437a7}</UniqueIdentifier>
-    </Filter>
+=======
     <Filter Include="Header Files\Math">
-      <UniqueIdentifier>{d7f0ca61-ddea-4fa7-bcd1-b9d116c26959}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Dependancies\JpegXR">
-      <UniqueIdentifier>{2f316588-9293-4742-88de-76544fd604c8}</UniqueIdentifier>
+      <UniqueIdentifier>{acf8ddab-df8d-4ac7-a456-48df507b2310}</UniqueIdentifier>
+>>>>>>> 0fae41ed4e2c5bb289ffd6839b534e226bc3df82
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -177,6 +176,27 @@
     <ClInclude Include="Headers\SDK\MeshExSubdivision.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Vector4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Matrix4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Quaternion.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\Binary.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Headers\SDK\Math\MathTypes.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
     <ClInclude Include="Headers\SDK\MeshExCurvature.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
@@ -251,42 +271,6 @@
     </ClInclude>
     <ClInclude Include="Source\Core\SVTPageEncoding.h">
       <Filter>Header Files\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector2.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Vector3.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Quaternion.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Matrix4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\MathTypes.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Headers\SDK\Math\Binary.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Dependancies\JpegXR\app_resource.h">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Dependancies\JpegXR\jpegxr.h">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Dependancies\JpegXR\jxr_priv.h">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Dependancies\JpegXR\qp.tab.h">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Dependancies\JpegXR\stdint_minimal.h">
-      <Filter>Dependancies\JpegXR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -465,66 +449,6 @@
       <Filter>Dependancies\LZMA</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\SVTPageEncoding.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\algo.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\api.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\cr_parse.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\cw_emit.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\flags.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\init.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\io.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\jpegxr_pixelformat.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\qp.tab.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\qp_lexor.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\r_parse.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\r_strip.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\r_tile_frequency.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\r_tile_spatial.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\w_emit.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\w_strip.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\w_tile_frequency.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\w_tile_spatial.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Dependancies\JpegXR\x_strip.c">
-      <Filter>Dependancies\JpegXR</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\SVTPageEncodingJpegXR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

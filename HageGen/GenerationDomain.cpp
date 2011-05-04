@@ -20,7 +20,7 @@ namespace HAGE {
 		}		
 
 		void GenerationDomain::DomainStep(t64 time)
-		{
+		{/*
 			static bool test = true;
 
 			if(test)
@@ -28,10 +28,12 @@ namespace HAGE {
 				const int page_size = 128;
 				SVTPage pageTest(128);
 				SVTPage pageTestL(1024);
+				SVTPage::SVTPageHeader header;
+
 				FreeImage_Initialise();
-				FIBITMAP* pBitmap = FreeImage_Load(FIF_PNG,"SampleTex.png",0);
-				SVTDataLayer_Raw rawImage;
-				SVTDataLayer_PNGish pngImage;
+				FIBITMAP* pBitmap = FreeImage_Load(FIF_PNG,"MipMap_partial5.png",0);
+				SVTDataLayer_PNGish rawImage;
+				SVTDataLayer_JpegXR pngImage;
 				ImageData<R8G8B8A8> image_data(1024,1024);
 				for(int y = 0; y < 1024; ++y)
 					for(int x = 0; x < 1024; ++x)
@@ -44,11 +46,35 @@ namespace HAGE {
 					}
 				rawImage.Initialize(image_data);
 				pngImage.Initialize(image_data);
-				FreeImage_Unload(pBitmap);
-				
+								
 				std::vector<u8> buffer(1024*1024*20);
 
-				SVTPage::SVTPageHeader header;
+				for(int y = 0; y < 1024/page_size; ++y)
+					for(int x = 0; x < 1024/page_size; ++x)
+					{
+						pageTest.Empty();
+						pageTest.WriteRect(Vector2<i32>(-x * page_size,-y * page_size),SVTLAYER_DIFFUSE_COLOR,&pngImage);
+						u32 bytes = pageTest.Serialize(buffer.size(),buffer.data(),&header,SVTPage::PAGE_FLAGS::PAGE_COMPRESSED_NONE);
+
+						pageTest.Deserialize(128,&header,bytes,buffer.data(),nullptr);
+						pageTest.GetLayer(SVTLAYER_DIFFUSE_COLOR)->GetImageData(Vector2<u32>(0,0),SVTLAYER_DIFFUSE_COLOR,image_data.GetRect(Vector4<u32>(x * page_size,y * page_size,(x+1) * page_size,(y+1) * page_size)));
+					}
+
+				
+				for(int y = 0; y < 1024; ++y)
+					for(int x = 0; x < 1024; ++x)
+					{
+						RGBQUAD color;
+						color.rgbRed = image_data(x,y).Red();
+						color.rgbBlue = image_data(x,y).Blue();
+						color.rgbGreen = image_data(x,y).Green();
+						FreeImage_SetPixelColor(pBitmap,x,y,&color);
+					}
+
+				FreeImage_Save(FIF_PNG, pBitmap, "TestOut.png");
+				FreeImage_Unload(pBitmap);
+
+
 
 				const u32 compression_methods = 4;
 
@@ -74,17 +100,17 @@ namespace HAGE {
 					pageTestL.WriteRect(Vector2<i32>(0,0),SVTLAYER_DIFFUSE_COLOR,&pngImage);
 					u32 largeSizePNG = pageTestL.Serialize(buffer.size(),buffer.data(),&header,(SVTPage::PAGE_FLAGS)(method?(1<<(method-1)):0));
 
-					printf("Method %u, %u.%03u to %u.%03u\n",method,totalSize/1000,totalSize%1000,totalSizePNG/1000,totalSizePNG%1000);
-					printf("Method %uL, %u.%03u to %u.%03u\n",method,largeSize/1000,largeSize%1000,largeSizePNG/1000,largeSizePNG%1000);
+					printf("Method %u, %u to %u\n",method,totalSize/1024,totalSizePNG/1024);
+					printf("Method %uL, %u to %u\n",method,largeSize/1024,largeSizePNG/1024);
 				}
 
 				test = false;
 			}
 			else
 				GetTask().Shutdown();
-			/*
+			*/
 			if(_dataProc.Process())
-				GetTask().Shutdown();*/
+				GetTask().Shutdown();
 		}
 
 		GenerationDomain::~GenerationDomain()

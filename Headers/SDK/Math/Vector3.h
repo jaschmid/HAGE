@@ -184,12 +184,12 @@ public:
 		return (*this)/(sqrtf(!(*this)));
 	}
 
-	float length() const
+	_T length() const
 	{
-		return sqrtf(!(*this));
+		return sqrt<_T>(!(*this));
 	}
 
-	float sqLength() const
+	_T sqLength() const
 	{
 		return !(*this);
 	}

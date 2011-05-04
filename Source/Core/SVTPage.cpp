@@ -90,6 +90,8 @@ namespace HAGE
 	static void *SzAlloc(void *p, size_t size) { p = p; return new u8[size]; }
 	static void SzFree(void *p, void *address) {  p = p; delete [] address; }
 	static ISzAlloc g_Alloc = { SzAlloc, SzFree };
+
+	const static SVTPage::PAGE_FLAGS final_compression = SVTPage::PAGE_COMPRESSED_LZMA;
 	
 	u32 SVTPage::Serialize(u32 maxBytes,u8* pOutBytes,SVTPageHeader* headerOut,PAGE_FLAGS requested_compression) const
 	{
@@ -105,9 +107,24 @@ namespace HAGE
 			if(_layerMask & getLayerMask(iLayer))
 			{
 				assert(_layers[iLayer]);
-				*(u32*)&pOutBytes[pos] = _layers[iLayer]->GetEncodingId();
-				pos+= 4;
-				pos+= _layers[iLayer]->Serialize(maxBytes-pos,&pOutBytes[pos]);
+				if(requested_compression & final_compression && _layers[iLayer]->GetEncodingId() == LAYER_ENCODING_UNCOMPRESSED_RAW)
+				{
+					ISVTDataLayer* new_layer = ISVTDataLayer::CreateLayer(LAYER_ENCODING_JPEG_XR_RAW);
+					new_layer->Empty(Vector2<u32>(_pageSize,_pageSize));
+					new_layer->WriteRect(Vector2<i32>(0,0),getLayerMask(iLayer),_layers[iLayer]);
+					
+					*(u32*)&pOutBytes[pos] = new_layer->GetEncodingId();
+					pos+= 4;
+					pos+= new_layer->Serialize(maxBytes-pos,&pOutBytes[pos]);
+
+					delete new_layer;
+				}
+				else
+				{
+					*(u32*)&pOutBytes[pos] = _layers[iLayer]->GetEncodingId();
+					pos+= 4;
+					pos+= _layers[iLayer]->Serialize(maxBytes-pos,&pOutBytes[pos]);
+				}
 			}
 		}
 		u32 used_data_size = pos;
@@ -147,8 +164,9 @@ namespace HAGE
 			CLzmaEncProps props;
 			LzmaEncProps_Init(&props);
 			props.numThreads = 1;
+			props.lp = 1;//byte size addressing generally better for images
 			size_t size_props_encoded = LZMA_PROPS_SIZE;
-			std::vector<u8> compressed(LZMA_PROPS_SIZE+used_data_size+12);
+			std::vector<u8> compressed(LZMA_PROPS_SIZE+used_data_size*2);
 			size_t compressed_size = compressed.size();
 			SRes result = LzmaEncode(&compressed[LZMA_PROPS_SIZE],&compressed_size,pOutBytes,used_data_size,&props,&compressed[0],&size_props_encoded,true,nullptr,&g_Alloc,&g_Alloc);
 			if(result == SZ_OK && (compressed_size + LZMA_PROPS_SIZE < used_data_size))
