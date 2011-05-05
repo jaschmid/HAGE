@@ -298,7 +298,7 @@ namespace HAGE
 			for(i32 ix = xBegin; ix < xEnd ; ix++)
 				image_data(ix-xBegin,iy-yBegin).SetData(pData[ (iy%ySize)*xSize + (ix%xSize) ]);
 
-		SVTDataLayer_PNGish raw_image;
+		SVTDataLayer_Raw raw_image;
 		raw_image.Initialize(image_data);
 		materials.push_back(hsvt.PlaceTexture(&raw_image,arr));
 

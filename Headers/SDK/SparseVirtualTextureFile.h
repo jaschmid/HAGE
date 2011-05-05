@@ -58,6 +58,7 @@ namespace HAGE {
 		//update function
 		virtual ISVTDataLayer* WriteRect(Vector2<i32> offset,u32 layer,const ISVTDataLayer* data) = 0;
 
+		static const u32		MaxLayerSerializedSizeFactor	= 4; // max size is Factor * x_size * y_size
 		static ISVTDataLayer* CreateLayer(u32 encodingId);
 	};
 
@@ -102,6 +103,13 @@ namespace HAGE {
 		void WriteRect(Vector2<i32> offset,u32 layer,const ISVTDataLayer* data);
 		bool Deserialize(u32 pageSize,const SVTPageHeader* header, u32 numBytes,const u8* pInBytes,const ISVTSharedDataStorage* pShared);
 	private:
+		struct LayerHeader
+		{
+			u32 layerSize;
+			u16	layerEncoding;
+			u16	layerFlags;
+		};
+
 		const u32 _pageSize;
 		u32 _layerMask;
 
@@ -109,6 +117,9 @@ namespace HAGE {
 		static u32 getLayerMask(u32 Layer);
 
 		void reset(); // clears current contents
+
+		static u32 compress_layer(const void* pInData,u32 pInDataSize,void* pOutData,u32 maxOutSize,PAGE_FLAGS compression);
+		static u32 decompress_layer(const void* pInData,u32 pInDataSize,void* pOutData,u32 maxOutSize,PAGE_FLAGS compression);
 
 		enum
 		{
@@ -121,8 +132,8 @@ namespace HAGE {
 		};
 
 		static const u32 nNumLayers = 6;
-
 		static const u32 defaultMixedEncoding = LAYER_ENCODING_UNCOMPRESSED_RAW;
+		static const u32 nMaxStackBuffer = 1024*128;
 
 		std::array<ISVTDataLayer*,nNumLayers> _layers;
 	};
