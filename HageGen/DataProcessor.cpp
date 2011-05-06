@@ -3,6 +3,7 @@
 #include "GenerationDomain.h"
 #include <SDK/EditableImage.h>
 #include <fstream>
+#include <set>
 #include "../Source/Core/SVTPageEncoding.h"
 
 namespace HAGE
@@ -81,8 +82,10 @@ namespace HAGE
 				MeshType::Vertex v = _mesh.GetVertex(i);
 				u32 mat = v->Material;
 
-				Vector2<> scale(materials[mat].GetUSize(),materials[mat].GetVSize());
-				Vector2<> bias(materials[mat].GetUBegin(),materials[mat].GetVBegin());
+				auto found = materials.find(mat);
+
+				Vector2<> scale(found->second.GetUSize(),found->second.GetVSize());
+				Vector2<> bias(found->second.GetUBegin(),found->second.GetVBegin());
 					
 				Vector2<>& texcoord = v->TexCoord;
 
@@ -128,6 +131,135 @@ namespace HAGE
 		std::array<Vector2<>,2> adjustment;
 		bool set;
 	};
+	
+	void DataProcessor::processMeshTextures(DataProcessor::MeshType& mesh,const TResourceAccess<IMeshData>& data)
+	{
+		for(u32 i = 0; i < mesh.GetNumVertexIndices(); ++i)
+		{
+			MeshType::Vertex v = mesh.GetVertex(i);
+			if(v == MeshType::nullVertex)
+				break;
+
+			//vertex not processed yet
+			if(v->Material & TempMaterialMarker)
+			{
+
+				struct lessVertex
+				{
+					bool operator()(const MeshType::Vertex& v1, const MeshType::Vertex& v2)
+					{
+						return v1.Index() < v2.Index();
+					}
+				};
+
+				std::set<MeshType::Vertex,lessVertex> processed;
+				std::set<MeshType::Vertex,lessVertex> found;
+
+				found.insert(v);
+
+				while(!found.empty())
+				{
+					MeshType::Vertex current = *found.begin();
+					found.erase(found.begin());
+					auto triple = mesh.GetFirstVertexElementTriple(current);
+					while(std::get<0>(triple) != MeshType::nullVertex)
+					{
+						if(processed.find(std::get<0>(triple)) == processed.end() &&
+							found.find(std::get<0>(triple)) == found.end() &&
+							std::get<0>(triple)->Material == v->Material)
+							found.insert(std::get<0>(triple));
+
+						triple = mesh.GetNextVertexElementTriple(current,triple);
+					}
+					processed.insert(current);
+				}
+
+				u32 this_original_index = v->Material & (~TempMaterialMarker);
+				u32 this_material_index = materials.size();
+				
+				auto first = processed.begin();
+
+				Vector2<> min = (*first)->TexCoord;
+				Vector2<> max = min;
+
+				//processed now contains all vertices in this patch
+				for(auto it = first; it != processed.end(); ++it)
+				{
+					assert((*it)->Material == this_original_index | TempMaterialMarker);
+					//mark as processed
+					(*it)->Material = this_material_index;
+
+					if((*it)->TexCoord.x > max.x)
+						max.x = (*it)->TexCoord.x;
+					else if((*it)->TexCoord.x < min.x)
+						min.x = (*it)->TexCoord.x;
+					
+					if((*it)->TexCoord.y > max.y)
+						max.y = (*it)->TexCoord.y;
+					else if((*it)->TexCoord.y < min.y)
+						min.y = (*it)->TexCoord.y;
+				}
+
+				assert(v->Material == this_material_index);
+
+				assert(IsFinite(max.x));
+				assert(IsFinite(max.y));
+				assert(IsFinite(min.x));
+				assert(IsFinite(min.y));
+
+				const TResourceAccess<IImageData>* curr = (const TResourceAccess<IImageData>*) data->GetTexture(this_original_index);
+				
+				SparseVirtualTextureGenerator::RelationArray arr;
+				u32 xSize = (*curr)->GetImageWidth();
+				u32 ySize = (*curr)->GetImageHeight();
+				const u8* data = (const u8*)(*curr)->GetImageData();
+
+				std::array<Vector2<>,2> adjustment;
+								
+				if((*curr)->GetImageFormat() == IImageData::R8G8B8A8)
+				{
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)data,arr);
+				}
+				else if((*curr)->GetImageFormat() == IImageData::DXTC1)
+				{
+					ImageData<DXTC1> compressed(xSize,ySize,data);
+					ImageData<R8G8B8A8> decompressed(compressed);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+				}
+				else if((*curr)->GetImageFormat() == IImageData::DXTC3)
+				{
+					ImageData<DXTC3> compressed(xSize,ySize,data);
+					ImageData<R8G8B8A8> decompressed(compressed);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+				}
+				else if((*curr)->GetImageFormat() == IImageData::DXTC5)
+				{
+					ImageData<DXTC5> compressed(xSize,ySize,data);
+					ImageData<R8G8B8A8> decompressed(compressed);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+				}
+				else
+				{
+					std::vector<u32> tempBuffer;
+					tempBuffer.resize(xSize*ySize);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)tempBuffer.data(),arr);
+				}
+				
+				assert(IsFinite(adjustment[0].x));
+				assert(IsFinite(adjustment[0].y));
+				assert(IsFinite(adjustment[1].x));
+				assert(IsFinite(adjustment[1].y));
+
+				for(auto it = processed.begin(); it != processed.end(); ++it)
+				{
+					Vector2<>& texcoords = (*it)->TexCoord;
+			
+					texcoords = (( ( texcoords - min ) | ( max - min) ) & ( adjustment[1] - adjustment[0]) ) + adjustment[0];
+				}
+			}
+
+		}
+	}
 
 	void DataProcessor::loadMesh(DataProcessor::MeshType& mesh,const TResourceAccess<IMeshData>& data,const Matrix4<>& transform)
 	{
@@ -142,9 +274,7 @@ namespace HAGE
 		u32 nVertices = data->GetVertexData((const u8**)&positionData,stridePos,IMeshData::POSITION);
 		data->GetVertexData((const u8**)&texcoordData,strideTex,IMeshData::TEXCOORD0);
 
-		u32 textureIndexOffset = materials.size();
-
-		
+		u32 textureIndexOffset = DataProcessor::TempMaterialMarker;
 
 		for(u32 i = 0; i < nVertices; ++i)
 		{
@@ -164,8 +294,6 @@ namespace HAGE
 			v->Material = textureIndexOffset;
 		}
 
-		u32 maxMaterial = 1;
-
 		const u32* materialData = (const u32*)	data->GetExtendedData(IMeshData::TRIANGLE_MATERIAL_INFO);
 		if(materialData)
 		{
@@ -175,110 +303,28 @@ namespace HAGE
 				{
 					MeshType::Vertex v = mesh.GetVertex(piData[i*3+i2]);
 					assert(v->Material == textureIndexOffset || v->Material == materialData[i] +textureIndexOffset);
-					v->Material = materialData[i] +textureIndexOffset;
-					if(materialData[i] >= maxMaterial)
-						maxMaterial = materialData[i] + 1;
+					v->Material = materialData[i] | DataProcessor::TempMaterialMarker;
 				}
 		}
-
-
-		std::vector<MinMaxTex> textureMinMax;
-		textureMinMax.resize(maxMaterial);
-
-		//set texture minmax to unlikely numbers
-		memset(textureMinMax.data(),0,sizeof(MinMaxTex)*textureMinMax.size());
-
-		//get minmax values
-		for(u32 i = 0; i < mesh.GetNumVertexIndices(); ++i)
-		{
-			MeshType::Vertex v = mesh.GetVertex(i);
-			if(v == MeshType::nullVertex)
-				break;
-			Vector2<>& texcoords = v->TexCoord;
-			MinMaxTex& minmax= textureMinMax[v->Material-textureIndexOffset];
-
-			if(minmax.min.x > texcoords.x || !minmax.set)
-				minmax.min.x = texcoords.x;
-			if(minmax.min.y > texcoords.y || !minmax.set)
-				minmax.min.y = texcoords.y;
-			if(minmax.max.x < texcoords.x || !minmax.set)
-				minmax.max.x = texcoords.x;
-			if(minmax.max.y < texcoords.y || !minmax.set)
-				minmax.max.y = texcoords.y;
-
-			minmax.set = true;
-		}
-
-		const TResourceAccess<IImageData>* curr = nullptr;
-		int index = 0;
-
-		//put the textures into the hsvt generator
-		while((curr = (const TResourceAccess<IImageData>*) data->GetTexture(index)) != nullptr && index < textureMinMax.size())
-		{
-			assert( materials.size() - textureIndexOffset == index );
-
-			SparseVirtualTextureGenerator::RelationArray arr;
-			u32 xSize = (*curr)->GetImageWidth();
-			u32 ySize = (*curr)->GetImageHeight();
-			const u8* data = (const u8*)(*curr)->GetImageData();
-			
-			if((*curr)->GetImageFormat() == IImageData::R8G8B8A8)
-			{
-				textureMinMax[index].adjustment = packTexture(textureMinMax[index].min,textureMinMax[index].max,xSize,ySize,(const u32*)data,arr);
-			}
-			else if((*curr)->GetImageFormat() == IImageData::DXTC1)
-			{
-				ImageData<DXTC1> compressed(xSize,ySize,data);
-				ImageData<R8G8B8A8> decompressed(compressed);
-				textureMinMax[index].adjustment = packTexture(textureMinMax[index].min,textureMinMax[index].max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
-			}
-			else if((*curr)->GetImageFormat() == IImageData::DXTC3)
-			{
-				ImageData<DXTC3> compressed(xSize,ySize,data);
-				ImageData<R8G8B8A8> decompressed(compressed);
-				textureMinMax[index].adjustment = packTexture(textureMinMax[index].min,textureMinMax[index].max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
-			}
-			else if((*curr)->GetImageFormat() == IImageData::DXTC5)
-			{
-				ImageData<DXTC5> compressed(xSize,ySize,data);
-				ImageData<R8G8B8A8> decompressed(compressed);
-				textureMinMax[index].adjustment = packTexture(textureMinMax[index].min,textureMinMax[index].max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
-			}
-			else
-			{
-				std::vector<u32> tempBuffer;
-				tempBuffer.resize(xSize*ySize);
-				textureMinMax[index].adjustment = packTexture(textureMinMax[index].min,textureMinMax[index].max,xSize,ySize,(const u32*)tempBuffer.data(),arr);
-			}
-
-			++index;
-		}
-		
-		//adjust coordinates
-		for(u32 i = 0; i < mesh.GetNumVertexIndices(); ++i)
-		{
-			MeshType::Vertex v = mesh.GetVertex(i);
-			if(v == MeshType::nullVertex)
-				break;
-
-			Vector2<>& texcoords = v->TexCoord;
-			MinMaxTex& minmax= textureMinMax[v->Material-textureIndexOffset];
-			
-			texcoords = (( ( texcoords - minmax.min ) | ( minmax.max - minmax.min) ) & ( minmax.adjustment[1] - minmax.adjustment[0]) ) + minmax.adjustment[0];
-		}
-
 	}
 
 	
-	std::array<Vector2<>,2> DataProcessor::packTexture(Vector2<> mincoord,Vector2<> maxcoord,u32 xSize,u32 ySize,const u32* pData,const SparseVirtualTextureGenerator::RelationArray& arr)
+	std::array<Vector2<>,2> DataProcessor::packTexture(u32 material_index,Vector2<> mincoord,Vector2<> maxcoord,u32 xSize,u32 ySize,const u32* pData,const SparseVirtualTextureGenerator::RelationArray& arr)
 	{
 
 		std::array<Vector2<>,2> result;
 
-		i32 xBegin = floorf(xSize * mincoord.x - 0.5f);
-		i32 yBegin = floorf(ySize * mincoord.y - 0.5f);
-		i32 xEnd = ceilf(xSize * maxcoord.x + 0.5f);
-		i32 yEnd = ceilf(ySize * maxcoord.y + 0.5f);
+		static const i32 borderSize = 0;
+
+		i32 xBegin = floorf(xSize * mincoord.x - 0.5f) - borderSize;
+		i32 yBegin = floorf(ySize * mincoord.y - 0.5f) - borderSize;
+		i32 xEnd = ceilf(xSize * maxcoord.x + 0.5f) + borderSize;
+		i32 yEnd = ceilf(ySize * maxcoord.y + 0.5f) + borderSize;
+		
+		i32 xMinCap = floorf(xSize * mincoord.x);
+		i32 yMinCap = floorf(ySize * mincoord.y);
+		i32 xMaxCap = ceilf(xSize * maxcoord.x);
+		i32 yMaxCap = ceilf(ySize * maxcoord.y);
 		
 		u32 newXSize = xEnd- xBegin;
 		u32 newYSize = yEnd- yBegin;
@@ -296,11 +342,13 @@ namespace HAGE
 
 		for(i32 iy = yBegin; iy < yEnd ; iy++)
 			for(i32 ix = xBegin; ix < xEnd ; ix++)
-				image_data(ix-xBegin,iy-yBegin).SetData(pData[ (iy%ySize)*xSize + (ix%xSize) ]);
+				image_data(ix-xBegin,iy-yBegin).SetData(pData[ (std::max(yMinCap,std::min(yMaxCap,iy))%ySize)*xSize + (std::max(xMinCap,std::min(xMaxCap,ix))%xSize) ]);
 
 		SVTDataLayer_Raw raw_image;
 		raw_image.Initialize(image_data);
-		materials.push_back(hsvt.PlaceTexture(&raw_image,arr));
+		materials.insert(std::make_pair(material_index,hsvt.PlaceTexture(&raw_image,arr)));
+
+		assert(materials.find(material_index) != materials.end());
 
 		return result;
 	}
@@ -326,6 +374,8 @@ namespace HAGE
 		mesh.InitializeDecimate();
 		mesh.DecimateToError(0.000001f,DecimateUpdate);
 		mesh.Compact();
+
+		processMeshTextures(mesh,item.GetMeshData());
 		
 		u32 nChildMeshes = 0;
 
@@ -339,7 +389,9 @@ namespace HAGE
 			MeshType child;
 			Matrix4<> childTransform = baseTransform  * pChildMeshes[i].transformation;
 			loadMesh(child,pChildMeshes[i].childMesh,childTransform);
-			child.DebugValidateMesh();
+			mergeMeshVertices(child);
+			child.Compact();
+			processMeshTextures(child,pChildMeshes[i].childMesh);
 			mesh.ImportMesh(child);
 			mesh.DebugValidateMesh();
 		}
@@ -528,7 +580,7 @@ namespace HAGE
 							Vector3<> pos1 = mesh.GetVertexData(v1).Position;
 							Vector3<> pos2 = mesh.GetVertexData(v2).Position;
 							float distance_sq = !( pos1 - pos2);
-							if(distance_sq < 0.00001f)
+							if(distance_sq < 0.001f && v1->Material == v2->Material && v1->TexCoord == v2->TexCoord)
 							{
 								MeshType::Vertex v = MeshType::nullVertex;
 								if((v = mesh.MergeVertex(mesh.MakePair(v1,v2))) == MeshType::nullVertex)

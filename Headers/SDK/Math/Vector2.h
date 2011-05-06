@@ -42,6 +42,17 @@ public:
 		return c[i];
 	}
 
+	// comparison operators
+
+	bool operator == (const Vector2<_T>& other) const
+	{
+		return x == other.x && y == other.y;
+	}
+	bool operator != (const Vector2<_T>& other) const
+	{
+		return x != other.x || y != other.y;
+	}
+
 	// constructors
 
 	Vector2(const _T& _1,const _T& _2) : x(_1),y(_2)

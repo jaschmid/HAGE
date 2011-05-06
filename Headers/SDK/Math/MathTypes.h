@@ -16,6 +16,7 @@
 
 #include <limits>
 #include <cmath>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 namespace HAGE {
 
@@ -31,6 +32,10 @@ template<typename _T> const _T NaN()
 {
 	return (_T)std::numeric_limits<_T>::quiet_NaN();
 }
+template<typename _T> const _T Infinity()
+{
+	return (_T)std::numeric_limits<_T>::infinity();
+}
 
 template<typename _T> bool IsZero(const _T& v)
 {
@@ -42,7 +47,15 @@ template<typename _T> bool IsOne(const _T& v)
 }
 template<typename _T> bool IsNaN(const _T& v)
 {
-	return v != v;
+	return boost::math::isnan(v);
+}
+template<typename _T> bool IsInfinite(const _T& v)
+{
+	return boost::math::isinf(v);
+}
+template<typename _T> bool IsFinite(const _T& v)
+{
+	return boost::math::isfinite(v);
 }
 
 template<typename _T> _T sqrt(const _T& v)

@@ -19,10 +19,10 @@ class GenerationDomain : public DomainBase<GenerationDomain>
 	private:
 		
 
-		const static int xBegin = 28;//27;
-		const static int xEnd = 36;//43;
-		const static int yBegin = 28;//27;
-		const static int yEnd = 36;//43;
+		const static int xBegin = 32;//27;
+		const static int xEnd = 33;//43;
+		const static int yBegin = 32;//27;
+		const static int yEnd = 33;//43;
 		
 		DataProcessor	_dataProc;
 
