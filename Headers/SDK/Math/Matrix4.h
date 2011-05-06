@@ -133,6 +133,26 @@ template<class _T> struct Matrix4
 		);
 	}
 
+	static const Matrix4<_T> QuaternionRotation(const Quaternion<_T>& q)
+	{
+		_T a2 = q.r*q.r;
+		_T b2 = q.i*q.i;
+		_T c2 = q.j*q.j;
+		_T d2 = q.k*q.k;
+		_T _2ab = 2.0f*q.r*q.i;
+		_T _2ac = 2.0f*q.r*q.j;
+		_T _2ad = 2.0f*q.r*q.k;
+		_T _2bc = 2.0f*q.i*q.j;
+		_T _2bd = 2.0f*q.i*q.k;
+		_T _2cd = 2.0f*q.j*q.k;
+		return Matrix4(
+			Vector4<_T>(a2 + b2 - c2 - d2 ,	_2bc - _2ad,		_2bd + _2ac,		0.0f),
+			Vector4<_T>(_2bc + _2ad,		a2 - b2 + c2 - d2,	_2cd - _2ab,		0.0f),
+			Vector4<_T>(_2bd - _2ac,		_2cd + _2ab,		a2 - b2 - c2 + d2,	0.0f),
+			Vector4<_T>(0.0f,				0.0f,				0.0f,				1.0f)
+		);
+	}
+
 	// basic operations
 
 	template<class _T2> const Matrix4<_T> operator *(const Matrix4<_T2>& other) const

@@ -151,12 +151,12 @@ public:
 		return Quaternion<_T>(r/_1,i/_1,j/_1,k/_1);
 	}
 
-	Quaternion<_T> operator invert() const
+	Quaternion<_T> invert() const
 	{
 		return conjugate()/sqNorm();
 	}
 
-	Quaternion<_T> operator versor() const
+	Quaternion<_T> versor() const
 	{
 		return (*this)/norm();
 	}

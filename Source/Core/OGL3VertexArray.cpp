@@ -127,7 +127,7 @@ unsigned int OGL3VertexArray::GetVA(GLuint program)
 
 				delete [] cAttribName;
 
-				if(nProperty!=-1);
+				if(nProperty!=-1)
 				{
 					glVertexAttribPointer((GLuint)nProperty, nAttributes, Type, GL_FALSE, pFormat->uVertexSize, (const GLvoid*)nOffset);
 					glEnableVertexAttribArray(nProperty);
