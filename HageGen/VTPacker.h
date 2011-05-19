@@ -296,7 +296,8 @@ private:
 	u32 getPackingYLocation(u32 index) const { assert(_data[index].yLocation >= 0 ); return (u32)_data[index].yLocation; }
 	u32 getPackingXSize(u32 index) const { return _data[index].xSize; }
 	u32 getPackingYSize(u32 index) const { return _data[index].ySize; }
-
+	
+	i32		getRelationshipWastage(u32 item,u32 xLoc,u32 yLoc) const;
 	i32		getWastedPixelsForPacking(u32 item,u32 xLoc,u32 yLoc) const;
 	i32		updateWastedPixelsForPacking(u32 item,u32 xLoc,u32 yLoc);
 	void	preparePacking();

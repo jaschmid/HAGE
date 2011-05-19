@@ -6,7 +6,7 @@ namespace HAGE {
 /* Public Constructors */
 
 VTPacker::VTPacker(u32 PageSize,u8 nLayers) : _pageSize(PageSize),_nLayers(nLayers),_wastedPixels(0),_packedPixels(0),_packingQuality(0.0f),
-	_maxSize(Vector2<u32>( 1 << (nLayers-1), 1 << (nLayers-1) )),_freeSpace(Vector2<u32>( (1 << (nLayers-1))*PageSize, (1 << (nLayers-1))*PageSize)),_wasteCounter(nLayers),_baseAffinity(1.0f)
+	_maxSize(Vector2<u32>( 1 << (nLayers-1), 1 << (nLayers-1) )),_freeSpace(Vector2<u32>( (1 << (nLayers-1))*PageSize, (1 << (nLayers-1))*PageSize)),_wasteCounter(nLayers),_baseAffinity(0.0f)
 {
 	for(u32 i = 0; i< _wasteCounter.size(); ++i)
 		_wasteCounter[i] = 0xffffffff; //indicates unused
@@ -29,6 +29,9 @@ VTPacker::Packing VTPacker::AddItem(const PackingRelationship& relationship,u32 
 	for(auto it = relationship.begin(); it!= relationship.end(); ++it)
 		dataItem.packingRelationship.push_back(std::make_pair(it->first.getIndex(),it->second));
 
+	for(auto it = dataItem.packingRelationship.begin(); it != dataItem.packingRelationship.end(); ++it)
+		_data[it->first].packingRelationship.push_back(std::make_pair(_data.size(),it->second));
+
 	_data.push_back(dataItem);
 
 	_unpackedItems.push_back((u32)_data.size()-1);
@@ -38,6 +41,7 @@ VTPacker::Packing VTPacker::AddItem(const PackingRelationship& relationship,u32 
 
 void VTPacker::ResolvePackingLocations()
 {
+	preparePacking();
 	while(_unpackedItems.size() != 0)
 	{
 		auto item = getNextItemToPack();
@@ -47,6 +51,8 @@ void VTPacker::ResolvePackingLocations()
 		u32 xLoc,yLoc;
 
 		findBestPackingLocation(index,xLoc,yLoc);
+
+		//assert(xLoc < 0x4000 && yLoc < 0x4000);
 
 		packItem(index,xLoc,yLoc);
 	}
@@ -65,7 +71,7 @@ i32 VTPacker::getWasteChangeForNode(u16 x,u16 y,u8 layer,u32 Waste) const
 	{
 		u32 oldWaste = _wasteCounter[node];
 		assert(oldWaste + Waste >= available);
-		return (i32)Waste - (i32)available;
+		return (i32)Waste - (i32)(available*_baseAffinity);
 	}
 }
 i32 VTPacker::updateWasteForNode(u16 x,u16 y,u8 layer,u32 Waste)
@@ -83,9 +89,8 @@ i32 VTPacker::updateWasteForNode(u16 x,u16 y,u8 layer,u32 Waste)
 	{
 		u32 oldWaste = _wasteCounter[node];
 		assert(oldWaste + Waste >= available);
-		i32 result = (i32)Waste - (i32)available;
 		_wasteCounter[node] -= available - Waste;
-		return result;
+		return (i32)Waste - (i32)(available*_baseAffinity);
 	}
 }
 
@@ -98,7 +103,7 @@ i32	VTPacker::getWastedPixelsForPacking(u32 item,u32 xLoc,u32 yLoc) const
 
 	u8 currentLayer	= (u8)_nLayers;
 
-	i32 wastage = 0;
+	i32 wastage = getRelationshipWastage(item,xLoc,yLoc);
 
 	while(currentLayer != 0)
 	{
@@ -167,8 +172,52 @@ i32	VTPacker::getWastedPixelsForPacking(u32 item,u32 xLoc,u32 yLoc) const
 		xSize/=2;
 		ySize/=2;
 	}
+		
 
-	wastage = (i32)((f32)wastage*_baseAffinity);
+	return wastage;
+}
+
+i32 VTPacker::getRelationshipWastage(u32 item,u32 xLoc,u32 yLoc) const
+{
+	i32 wastage = 0;
+	const u32 xSize = _data[item].xSize;
+	const u32 ySize = _data[item].ySize;
+
+	for(auto it = _data[item].packingRelationship.begin(); it != _data[item].packingRelationship.end(); ++it)
+	{
+		const u32 alt_xLoc = _data[it->first].xLocation;
+		const u32 alt_yLoc = _data[it->first].yLocation;
+		const u32 alt_xSize = _data[it->first].xSize;
+		const u32 alt_ySize = _data[it->first].ySize;
+
+		if(alt_xLoc == 0xffffffff || alt_yLoc == 0xffffffff)
+			continue;
+		
+		u8 currentLayer	= 0;
+
+		while(currentLayer != _nLayers)
+		{
+
+			u32 yBegin = std::max(yLoc>>currentLayer,alt_yLoc>>currentLayer)/_pageSize;
+			u32 yEnd = std::min((yLoc+ySize)>>currentLayer,(alt_yLoc+alt_ySize)>>currentLayer)/_pageSize;
+			u32 xBegin = std::max(xLoc>>currentLayer,alt_xLoc>>currentLayer)/_pageSize;
+			u32 xEnd = std::min((xLoc+xSize)>>currentLayer,(alt_xLoc+alt_xSize)>>currentLayer)/_pageSize;
+			
+			for(u32 yPage = yBegin; yPage <= yEnd; ++yPage)
+				for(u32 xPage = xBegin; xPage <= xEnd; ++xPage)
+				{
+					i32 xInPage = (i32)std::min((xLoc+xSize)>>currentLayer,_pageSize*(xPage+1)) - (i32)std::max(xLoc>>currentLayer,_pageSize*xPage);
+					i32 yInPage = (i32)std::min((yLoc+ySize)>>currentLayer,_pageSize*(yPage+1)) - (i32)std::max(yLoc>>currentLayer,_pageSize*yPage);
+					assert(xInPage >= 0 );
+					assert(yInPage >= 0 );
+					i32 change = xInPage*yInPage*(it->second-_baseAffinity);
+					//printf("wastage change: %i (%i, %i, %f, %f)\n",change,xInPage,yInPage,it->second,_baseAffinity);
+					wastage -= change;
+				}
+				
+			currentLayer ++;
+		}
+	}
 
 	return wastage;
 }
@@ -180,7 +229,7 @@ i32	VTPacker::updateWastedPixelsForPacking(u32 item,u32 xLoc,u32 yLoc)
 	
 	u8 currentLayer	= (u8)_nLayers;
 
-	i32 wastage = 0;
+	i32 wastage = getRelationshipWastage(item,xLoc,yLoc);
 
 	while(currentLayer != 0)
 	{

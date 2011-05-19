@@ -30,7 +30,7 @@ namespace HAGE {
 
 	private:
 
-		const static int DefaultCacheSize = 1024*1024*128;
+		const static int DefaultCacheSize = 1024*1024*64;
 
 		VirtualTextureManager();
 		~VirtualTextureManager();

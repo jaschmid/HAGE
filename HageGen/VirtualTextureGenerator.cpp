@@ -495,13 +495,13 @@ SparseVirtualTextureGenerator::TextureReference SparseVirtualTextureGenerator::P
 	std::vector<std::pair<VTPacker::Packing,f32>> internalRelationArray;
 
 	for(int i = 0; i < relationArray.size(); ++i)
-		internalRelationArray.push_back(std::make_pair(relationArray[i].first.packing,relationArray[i].second));
+		internalRelationArray.push_back(std::make_pair(relationArray[i].first->packing,relationArray[i].second));
 
 	PlacedTexture placement( this,_vtPacker->AddItem(internalRelationArray,pData->GetSize().x,pData->GetSize().y),storageIndex);
 	
 	_textureList.push_back(placement);
 
-	return _textureList.back();
+	return &_textureList.back();
 }
 
 SparseVirtualTextureGenerator::TempSharedStorage::TempSharedStorage() 

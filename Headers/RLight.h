@@ -13,9 +13,14 @@ public:
 	static RenderingLight* CreateSub(const guid& ObjectId,const MemHandle& h,const guid& source);
 	
 	GLightOut Step(RenderingDomain* pRendering);
+	
+	int Draw(EffectContainer* pEffect,const position_constants& c,APIWConstantBuffer* pBuffer,bool bShadow,bool bOrbit);
 
 private:
 	RenderingLight(const guid& ObjectId,const MemHandle& h,const guid& source);
+	
+	TResourceAccess<ITextureImage>						_texture;
+	TResourceAccess<IDrawableMesh>						_mesh;
 
 	GLightOut _data;
 	virtual ~RenderingLight();

@@ -180,6 +180,7 @@
     <ClInclude Include="DataProcessor.h" />
     <ClInclude Include="Dependancies\sqlite3.h" />
     <ClInclude Include="GenerationDomain.h" />
+    <ClInclude Include="GenPack.h" />
     <ClInclude Include="guids.h" />
     <ClInclude Include="header.h" />
     <ClInclude Include="VirtualTextureGenerator.h" />

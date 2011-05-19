@@ -39,7 +39,7 @@ namespace HAGE {
 			friend class SparseVirtualTextureGenerator;
 		};
 
-		typedef const PlacedTexture& TextureReference;
+		typedef const PlacedTexture* TextureReference;
 		typedef std::vector<std::pair<TextureReference,f32>> RelationArray;
 
 		/* Public Constructors */

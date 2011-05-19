@@ -84,8 +84,8 @@ namespace HAGE
 
 				auto found = materials.find(mat);
 
-				Vector2<> scale(found->second.GetUSize(),found->second.GetVSize());
-				Vector2<> bias(found->second.GetUBegin(),found->second.GetVBegin());
+				Vector2<> scale(found->second->GetUSize(),found->second->GetVSize());
+				Vector2<> bias(found->second->GetUBegin(),found->second->GetVBegin());
 					
 				Vector2<>& texcoord = v->TexCoord;
 
@@ -132,13 +132,18 @@ namespace HAGE
 		bool set;
 	};
 	
-	void DataProcessor::processMeshTextures(DataProcessor::MeshType& mesh,const TResourceAccess<IMeshData>& data)
+	void DataProcessor::processMeshTextures(DataProcessor::MeshType& mesh,const TResourceAccess<IMeshData>& data,SparseVirtualTextureGenerator::RelationArray& arr)
 	{
+		SparseVirtualTextureGenerator::RelationArray local_array = arr;
+
+		for(auto it = local_array.begin(); it != local_array.end(); ++it)
+			it->second *= 0.5f;
+
 		for(u32 i = 0; i < mesh.GetNumVertexIndices(); ++i)
 		{
 			MeshType::Vertex v = mesh.GetVertex(i);
 			if(v == MeshType::nullVertex)
-				break;
+				continue;
 
 			//vertex not processed yet
 			if(v->Material & TempMaterialMarker)
@@ -155,23 +160,40 @@ namespace HAGE
 				std::set<MeshType::Vertex,lessVertex> processed;
 				std::set<MeshType::Vertex,lessVertex> found;
 
-				found.insert(v);
+				const static bool bSplitTextures = false;
 
-				while(!found.empty())
+				if(bSplitTextures)
 				{
-					MeshType::Vertex current = *found.begin();
-					found.erase(found.begin());
-					auto triple = mesh.GetFirstVertexElementTriple(current);
-					while(std::get<0>(triple) != MeshType::nullVertex)
-					{
-						if(processed.find(std::get<0>(triple)) == processed.end() &&
-							found.find(std::get<0>(triple)) == found.end() &&
-							std::get<0>(triple)->Material == v->Material)
-							found.insert(std::get<0>(triple));
 
-						triple = mesh.GetNextVertexElementTriple(current,triple);
+					found.insert(v);
+
+					while(!found.empty())
+					{
+						MeshType::Vertex current = *found.begin();
+						found.erase(found.begin());
+						auto triple = mesh.GetFirstVertexElementTriple(current);
+						while(std::get<0>(triple) != MeshType::nullVertex)
+						{
+							if(processed.find(std::get<0>(triple)) == processed.end() &&
+								found.find(std::get<0>(triple)) == found.end() &&
+								std::get<0>(triple)->Material == v->Material)
+								found.insert(std::get<0>(triple));
+
+							triple = mesh.GetNextVertexElementTriple(current,triple);
+						}
+						processed.insert(current);
 					}
-					processed.insert(current);
+				}
+				else
+				{
+					for(u32 i2 = i; i2 < mesh.GetNumVertexIndices(); ++i2)
+					{
+						MeshType::Vertex v2 = mesh.GetVertex(i2);
+						if(v2 == MeshType::nullVertex)
+							continue;
+						if(v2->Material == v->Material)
+							processed.insert(v2);
+					}
 				}
 
 				u32 this_original_index = v->Material & (~TempMaterialMarker);
@@ -209,7 +231,6 @@ namespace HAGE
 
 				const TResourceAccess<IImageData>* curr = (const TResourceAccess<IImageData>*) data->GetTexture(this_original_index);
 				
-				SparseVirtualTextureGenerator::RelationArray arr;
 				u32 xSize = (*curr)->GetImageWidth();
 				u32 ySize = (*curr)->GetImageHeight();
 				const u8* data = (const u8*)(*curr)->GetImageData();
@@ -218,32 +239,39 @@ namespace HAGE
 								
 				if((*curr)->GetImageFormat() == IImageData::R8G8B8A8)
 				{
-					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)data,arr);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)data,local_array);
 				}
 				else if((*curr)->GetImageFormat() == IImageData::DXTC1)
 				{
 					ImageData<DXTC1> compressed(xSize,ySize,data);
 					ImageData<R8G8B8A8> decompressed(compressed);
-					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),local_array);
 				}
 				else if((*curr)->GetImageFormat() == IImageData::DXTC3)
 				{
 					ImageData<DXTC3> compressed(xSize,ySize,data);
 					ImageData<R8G8B8A8> decompressed(compressed);
-					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),local_array);
 				}
 				else if((*curr)->GetImageFormat() == IImageData::DXTC5)
 				{
 					ImageData<DXTC5> compressed(xSize,ySize,data);
 					ImageData<R8G8B8A8> decompressed(compressed);
-					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),arr);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)decompressed.GetData(),local_array);
 				}
 				else
 				{
 					std::vector<u32> tempBuffer;
 					tempBuffer.resize(xSize*ySize);
-					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)tempBuffer.data(),arr);
+					adjustment = packTexture(this_material_index,min,max,xSize,ySize,(const u32*)tempBuffer.data(),local_array);
 				}
+
+				auto material = materials.find(this_material_index);
+
+				assert(material != materials.end());
+
+				local_array.push_back(std::make_pair(material->second,1.0f));
+				arr.push_back(std::make_pair(material->second,1.0f));
 				
 				assert(IsFinite(adjustment[0].x));
 				assert(IsFinite(adjustment[0].y));
@@ -314,7 +342,7 @@ namespace HAGE
 
 		std::array<Vector2<>,2> result;
 
-		static const i32 borderSize = 0;
+		static const i32 borderSize = 16;
 
 		i32 xBegin = floorf(xSize * mincoord.x - 0.5f) - borderSize;
 		i32 yBegin = floorf(ySize * mincoord.y - 0.5f) - borderSize;
@@ -359,7 +387,7 @@ namespace HAGE
 		Vector3<> offset = Vector3<>(0.0f,0.0f,0.0f);//Vector3<>( (float)((float)item.GetX() - (float)(_xEnd + _xBegin) / 2) * 2.0f, 0.0f , (float)((float)item.GetY() - (float)(_yEnd + _yBegin) / 2) * 2.0f);
 		
 		Matrix4<> baseTransform = Matrix4<>::Translate(offset);
-
+		SparseVirtualTextureGenerator::RelationArray relation_array;
 		MeshType mesh;
 
 		loadMesh(mesh,item.GetMeshData(),baseTransform);
@@ -371,11 +399,18 @@ namespace HAGE
 		
 		mergeMeshVertices(mesh);
 		mesh.Compact();
+
+		
+		printf("height mesh merged\n");
+		printf("\t%i vertices\n",mesh.GetNumVertices());
+		printf("\t%i faces\n",mesh.GetNumFaces());
+		printf("\t%i edges\n",mesh.GetNumEdges());
+
 		mesh.InitializeDecimate();
 		mesh.DecimateToError(0.000001f,DecimateUpdate);
 		mesh.Compact();
 
-		processMeshTextures(mesh,item.GetMeshData());
+		processMeshTextures(mesh,item.GetMeshData(),relation_array);
 		
 		u32 nChildMeshes = 0;
 
@@ -386,17 +421,17 @@ namespace HAGE
 		const IMeshData::ChildObject* pChildMeshes = (const IMeshData::ChildObject*) item.GetMeshData()->GetExtendedData(IMeshData::CHILD_LIST);
 		for(int i = 0; i < nChildMeshes; ++i)
 		{
+			auto child_array = relation_array;
 			MeshType child;
 			Matrix4<> childTransform = baseTransform  * pChildMeshes[i].transformation;
 			loadMesh(child,pChildMeshes[i].childMesh,childTransform);
 			mergeMeshVertices(child);
 			child.Compact();
-			processMeshTextures(child,pChildMeshes[i].childMesh);
+			processMeshTextures(child,pChildMeshes[i].childMesh,child_array);
 			mesh.ImportMesh(child);
 			mesh.DebugValidateMesh();
 		}
 
-		
 		printf("child meshes loaded\n");
 		printf("\t%i vertices\n",mesh.GetNumVertices());
 		printf("\t%i faces\n",mesh.GetNumFaces());
@@ -562,12 +597,15 @@ namespace HAGE
 
 		printf("Done generating Tree\n");
 
+		u32 num_elements = 0;
+
 		const myTree::TreeNode* cur = tree.TopNode();
 		while(cur)
 		{
 			if(cur->IsLeaf())
 			{
 				auto elements = cur->LeafElements();
+				num_elements += elements.size();
 				if(elements.size() > 1000)
 					printf("\t%i Element Node Merging\n",elements.size());
 				for(size_t i = 0; i < elements.size(); ++i)
@@ -605,6 +643,7 @@ namespace HAGE
 		printf("%i vertices\n",mesh.GetNumVertices());
 		printf("%i faces\n",mesh.GetNumFaces());
 		printf("%i edges\n",mesh.GetNumEdges());
+		printf("%i elements\n",num_elements);
 	}
 
 	DataProcessor::DataItem::DataItem(u32 x,u32 y) :

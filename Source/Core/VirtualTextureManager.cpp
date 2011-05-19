@@ -204,8 +204,8 @@ namespace HAGE {
 					auto& e = pElementBuffer[nElements];
 					e.level = std::min((u16)(floorf((f32)(v.z*16)/(f32)0xffff+0.5f)),(u16)_pTextureSource->GetMaxDepth());
 					f32 nPages =  (f32)_pTextureSource->GetNumXPagesAtDepth(e.level);
-					e.x = (u16)(floorf((f32)(v.x)*nPages/(f32)0xffff)+0.5f) ;
-					e.y = (u16)(floorf((f32)(v.y)*nPages/(f32)0xffff)+0.5f) ;
+					e.x = std::min<u16>((u16)(floorf((f32)(v.x)*nPages/(f32)0xffff)+0.5f),(u16)nPages-1);
+					e.y = std::min<u16>((u16)(floorf((f32)(v.y)*nPages/(f32)0xffff)+0.5f),(u16)nPages-1);
 					
 					++nElements;
 				}

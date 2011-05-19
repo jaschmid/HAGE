@@ -129,7 +129,7 @@ namespace HAGE {
 			m_pConstants->UpdateContent(&constants);
 			m_pEffect2D->Draw(m_pVASquare);
 		}
-		
+		/*
 		{
 			Effect2DConstants constants;
 			constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
@@ -156,6 +156,6 @@ namespace HAGE {
 			m_pConstants->UpdateContent(&constants);
 			m_pEffect2D->SetTexture("DiffuseTexture",_VT->GetCurrentVTCache());
 			m_pEffect2D->Draw(m_pVASquare);
-		}
+		}*/
 	}
 }

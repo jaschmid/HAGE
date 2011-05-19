@@ -68,12 +68,12 @@ namespace HAGE
 
 		const static u32 TempMaterialMarker = 0x80000000;
 
-		std::map<u32,SparseVirtualTextureGenerator::PlacedTexture> materials;
+		std::map<u32,SparseVirtualTextureGenerator::TextureReference> materials;
 
 		typedef HAGE::HageMeshEx< MeshFeatures , VertexData> MeshType;
 		
 		void loadMesh(MeshType& mesh,const TResourceAccess<IMeshData>& data,const Matrix4<>&);
-		void processMeshTextures(MeshType& mesh,const TResourceAccess<IMeshData>& data);
+		void processMeshTextures(MeshType& mesh,const TResourceAccess<IMeshData>& data,SparseVirtualTextureGenerator::RelationArray& arr);
 
 		std::array<Vector2<>,2> packTexture(u32 material_index,Vector2<> mincoord,Vector2<> maxcoord,u32 xSize,u32 ySize,const u32* pData,const SparseVirtualTextureGenerator::RelationArray& arr);
 

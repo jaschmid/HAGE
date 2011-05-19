@@ -10,8 +10,11 @@ namespace HAGE {
 
 	bool LogicLight::Step()
 	{
-		/*_data.Position.x = -cosf(GetTime().toSeconds())*3.0f;
-		_data.Position.z = sinf(GetTime().toSeconds())*3.0f;*/
+		if(_init.bMove)
+		{
+			_data.Position.x = _init.Position.x -cosf(GetTime().toSeconds())*2.0f;
+			_data.Position.z = _init.Position.z +sinf(GetTime().toSeconds())*2.0f;
+		}
 		Output::Set(_data);
 		return false;
 	}

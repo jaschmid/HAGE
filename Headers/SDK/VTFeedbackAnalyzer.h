@@ -228,7 +228,7 @@ namespace HAGE {
 				element e;
 				e.index = n;
 				e.level = 0;
-				e.priority = _pNodes[n].count_this;
+				e.priority = _pNodes[n].count_children;
 				out.push_back(e);
 				std::push_heap(out.begin(),out.end(),prio_compare);
 

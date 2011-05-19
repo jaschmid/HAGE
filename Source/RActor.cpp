@@ -20,14 +20,14 @@ namespace HAGE {
 
 		if(strcmp(pInit->mesh,"Box")==0)
 		{
-			//_mesh = GetResource()->OpenResource<IDrawableMesh>("Box");
-			//_texture = GetResource()->OpenResource<ITextureImage>("Null");
+			_mesh = GetResource()->OpenResource<IDrawableMesh>("Box");
+			_texture = GetResource()->OpenResource<ITextureImage>("art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp");
 			//_mesh = GetResource()->OpenResource<IDrawableMesh>("landscape.hgeo");
 			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40.adt
 			//art.mpq\\World\\Azeroth\\Elwynn\\BUILDINGS\\BlackSmith\\BlackSmithBrick01.blp
 			//@world.MPQ\\world\\maps\\Azeroth\\Azeroth_38_40_tex0.adt
-			_mesh = GetResource()->OpenResource<IDrawableMesh>("t_landscape.hgeo");
-			scale = scale / 1000.0f;
+			//_mesh = GetResource()->OpenResource<IDrawableMesh>("t_landscape.hgeo");
+			//scale = scale / 1000.0f;
 			//_texture = GetResource()->OpenResource<ITextureImage>("t_landscape.hsvt");
 		}
 		else
@@ -67,19 +67,19 @@ namespace HAGE {
 			
 			if(_init.bCastShadow)
 			{	
-				pc.diffuseFactor = 0.0f;
-				pc.ambientFactor = 1.0f;
+				pc.diffuseFactor = 1.0f;
+				pc.ambientFactor = 0.0f;
 			}
 			else
 			{
-				pc.diffuseFactor = 0.0f;
-				pc.ambientFactor = 1.0f;
+				pc.diffuseFactor = 1.0f;
+				pc.ambientFactor = 0.0f;
 			}
 
 			pBuffer->UpdateContent(&pc);
 
 			if(strcmp(_init.mesh,"Box")==0)
-				pEffect->SetTexture("DiffuseTexture",_virtTex->GetCurrentVTRedirection());
+				pEffect->SetTexture("DiffuseTexture",_texture->GetTexture());//pEffect->SetTexture("DiffuseTexture",_virtTex->GetCurrentVTRedirection());
 			else if(_mesh->GetTexture(0))
 				pEffect->SetTexture("DiffuseTexture",_mesh->GetTexture(0));
 			else

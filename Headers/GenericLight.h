@@ -22,6 +22,7 @@ struct LightInit
 	Vector3<>	Position;
 	Vector3<>	Color;
 	f32			Range;
+	bool		bMove;
 };
 
 struct LLightOut
