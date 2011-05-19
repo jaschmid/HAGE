@@ -107,19 +107,19 @@ public:
 		return conjugate();
 	}
 
-	_T sqMagnitude() const
+	_T sqNorm() const
 	{
 		return r*r + i*i + j*j + k*k;
 	}
 
 	_T operator !() const
 	{
-		return sqMagnitude();
+		return sqNorm();
 	}
 
-	_T magnitude() const
+	_T norm() const
 	{
-		return sqrt(sqMagnitude());
+		return sqrt<_T>(sqNorm());
 	}
 
 	Quaternion<_T> operator + (const Quaternion<_T>& _1) const
@@ -130,6 +130,35 @@ public:
 	Quaternion<_T> operator - (const Quaternion<_T>& _1) const
 	{
 		return Quaternion<_T>(r-_1.r,i-_1.i,j-_1.j,k-_1.k);
+	}
+
+	Quaternion<_T> operator * (const Quaternion<_T>& _1) const
+	{
+		return Quaternion<_T>(
+			r*_1.r - i*_1.i - j*_1.j - k*_1.k,
+			r*_1.i + i*_1.r + j*_1.k - k*_1.j,
+			r*_1.j - i*_1.k + j*_1.r + k*_1.i,
+			r*_1.k + i*_1.j - j*_1.i + k*_1.r
+			);
+	}
+
+	Quaternion<_T> operator * (const _T& _1) const
+	{
+		return Quaternion<_T>(r*_1,i*_1,j*_1,k*_1);
+	}
+	Quaternion<_T> operator / (const _T& _1) const
+	{
+		return Quaternion<_T>(r/_1,i/_1,j/_1,k/_1);
+	}
+
+	Quaternion<_T> invert() const
+	{
+		return conjugate()/sqNorm();
+	}
+
+	Quaternion<_T> versor() const
+	{
+		return (*this)/norm();
 	}
 
 };
