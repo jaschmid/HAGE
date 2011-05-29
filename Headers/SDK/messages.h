@@ -442,7 +442,8 @@ enum {
 	MESSAGE_UI_ADJUST_CAMERA	= 0x00110002,
 	MESSAGE_UI_MOVE_PLAYER		= 0x00110003,
 	MESSAGE_UI_SHOW				= 0x00110004,
-	MESSAGE_UI_HIDE				= 0x00110005
+	MESSAGE_UI_HIDE				= 0x00110005,
+	MESSAGE_UI_TOGGLE_SETTING	= 0x00110006
 };
 
 class MessageUIUnknown : public Message
@@ -511,6 +512,16 @@ public:
 	MessageUIHide() : MessageHelper<MessageUIHide,MessageUIUnknown>(id) {}
 private:
 	static const u32 id = MESSAGE_UI_HIDE;
+};
+
+class MessageUIToggleSetting : public MessageHelper<MessageUIToggleSetting,MessageUIUnknown>
+{
+public:
+	MessageUIToggleSetting(u32 setting) : MessageHelper<MessageUIToggleSetting,MessageUIUnknown>(id),_setting(setting) {}
+	u32 GetSetting(){return _setting;}
+private:
+	const u32 _setting;
+	static const u32 id = MESSAGE_UI_TOGGLE_SETTING;
 };
 
 enum {

@@ -67,6 +67,8 @@ namespace HAGE {
 			{
 				Vector2<>	cache_inner_page_size;
 				Vector2<>	cache_border_size;	
+				Vector2<>	cache_outer_page_size;
+				Vector2<>	cache_factor;	
 			};
 
 			void UpdateSettings(const VT_Settings& settings);
@@ -114,6 +116,8 @@ namespace HAGE {
 			~PageCache();
 
 			u32 GetNumCachePages() {return nCachePagesX*nCachePagesY;}
+			u32 GetCacheXPages() {return nCachePagesX;}
+			u32 GetCacheYPages() {return nCachePagesY;}
 			PageData* UpdatePage(u32 CacheIndex);
 
 			UpdatableTexture CreateCacheTexture();
@@ -140,17 +144,17 @@ namespace HAGE {
 				}
 
 				//static const HAGE::APIWFormat format = HAGE::APIWFormat::R32G32B32A32_FLOAT;
-				static const HAGE::APIWFormat format = R10G10B10A2_UNORM;
+				static const HAGE::APIWFormat format = R16_FLOAT;
 
 			private:
 				PageRedirection(u32 xOff,u32 yOff,u32 exponent)
 				{
 					
 					
-					assert(xOff < (1<<10));
-					assert(yOff < (1<<10));
-					assert(exponent < (1<<10));
-					data = (xOff) | (yOff<<10) | (exponent<<20) | (0x3<<30);
+					assert(xOff < (1<<5));
+					assert(yOff < (1<<5));
+					assert(exponent < (1<<5 - 1));
+					data = (0x0000) | ((exponent+1)<<10) | (yOff<<5) | (xOff<<0);
 					
 						/*
 					OffsetX=xOff;
@@ -163,7 +167,7 @@ namespace HAGE {
 				f32 Exponent;
 				f32 _Padding;
 				*/
-				u32 data;
+				u16 data;
 				friend class PageCache;
 			};
 

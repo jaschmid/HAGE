@@ -32,6 +32,9 @@ namespace HAGE {
 					{
 						//keydown
 						m_bKeyboardState[m->GetKey()] = 1;
+
+						if(m->GetKey() == KEY_CODE_D)
+							PostMessage(MessageUIToggleSetting(0));
 					}
 				}
 				else if(m->GetDevice() == guidDefMouse)

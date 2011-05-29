@@ -134,6 +134,7 @@ namespace HAGE {
 	"\n"
 	"H_CONSTANT_BUFFER_BEGIN(VTSettings)\n"
 	"	 float4 tex_inner_cache_page_size__tex_cache_border_size;\n"
+	"	 float4 tex_outer_cache_page_size__tex_cache_factor;\n"
 	"H_CONSTANT_BUFFER_END\n"
 	"\n"
 	"H_TEXTURE_CUBE_CMP(ShadowCube1);\n"
@@ -153,8 +154,10 @@ namespace HAGE {
 	"#define Arg2(x)		         (light_color_arg2[x].w)\n"
 	"#define CacheInnerPageSize		 (tex_inner_cache_page_size__tex_cache_border_size.xy)\n"
 	"#define CacheBorderSize		 (tex_inner_cache_page_size__tex_cache_border_size.zw)\n"
+	"#define CacheOuterPageSize		 (tex_outer_cache_page_size__tex_cache_factor.xy)\n"
+	"#define CacheFactor			 (tex_outer_cache_page_size__tex_cache_factor.zw)\n"
 	"\n"
-	"static const float BIAS = 0.998f;\n"
+	"static const float BIAS = 0.9998f;\n"
 	"\n"
 	"VS_IN_BEGIN\n"
 	"  DECL_VS_IN(float3,position);\n"
@@ -191,11 +194,18 @@ namespace HAGE {
 	"  DECL_FS_COLOR;\n"
 	"FS_OUT_END\n"
 	"\n"
+	"float mipmapLevelAni(float2 dx,float2 dy)\n"
+	"{ \n"
+	"  float Pmax = max(dot(dx,dx), dot(dy,dy));\n"
+	"  float Pmin = min(dot(dx,dx), dot(dy,dy));\n"
+	"  float N = min(ceil(Pmax/Pmin), 8.0f*8.0f);\n"
+	"  return min(max(0.0f, ceil(-0.5f*log2(Pmax/N) -7.0f)),16.0f);\n"
+	"} \n"
 	"FRAGMENT_SHADER\n"
 	"{\n"
 	"  //float Sdist = texCUBE(ShadowCube,float3(VS_OUT.lDir.xyz)).r;\n"
 	"  //if(Sdist <= VS_OUT.lDir.w) PS_OUT.color = float4(0.0f,0.0f,0.0,1.0f);\n"
-	"  //else PS_OUT.color = VS_OUT.color;\n"
+	"  //else PS_OUT.color = VS_OUT.color;\n"/*
 	"  float3 normal = normalize(FS_IN(normal).xyz);\n"
 	"  FS_OUT_COLOR = float4(0.0f,0.0f,0.0f,1.0f);\n"
 	"  float3 lDir[nLights];\n"
@@ -225,13 +235,16 @@ namespace HAGE {
 	"      float3 normDir = lDir[i]*rsqrt(dirLen);\n"
 	"      float light_intensity = saturate(dot(normDir,normal))*saturate(1.0f-dirLen/100.0f)*diffuse_factor;\n"
 	"      FS_OUT_COLOR.xyz += (light_intensity*visibility[i] + ambient_factor)*LightColor(i);\n"
-	"  }\n"
+	"  }\n"*/
 	"  float2 dx = ddx(FS_IN(tex));\n"
 	"  float2 dy = ddy(FS_IN(tex));\n"
-	"  float4 redir = round(H_SAMPLE_2D(VT_Redirection,FS_IN(tex))*1023.0f);\n"
-	"  float2 cache_coord = frac( FS_IN(tex).xy * exp2(redir.z)) *CacheInnerPageSize+redir.xy/1024.0f+CacheBorderSize;\n"
-	"  float4 diffuse_color = saturate(H_SAMPLE_2D_GRAD(VT_Cache,cache_coord,dx*4.0f,dy*4.0f) );\n"
-	"  FS_OUT_COLOR = saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*diffuse_color.xyz,1.0f));\n"
+	"  float lambda = mipmapLevelAni(dx,dy);\n"
+	"  uint val = asuint(H_SAMPLE_2D_LOD(VT_Redirection,FS_IN(tex),11-lambda));\n"
+	"  float3 redir = float3( ((val>>13)&0x1f), ((val>>18)&0x1f), ((val>>23)&0xff) -113.0f );\n"
+	"  float2 cache_coord = frac( FS_IN(tex).xy * exp2(redir.z) ) *CacheInnerPageSize+redir.xy*CacheOuterPageSize+CacheBorderSize;\n"
+	"  float scale = exp2(redir.z)*CacheInnerPageSize;\n"
+	"  float4 diffuse_color = saturate(H_SAMPLE_2D_GRAD(VT_Cache,cache_coord,dx*scale,dy*scale) );\n"
+	"  FS_OUT_COLOR = diffuse_color;\n"//saturate(float4(FS_OUT_COLOR.xyz*FS_IN(color).xyz*diffuse_color.xyz,1.0f));\n"
 	"}\n";
 	
 	struct light_constants
@@ -416,7 +429,7 @@ namespace HAGE {
 	{
 		
 		pWrapper->BeginFrame();
-		/*
+		
 		static u32 lastFeedbackIndex = 0xffffffff;
 
 		u32 currentIndex = _VT->GetId();
@@ -439,10 +452,10 @@ namespace HAGE {
 			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(&effect,c,_pConstants,true,false);} , guid_of<RenderingActor>::Get() ,true);
 
 			 _VT->EndFeedback(pWrapper);
-		}*/
+		}
 
 
-		const int max_lights = 3;
+		int max_lights = 0;
 		
 		auto result3 = GetFactory().ForEach<GLightOut,RenderingLight>( [this](RenderingLight* o) -> GLightOut {return o->Step(this);} , guid_of<RenderingLight>::Get() ,true);
 		int nLights = std::min<u32>(result3.second,max_lights);
@@ -536,10 +549,11 @@ namespace HAGE {
 		c.modelview_projection =	c.modelview;*/
 		
 		_pLightConstants->UpdateContent(&lc);
-		/*
+		
 		_pVTEffect->SetTexture("VT_Cache",_VT->GetCurrentVTCache());
 		_pVTEffect->SetTexture("VT_Redirection",_VT->GetCurrentVTRedirection());
-		_pVTEffect->SetConstant("VTSettings",_VT->GetSettings());*/
+		if(_VT->GetSettings())
+			_pVTEffect->SetConstant("VTSettings",_VT->GetSettings());
 
 		if(bToonShading)
 		{
@@ -549,9 +563,9 @@ namespace HAGE {
 		}
 		else
 		{
-			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
-			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
-			auto result3 = GetFactory().ForEach<int,RenderingLight>( [&](RenderingLight* o) -> int {return o->Draw(_pEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingLight>::Get() ,true);
+			auto result = GetFactory().ForEach<int,RenderingActor>( [&](RenderingActor* o) -> int {return o->Draw(_pVTEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingActor>::Get() ,true);
+			auto result2 = GetFactory().ForEach<int,RenderingSheet>( [&](RenderingSheet* o) -> int {return o->Draw(_pVTEffect,c,_pConstants);} , guid_of<RenderingSheet>::Get() ,true);
+			auto result3 = GetFactory().ForEach<int,RenderingLight>( [&](RenderingLight* o) -> int {return o->Draw(_pVTEffect,c,_pConstants,false,bShowOrbit);} , guid_of<RenderingLight>::Get() ,true);
 		}
 
 		_pPostprocessFilter->EndSceneRendering();
@@ -625,7 +639,7 @@ namespace HAGE {
 		Samplers[3].State.MaxAnisotropy = 8.0f;
 		Samplers[4].State = DefaultSamplerState;
 		Samplers[4].State.FilterFlags = FILTER_MIN_POINT | FILTER_MAG_POINT | FILTER_MIP_POINT;
-		Samplers[4].State.MipLODBias = 6;
+		Samplers[4].State.MipLODBias = 0;
 
 		_pVTEffect = new EffectContainer(pWrapper,vt_test,&wireframe,&DefaultBlendState,1,false,Samplers,5);
 		_pConstants = pWrapper->CreateConstantBuffer(sizeof(position_constants));

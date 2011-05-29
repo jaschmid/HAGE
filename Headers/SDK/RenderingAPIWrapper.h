@@ -65,7 +65,8 @@ typedef enum _APIWFormat
 	DXTC5_UNORM_SRGB	= 17,
 	R16G16B16A16_UNORM	= 18,
 	R10G10B10A2_UNORM		= 19,
-	R10G10B10A2_UINT		= 20
+	R10G10B10A2_UINT		= 20,
+	R16_FLOAT			= 21
 } APIWFormat;
 
 typedef enum _APIWCullMode
@@ -223,8 +224,9 @@ static HAGE::u32 APIWFormatPixelSize(const HAGE::APIWFormat& format)
 {
 	switch(format)
 	{
+	case HAGE::R16_FLOAT			:
 	case HAGE::R16_UNORM			:
-		return sizeof(HAGE::u16)*2;
+		return sizeof(HAGE::u16);
 	case HAGE::R32_FLOAT			:
 		return sizeof(HAGE::f32);
 	case HAGE::R32G32_FLOAT			:
@@ -267,6 +269,7 @@ static HAGE::u32 APIWFormatImagePhysicalSize(const HAGE::APIWFormat& format,u32 
 {
 	switch(format)
 	{
+	case HAGE::R16_FLOAT			:
 	case HAGE::R16_UNORM			:
 	case HAGE::R32_FLOAT			:
 	case HAGE::R32G32_FLOAT			:
@@ -301,6 +304,7 @@ static HAGE::u32 APIWFormatImagePhysicalPitch(const HAGE::APIWFormat& format,u32
 {
 	switch(format)
 	{
+	case HAGE::R16_FLOAT			:
 	case HAGE::R16_UNORM			:
 	case HAGE::R32_FLOAT			:
 	case HAGE::R32G32_FLOAT			:

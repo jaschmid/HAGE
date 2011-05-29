@@ -68,7 +68,7 @@ namespace HAGE {
 		"  float2 dy = ddy(tex);\n"
 		"  float Pmax = max(dot(dx,dx), dot(dy,dy));\n"
 		"  float Pmin = min(dot(dx,dx), dot(dy,dy));\n"
-		"  float N = min(ceil(Pmax/Pmin), 8.0f);\n"
+		"  float N = min(ceil(Pmax/Pmin), 8.0f*8.0f);\n"
 		"  return min(max(0.0f, ceil(-0.5f*log2(Pmax/N) -5.0f)),16.0f);\n"
 		"} \n"
 		"float distanceEstimate(float dist)\n"
@@ -298,6 +298,8 @@ namespace HAGE {
 			FeedbackBuffer::VT_Settings settings;
 			settings.cache_inner_page_size = _pageCache->GetCachePageInnerSize();
 			settings.cache_border_size = _pageCache->GetCacheBorderSize();
+			settings.cache_outer_page_size = settings.cache_inner_page_size + settings.cache_border_size* 2.0f;
+			settings.cache_factor = Vector2<>((f32)nPagesX/(f32)_pageCache->GetCacheXPages(),(f32)nPagesY/(f32)_pageCache->GetCacheYPages());
 
 			_feedbackElements[i].buffer->UpdateSettings(settings);
 			accesses.push_back(_feedbackElements[i].buffer);
@@ -610,8 +612,8 @@ namespace HAGE {
 
 		f32 exponent = -(std::logf(scale)/std::logf(2));
 
-		u32 xLoc = (u32)((CacheIndex % nCachePagesX) * 1024/nCachePagesX);
-		u32 yLoc = (u32)((CacheIndex / nCachePagesX) * 1024/nCachePagesY);
+		u32 xLoc = (u32)((CacheIndex % nCachePagesX) * (1<<5)/nCachePagesX);
+		u32 yLoc = (u32)((CacheIndex / nCachePagesX) * (1<<5)/nCachePagesY);
 		u32 Exp = ((u32)floorf(exponent+0.5f));
 		
 		PageRedirection redirection(xLoc,yLoc,Exp);

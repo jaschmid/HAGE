@@ -48,11 +48,12 @@ namespace HAGE {
 			boxinit.rotation_speed = 0.0f;
 			strcpy(boxinit.mesh,"Box");
 			boxinit.initial_position = Vector3<>(0.0f,0.0f,0.0f);
-			boxinit.scale = Vector3<>(5.0f,5.0f,5.0f);
+			boxinit.scale = Vector3<>(20.0f,20.0f,20.0f);
 			GetFactory().CreateObject<LogicActor>(boxinit);
 
 			
-			//create sun
+			//create sun/*
+			
 			ActorInit ainit;
 			ainit.bCastShadow = true;
 			ainit.behavior = HAGE::ACTOR_BEHAVIOR_SUN;
@@ -111,7 +112,7 @@ namespace HAGE {
 				}
 			}
 
-			*/
+			*//*
 			Vector3<> ply_location(settings->getf32Setting("ply_spawn_x"),
 									settings->getf32Setting("ply_spawn_y"),
 									settings->getf32Setting("ply_spawn_z"));
@@ -126,8 +127,8 @@ namespace HAGE {
 				ainit.initial_position = ply_location + Vector3<>((GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f,(GetRandFloat()-0.5f)*2.0f)*ply_range;
 		
 				GetFactory().CreateObject<LogicActor>(ainit);
-			}
-			
+			}*/
+			/*
 			SheetInit init;
 			//init.Center = Vector3<>(0.0,0.0,50.0f);
 			//init.HalfExtent = Vector3<>(-40.0f,-40.0f,0.0f);
@@ -144,7 +145,7 @@ namespace HAGE {
 										settings->getf32Setting("cloth_init_normal_z"));
 			if(settings->getBoolSetting("cloth_exists"))
 				GetFactory().CreateObject<LogicSheet>(init);
-			
+			*/
 			LightInit linit;
 			linit.Position = Vector3<>(settings->getf32Setting("light1_x"),
 										settings->getf32Setting("light1_y"),

@@ -21,6 +21,8 @@ private:
 
 	Vector2<>				m_vMousePosition;
 	bool					m_bMouseVisible;
+
+	bool					m_bDebug;
 	
 	APIWVertexBuffer*		m_pVBSquare;
 	APIWVertexArray*		m_pVASquare;

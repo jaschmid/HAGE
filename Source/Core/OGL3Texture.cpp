@@ -18,6 +18,19 @@ public:
 	typedef char SrcChannelType;
 };
 
+template<> class _OGLPixelTransferBufferInfo<HAGE::R16_FLOAT>
+{
+public:
+	const static HAGE::APIWFormat	SourceFormat = HAGE::R16_FLOAT;
+	const static GLenum				DestFormat = GL_R16;
+	const static GLenum				DestChannel = GL_UNSIGNED_SHORT;
+	const static int				nSrcChannels = 1;
+	const static int				nDestChannels = 1;
+	
+	typedef unsigned short DestChannelType;
+	typedef unsigned short SrcChannelType;
+};
+
 template<> class _OGLPixelTransferBufferInfo<HAGE::R16_UNORM>
 {
 public:
@@ -205,6 +218,9 @@ public:
 		{
 		case HAGE::R16_UNORM:
 			SetValues<HAGE::R16_UNORM>(width,height,pData);
+			break;		
+		case HAGE::R16_FLOAT:
+			SetValues<HAGE::R16_FLOAT>(width,height,pData);
 			break;		
 		case HAGE::R32_FLOAT:
 			SetValues<HAGE::R32_FLOAT>(width,height,pData);

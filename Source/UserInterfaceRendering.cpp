@@ -69,7 +69,7 @@ namespace HAGE {
 		{"Texcoord",	1,	R32G32_FLOAT	}
 	};
 
-	UserInterfaceRendering::UserInterfaceRendering(RenderingAPIWrapper* pWrapper) : m_pWrapper(pWrapper),m_bMouseVisible(false)
+	UserInterfaceRendering::UserInterfaceRendering(RenderingAPIWrapper* pWrapper) : m_pWrapper(pWrapper),m_bMouseVisible(false),m_bDebug(false)
 	{
 		Vertex2DFormat vertices[] =
 		{
@@ -114,6 +114,11 @@ namespace HAGE {
 				return true;
 			}
 			break;
+		case MESSAGE_UI_TOGGLE_SETTING:
+			{
+				m_bDebug = !m_bDebug;
+			}
+			break;
 		}
 		return true;
 	}
@@ -129,33 +134,35 @@ namespace HAGE {
 			m_pConstants->UpdateContent(&constants);
 			m_pEffect2D->Draw(m_pVASquare);
 		}
-		/*
+		if(m_bDebug)
 		{
-			Effect2DConstants constants;
-			constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
-			constants.texture_matrix = Matrix4<>::One();
-			constants.position_matrix = (Matrix4<>::Translate(Vector3<>(0.5f,0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
-			m_pConstants->UpdateContent(&constants);
-			m_pEffect2D->SetTexture("DiffuseTexture",_VT->_Debug_GetFeedbackTexture());
-			m_pEffect2D->Draw(m_pVASquare);
+			{
+				Effect2DConstants constants;
+				constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
+				constants.texture_matrix = Matrix4<>::One();
+				constants.position_matrix = (Matrix4<>::Translate(Vector3<>(0.5f,0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
+				m_pConstants->UpdateContent(&constants);
+				m_pEffect2D->SetTexture("DiffuseTexture",_VT->_Debug_GetFeedbackTexture());
+				m_pEffect2D->Draw(m_pVASquare);
+			}
+			{
+				Effect2DConstants constants;
+				constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
+				constants.texture_matrix = Matrix4<>::One();
+				constants.position_matrix = (Matrix4<>::Translate(Vector3<>(-0.5f,0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
+				m_pConstants->UpdateContent(&constants);
+				m_pEffect2D->SetTexture("DiffuseTexture",_VT->GetCurrentVTRedirection());
+				m_pEffect2D->Draw(m_pVASquare);
+			}
+			{
+				Effect2DConstants constants;
+				constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
+				constants.texture_matrix = Matrix4<>::One();
+				constants.position_matrix = (Matrix4<>::Translate(Vector3<>(0.5f,-0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
+				m_pConstants->UpdateContent(&constants);
+				m_pEffect2D->SetTexture("DiffuseTexture",_VT->GetCurrentVTCache());
+				m_pEffect2D->Draw(m_pVASquare);
+			}
 		}
-		{
-			Effect2DConstants constants;
-			constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
-			constants.texture_matrix = Matrix4<>::One();
-			constants.position_matrix = (Matrix4<>::Translate(Vector3<>(-0.5f,0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
-			m_pConstants->UpdateContent(&constants);
-			m_pEffect2D->SetTexture("DiffuseTexture",_VT->GetCurrentVTRedirection());
-			m_pEffect2D->Draw(m_pVASquare);
-		}
-		{
-			Effect2DConstants constants;
-			constants.color = Vector4<>(1.0f,1.0f,1.0f,0.0f);
-			constants.texture_matrix = Matrix4<>::One();
-			constants.position_matrix = (Matrix4<>::Translate(Vector3<>(0.5f,-0.5f,0.0f)) * Matrix4<>::Scale(Vector3<>(0.3f,0.3f,0.0f))).Transpose();
-			m_pConstants->UpdateContent(&constants);
-			m_pEffect2D->SetTexture("DiffuseTexture",_VT->GetCurrentVTCache());
-			m_pEffect2D->Draw(m_pVASquare);
-		}*/
 	}
 }
